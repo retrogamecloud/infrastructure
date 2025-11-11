@@ -1,0 +1,346 @@
+version: '3.9'
+
+services:
+  # ============================================
+  # DATABASES
+  # ============================================
+  
+  # PostgreSQL for Auth Service
+  auth-db:
+    image: postgres:15-alpine
+    container_name: gamehub-auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for User Service
+  user-db:
+    image: postgres:15-alpine
+    container_name: gamehub-user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_pass
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for Score Service
+  score-db:
+    image: postgres:15-alpine
+    container_name: gamehub-score-db
+    environment:
+      POSTGRES_DB: score_db
+      POSTGRES_USER: score_user
+      POSTGRES_PASSWORD: score_pass
+    volumes:
+      - score-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U score_user -d score_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for Game Catalog
+  game-catalog-db:
+    image: mongo:7
+    container_name: gamehub-catalog-db
+    environment:
+      MONGO_INITDB_DATABASE: gamehub_catalog
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # CACHE & MESSAGE BROKER
+  # ============================================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: gamehub-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # API GATEWAY
+  # ============================================
+  
+  kong:
+    image: kong:3.4
+    container_name: gamehub-kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+    volumes:
+      - ./infrastructure/kong/kong.yml:/usr/local/kong/kong.yml:ro
+    ports:
+      - "8000:8000"  # Proxy
+      - "8445:8443"  # Proxy SSL
+      - "8001:8001"  # Admin API
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================
+  # MICROSERVICES
+  # ============================================
+  
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: gamehub-auth-service
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://auth_user:auth_pass@auth-db:5432/auth_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+      BCRYPT_ROUNDS: 10
+      USER_SERVICE_URL: http://user-service:3002
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: gamehub-user-service
+    environment:
+      PORT: 3002
+      NODE_ENV: production
+      DATABASE_URL: postgresql://user_user:user_pass@user-db:5432/user_db
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:3001
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "3002:3002"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  score-service:
+    build:
+      context: ./services/score-service
+      dockerfile: Dockerfile
+    container_name: gamehub-score-service
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      DATABASE_URL: postgresql://score_user:score_pass@score-db:5432/score_db
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:3001
+    depends_on:
+      score-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "3003:3003"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  ranking-service:
+    build:
+      context: ./services/ranking-service
+      dockerfile: Dockerfile
+    container_name: gamehub-ranking-service
+    environment:
+      PORT: 3004
+      NODE_ENV: production
+      DATABASE_URL: postgresql://score_user:score_pass@score-db:5432/score_db
+      REDIS_URL: redis://redis:6379
+      CACHE_TTL_SHORT: 30
+      CACHE_TTL_MEDIUM: 300
+      CACHE_TTL_LONG: 3600
+    depends_on:
+      score-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3004:3004"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  game-catalog-service:
+    build:
+      context: ./services/game-catalog-service
+      dockerfile: Dockerfile
+    container_name: gamehub-catalog-service
+    environment:
+      PORT: 3005
+      NODE_ENV: production
+      MONGODB_URL: mongodb://game-catalog-db:27017/gamehub_catalog
+      CDN_BASE_URL: http://localhost:8085
+    depends_on:
+      game-catalog-db:
+        condition: service_healthy
+    ports:
+      - "3005:3005"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  # ============================================
+  # FRONTEND & CDN
+  # ============================================
+  
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.microservices
+    container_name: gamehub-frontend
+    ports:
+      - "8081:8081"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  games-cdn:
+    image: nginx:alpine
+    container_name: gamehub-games-cdn
+    volumes:
+      - ./juegos:/usr/share/nginx/html/juegos:ro
+      - ./frontend/img:/usr/share/nginx/html/img:ro
+      - ./infrastructure/nginx/cdn.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8086:80"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  # ============================================
+  # MONITORING
+  # ============================================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gamehub-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gamehub-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  auth-db-data:
+  user-db-data:
+  score-db-data:
+  mongo-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  gamehub-network:
+    driver: bridge
