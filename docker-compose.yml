@@ -272,12 +272,11 @@ services:
     restart: unless-stopped
 
   games-cdn:
-    image: nginx:alpine
+    build:
+      context: ./cdn
+      dockerfile: Dockerfile
+    image: retrogamecloud/games-cdn:local
     container_name: gamehub-games-cdn
-    volumes:
-      - ./juegos:/usr/share/nginx/html/juegos:ro
-      - ./frontend/img:/usr/share/nginx/html/img:ro
-      - ./infrastructure/nginx/cdn.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8086:80"
     networks:
