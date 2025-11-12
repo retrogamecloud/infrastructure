@@ -120,7 +120,7 @@ services:
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
     volumes:
-      - ./kong:/kong:ro
+      - ../kong:/kong:ro
     ports:
       - "8000:8000"
       - "8445:8443"
@@ -139,7 +139,7 @@ services:
   # ============================================
 
   auth-service:
-    image: retrogamecloud/auth-service:local
+    image: retrogamecloud/auth-service:latest
     container_name: gamehub-auth-service
     environment:
       NODE_ENV: production
@@ -161,7 +161,7 @@ services:
     restart: unless-stopped
 
   user-service:
-    image: retrogamecloud/user-service:local
+    image: retrogamecloud/user-service:latest
     container_name: gamehub-user-service
     environment:
       NODE_ENV: production
@@ -183,7 +183,7 @@ services:
     restart: unless-stopped
 
   score-service:
-    image: retrogamecloud/score-service:local
+    image: retrogamecloud/score-service:latest
     container_name: gamehub-score-service
     environment:
       NODE_ENV: production
@@ -205,7 +205,7 @@ services:
     restart: unless-stopped
 
   ranking-service:
-    image: retrogamecloud/ranking-service:local
+    image: retrogamecloud/ranking-service:latest
     container_name: gamehub-ranking-service
     environment:
       NODE_ENV: production
@@ -226,12 +226,12 @@ services:
     restart: unless-stopped
 
   game-catalog-service:
-    image: retrogamecloud/game-catalog-service:local
+    image: retrogamecloud/game-catalog-service:latest
     container_name: gamehub-game-catalog-service
     environment:
       NODE_ENV: production
       PORT: 3005
-      MONGODB_URI: mongodb://mongo_user:mongo_password@game-catalog-db:27017/game_catalog?authSource=admin
+      MONGODB_URL: mongodb://mongo_user:mongo_password@game-catalog-db:27017/game_catalog?authSource=admin
     depends_on:
       game-catalog-db:
         condition: service_healthy
@@ -244,7 +244,7 @@ services:
   # ============================================
 
   frontend:
-    image: retrogamecloud/frontend:local
+    image: retrogamecloud/frontend:latest
     container_name: gamehub-frontend
     environment:
       NODE_ENV: production
@@ -261,7 +261,7 @@ services:
     restart: unless-stopped
 
   games-cdn:
-    image: retrogamecloud/games-cdn:local
+    image: retrogamecloud/cdn:latest
     container_name: gamehub-games-cdn
     ports:
       - "8086:80"
