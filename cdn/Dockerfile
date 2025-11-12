@@ -1,10 +1,10 @@
 FROM nginx:alpine
 
-# Copy game files and images
+# Copiar archivos de juegos e imágenes
 COPY juegos /usr/share/nginx/html/juegos
 COPY img /usr/share/nginx/html/img
 
-# Copy nginx configuration
+# Copiar configuración de nginx
 COPY cdn.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
