@@ -1,0 +1,271 @@
+version: '3.8'
+
+networks:
+  gamehub-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  user-db-data:
+  score-db-data:
+  game-catalog-data:
+  redis-data:
+
+services:
+  # ============================================
+  # DATABASES
+  # ============================================
+  
+  auth-db:
+    image: postgres:15-alpine
+    container_name: gamehub-auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  user-db:
+    image: postgres:15-alpine
+    container_name: gamehub-user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_password
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  score-db:
+    image: postgres:15-alpine
+    container_name: gamehub-score-db
+    environment:
+      POSTGRES_DB: score_db
+      POSTGRES_USER: score_user
+      POSTGRES_PASSWORD: score_password
+    volumes:
+      - score-db-data:/var/lib/postgresql/data
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U score_user -d score_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  game-catalog-db:
+    image: mongo:7
+    container_name: gamehub-game-catalog-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+      MONGO_INITDB_DATABASE: game_catalog
+    volumes:
+      - game-catalog-data:/data/db
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: gamehub-redis
+    command: redis-server --requirepass redis_password
+    volumes:
+      - redis-data:/data
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # API GATEWAY
+  # ============================================
+
+  kong:
+    image: kong:alpine
+    container_name: gamehub-kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+    volumes:
+      - ./kong:/kong:ro
+    ports:
+      - "8000:8000"
+      - "8445:8443"
+      - "8001:8001"
+    networks:
+      - gamehub-network
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  # ============================================
+  # MICROSERVICES
+  # ============================================
+
+  auth-service:
+    image: retrogamecloud/auth-service:local
+    container_name: gamehub-auth-service
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://auth_user:auth_password@auth-db:5432/auth_db
+      REDIS_HOST: redis
+      REDIS_URL: redis://:redis_password@redis:6379
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 24h
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  user-service:
+    image: retrogamecloud/user-service:local
+    container_name: gamehub-user-service
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      DATABASE_URL: postgresql://user_user:user_password@user-db:5432/user_db
+      REDIS_HOST: redis
+      REDIS_URL: redis://:redis_password@redis:6379
+      AUTH_SERVICE_URL: http://auth-service:3001
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  score-service:
+    image: retrogamecloud/score-service:local
+    container_name: gamehub-score-service
+    environment:
+      NODE_ENV: production
+      PORT: 3003
+      DATABASE_URL: postgresql://score_user:score_password@score-db:5432/score_db
+      REDIS_HOST: redis
+      REDIS_URL: redis://:redis_password@redis:6379
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      AUTH_SERVICE_URL: http://auth-service:3001
+    depends_on:
+      score-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  ranking-service:
+    image: retrogamecloud/ranking-service:local
+    container_name: gamehub-ranking-service
+    environment:
+      NODE_ENV: production
+      PORT: 3004
+      DATABASE_URL: postgresql://score_user:score_password@score-db:5432/score_db
+      REDIS_HOST: redis
+      REDIS_URL: redis://:redis_password@redis:6379
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      CACHE_TTL: 300
+    depends_on:
+      score-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  game-catalog-service:
+    image: retrogamecloud/game-catalog-service:local
+    container_name: gamehub-game-catalog-service
+    environment:
+      NODE_ENV: production
+      PORT: 3005
+      MONGODB_URI: mongodb://mongo_user:mongo_password@game-catalog-db:27017/game_catalog?authSource=admin
+    depends_on:
+      game-catalog-db:
+        condition: service_healthy
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  # ============================================
+  # FRONTEND & CDN
+  # ============================================
+
+  frontend:
+    image: retrogamecloud/frontend:local
+    container_name: gamehub-frontend
+    environment:
+      NODE_ENV: production
+      PORT: 8081
+      API_GATEWAY_URL: http://kong:8000
+      CDN_BASE_URL: http://localhost:8086
+    depends_on:
+      - kong
+      - games-cdn
+    ports:
+      - "8081:8081"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
+  games-cdn:
+    image: retrogamecloud/games-cdn:local
+    container_name: gamehub-games-cdn
+    ports:
+      - "8086:80"
+    networks:
+      - gamehub-network
+    restart: unless-stopped
+
