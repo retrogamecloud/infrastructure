@@ -1,21 +1,21 @@
-# Dependencies
+# Dependencias
 node_modules/
 npm-debug.log
 yarn-error.log
 package-lock.json
 yarn.lock
 
-# Database
+# Base de datos
 *.db
 *.sqlite
 *.sqlite3
 
-# Environment variables
+# Variables de entorno
 .env
 .env.local
 .env.*.local
 
-# OS files
+# Archivos del sistema operativo
 .DS_Store
 Thumbs.db
 *.swp
@@ -28,7 +28,7 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# Logs
+# Registros
 *.log
 logs/
 npm-debug.log*
@@ -38,16 +38,16 @@ yarn-error.log*
 # Docker
 .docker/
 
-# Build outputs
+# Salidas de compilación
 dist/
 build/
 *.tmp
 
-# Test coverage
+# Cobertura de pruebas
 coverage/
 .nyc_output/
 
-# Temporary files
+# Archivos temporales
 *.bak
 *.tmp
 *~
