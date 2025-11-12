@@ -56,8 +56,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
-            ${{ env.IMAGE_NAME }}
+            ghcr.io/retrogamecloud/gamescdn
+            retrogamehub/gamescdn
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}
