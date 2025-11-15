@@ -145,26 +145,41 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-      - name: Commit y Push de cambios
+      - name: Crear rama y PR con cambios
         run: |
           VERSION="${{ steps.image_info.outputs.version }}"
           IMAGE_TAG="${{ steps.image_info.outputs.image_tag }}"
+          BRANCH_NAME="auto/cdn-${IMAGE_TAG}"
           
           git add ${{ env.K8S_MANIFEST_FILE }}
           
-          # Solo hacer commit si hay cambios
+          # Solo proceder si hay cambios
           if git diff --staged --quiet; then
             echo "No hay cambios en el manifiesto"
           else
+            # Crear rama para el PR
+            git checkout -b "${BRANCH_NAME}"
+            
             git commit -m "chore: Actualizar imagen de CDN a ${IMAGE_TAG}" \
                        -m "Version: ${VERSION}" \
                        -m "SHA: ${{ steps.image_info.outputs.short_sha }}" \
                        -m "Commit origen: ${{ github.sha }}" \
                        -m "Actualizacion automatica desde CI/CD del repositorio infrastructure"
             
-            git push origin main
-            echo "Cambios pusheados al repositorio de Kubernetes"
+            git push origin "${BRANCH_NAME}"
+            
+            # Crear PR usando GitHub CLI
+            gh pr create \
+              --repo ${{ env.K8S_REPO }} \
+              --base main \
+              --head "${BRANCH_NAME}" \
+              --title "chore(cdn): Actualizar a ${IMAGE_TAG}" \
+              --body "Actualizacion automatica de CDN - Version: ${VERSION}, Tag: ${IMAGE_TAG}, SHA: ${{ steps.image_info.outputs.short_sha }}, Commit: ${{ github.sha }}"
+            
+            echo "✅ PR creado en el repositorio de Kubernetes"
           fi
+        env:
+          GH_TOKEN: ${{ secrets.K8S_UPDATE_TOKEN }}
 
       - name: Resumen
         run: |
