@@ -119,7 +119,7 @@ jobs:
         id: image_info
         run: |
           # Clonar el repo infrastructure temporalmente para obtener la info
-          git clone https://github.com/retrogamecloud/infrastructure.git /tmp/infrastructure
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/retrogamecloud/infrastructure.git /tmp/infrastructure
           cd /tmp/infrastructure
           
           COMMIT_COUNT=$(git rev-list --count HEAD)
