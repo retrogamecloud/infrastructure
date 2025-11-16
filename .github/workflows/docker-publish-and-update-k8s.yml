@@ -204,22 +204,14 @@ jobs:
             git push origin "${BRANCH_NAME}"
             
             # Crear PR usando GitHub CLI
-            PR_URL=$(gh pr create \
+            gh pr create \
               --repo ${{ env.K8S_REPO }} \
               --base main \
               --head "${BRANCH_NAME}" \
               --title "chore(cdn): Actualizar a ${IMAGE_TAG}" \
-              --body "Actualizacion automatica de CDN - Version: ${VERSION}, Tag: ${IMAGE_TAG}, SHA: ${{ steps.image_info.outputs.short_sha }}, Commit: ${{ github.sha }}")
+              --body "Actualizacion automatica de CDN - Version: ${VERSION}, Tag: ${IMAGE_TAG}, SHA: ${{ steps.image_info.outputs.short_sha }}, Commit: ${{ github.sha }}"
             
-            echo "✅ PR creado: ${PR_URL}"
-            
-            # Auto-aprobar el PR
-            gh pr review "${PR_URL}" --approve --body "Auto-aprobado por CI/CD"
-            
-            # Hacer merge automático
-            gh pr merge "${PR_URL}" --auto --squash --delete-branch
-            
-            echo "✅ PR auto-aprobado y configurado para merge automático"
+            echo "✅ PR creado en el repositorio de Kubernetes"
           fi
         env:
           GH_TOKEN: ${{ secrets.K8S_UPDATE_TOKEN }}
