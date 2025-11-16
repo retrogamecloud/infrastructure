@@ -168,10 +168,10 @@ jobs:
           VERSION="${{ steps.image_info.outputs.version }}"
           
           # Actualizar la imagen en el manifiesto usando sed
-          sed -i "s|image: ghcr.io/retrogamecloud/gamescdn:.*|image: ghcr.io/retrogamecloud/gamescdn:${IMAGE_TAG}|g" ${{ env.K8S_MANIFEST_FILE }}
+          sed -i "s|image: retrogamehub/gamescdn:.*|image: retrogamehub/gamescdn:${IMAGE_TAG}|g" ${{ env.K8S_MANIFEST_FILE }}
           
           # Actualizar el comentario con la versión
-          sed -i "s|# Imagen del CDN desde GHCR.*|# Imagen del CDN desde GHCR - ${VERSION} (${IMAGE_TAG})|g" ${{ env.K8S_MANIFEST_FILE }}
+          sed -i "s|# Imagen del CDN desde DockerHub.*|# Imagen del CDN desde DockerHub - ${VERSION} (${IMAGE_TAG})|g" ${{ env.K8S_MANIFEST_FILE }}
           
           echo "✅ Manifiesto actualizado con imagen: ${IMAGE_TAG}"
 
