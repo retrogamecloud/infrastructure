@@ -1,5 +1,5 @@
 import { describe, test, expect } from '@jest/globals';
-import { existsSync, readdirSync, statSync } from 'fs';
+import { existsSync, readdirSync, statSync, readFileSync } from 'fs';
 import { join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -121,7 +121,6 @@ describe('CDN Files - Tests de Archivos', () => {
 
     test('Dockerfile debe usar nginx como base', () => {
       if (existsSync(dockerfilePath)) {
-        const { readFileSync } = require('fs');
         const dockerfile = readFileSync(dockerfilePath, 'utf8');
         
         expect(dockerfile).toContain('FROM nginx');
