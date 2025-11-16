@@ -18,7 +18,36 @@ env:
   K8S_MANIFEST_FILE: 03-cdn.yaml
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar todos los tests
+        run: npm test
+
+      - name: Generar reporte de cobertura
+        run: npm run test:coverage
+
+      - name: Validar configuración Nginx
+        run: npm run test:config
+
+      - name: Validar archivos CDN
+        run: npm run test:files
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -169,14 +198,22 @@ jobs:
             git push origin "${BRANCH_NAME}"
             
             # Crear PR usando GitHub CLI
-            gh pr create \
+            PR_URL=$(gh pr create \
               --repo ${{ env.K8S_REPO }} \
               --base main \
               --head "${BRANCH_NAME}" \
               --title "chore(cdn): Actualizar a ${IMAGE_TAG}" \
-              --body "Actualizacion automatica de CDN - Version: ${VERSION}, Tag: ${IMAGE_TAG}, SHA: ${{ steps.image_info.outputs.short_sha }}, Commit: ${{ github.sha }}"
+              --body "Actualizacion automatica de CDN - Version: ${VERSION}, Tag: ${IMAGE_TAG}, SHA: ${{ steps.image_info.outputs.short_sha }}, Commit: ${{ github.sha }}")
             
-            echo "✅ PR creado en el repositorio de Kubernetes"
+            echo "✅ PR creado: ${PR_URL}"
+            
+            # Auto-aprobar el PR
+            gh pr review "${PR_URL}" --approve --body "Auto-aprobado por CI/CD"
+            
+            # Hacer merge automático
+            gh pr merge "${PR_URL}" --auto --squash --delete-branch
+            
+            echo "✅ PR auto-aprobado y configurado para merge automático"
           fi
         env:
           GH_TOKEN: ${{ secrets.K8S_UPDATE_TOKEN }}

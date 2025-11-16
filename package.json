@@ -1,0 +1,16 @@
+{
+  "name": "cdn-infrastructure",
+  "version": "1.0.0",
+  "description": "CDN Infrastructure tests for RetroGameCloud",
+  "type": "module",
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:config": "NODE_OPTIONS=--experimental-vm-modules jest tests/config",
+    "test:files": "NODE_OPTIONS=--experimental-vm-modules jest tests/files",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
+  }
+}
