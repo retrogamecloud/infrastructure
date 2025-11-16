@@ -195,7 +195,7 @@ jobs:
             # Crear rama para el PR
             git checkout -b "${BRANCH_NAME}"
             
-            git commit -m "chore: Actualizar imagen de CDN a ${IMAGE_TAG}" \
+            git commit -m "chore: Actualizar imagen del CDN a ${IMAGE_TAG} [skip ci]" \
                        -m "Version: ${VERSION}" \
                        -m "SHA: ${{ steps.image_info.outputs.short_sha }}" \
                        -m "Commit origen: ${{ github.sha }}" \
