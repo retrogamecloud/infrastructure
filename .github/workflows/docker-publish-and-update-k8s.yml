@@ -7,6 +7,12 @@ on:
     paths:
       - 'cdn/**'
       - '.github/workflows/docker-publish-and-update-k8s.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cdn/**'
+      - '.github/workflows/docker-publish-and-update-k8s.yml'
   workflow_dispatch:
 
 env:
