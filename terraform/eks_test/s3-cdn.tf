@@ -10,6 +10,16 @@ resource "aws_s3_bucket" "games_cdn" {
   )
 }
 
+# Bloquear acceso público al bucket principal (accederemos via CloudFront)
+resource "aws_s3_bucket_public_access_block" "games_cdn" {
+  bucket = aws_s3_bucket.games_cdn.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 # Bucket de logs para S3
 resource "aws_s3_bucket" "cdn_logs" {
   bucket = "${var.cluster_name}-cdn-logs"
@@ -34,6 +44,39 @@ resource "aws_s3_bucket_public_access_block" "cdn_logs" {
 resource "aws_s3_bucket_acl" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
   acl    = "log-delivery-write"
+
+  depends_on = [aws_s3_bucket_public_access_block.cdn_logs]
+}
+
+# Política de HTTPS obligatorio para bucket de logs
+resource "aws_s3_bucket_policy" "cdn_logs" {
+  bucket = aws_s3_bucket.cdn_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.cdn_logs.arn,
+          "${aws_s3_bucket.cdn_logs.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
+
+  depends_on = [
+    aws_s3_bucket_public_access_block.cdn_logs,
+    aws_s3_bucket_acl.cdn_logs
+  ]
 }
 
 # Habilitar versionado
@@ -65,16 +108,6 @@ resource "aws_s3_bucket_cors_configuration" "games_cdn" {
   }
 }
 
-# Bloquear acceso público (accederemos via CloudFront)
-resource "aws_s3_bucket_public_access_block" "games_cdn" {
-  bucket = aws_s3_bucket.games_cdn.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 # Política del bucket - solo CloudFront puede acceder + HTTPS obligatorio
 resource "aws_s3_bucket_policy" "games_cdn" {
   bucket = aws_s3_bucket.games_cdn.id
@@ -97,10 +130,10 @@ resource "aws_s3_bucket_policy" "games_cdn" {
         }
       },
       {
-        Sid       = "DenyInsecureTransport"
-        Effect    = "Deny"
+        Sid    = "DenyInsecureTransport"
+        Effect = "Deny"
         Principal = "*"
-        Action    = "s3:*"
+        Action   = "s3:*"
         Resource = [
           aws_s3_bucket.games_cdn.arn,
           "${aws_s3_bucket.games_cdn.arn}/*"
@@ -114,7 +147,10 @@ resource "aws_s3_bucket_policy" "games_cdn" {
     ]
   })
 
-  depends_on = [aws_cloudfront_distribution.games_cdn]
+  depends_on = [
+    aws_s3_bucket_public_access_block.games_cdn,
+    aws_cloudfront_distribution.games_cdn
+  ]
 }
 
 # CloudFront Origin Access Control
@@ -289,9 +325,9 @@ resource "kubernetes_config_map" "cdn_config" {
   }
 
   data = {
-    CDN_URL          = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-    CDN_DISTRIBUTION = aws_cloudfront_distribution.games_cdn.id
-    S3_BUCKET        = aws_s3_bucket.games_cdn.id
+    CDN_URL           = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
+    CDN_DISTRIBUTION  = aws_cloudfront_distribution.games_cdn.id
+    S3_BUCKET         = aws_s3_bucket.games_cdn.id
   }
 
   depends_on = [
