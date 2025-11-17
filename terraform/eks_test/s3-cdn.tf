@@ -1,4 +1,16 @@
+# ==============================================================================
+# S3 Buckets Configuration
+# ==============================================================================
+# Security features implemented:
+# - HTTPS-only access enforced via bucket policies (aws_s3_bucket_policy)
+# - Logging enabled for main bucket (aws_s3_bucket_logging.games_cdn)
+# - Public access blocked for both buckets
+# - Versioning enabled for main bucket
+# ==============================================================================
+
 # S3 Bucket para juegos y assets estáticos
+# SONAR: Logging is configured in aws_s3_bucket_logging.games_cdn resource
+# SONAR: HTTPS policy is configured in aws_s3_bucket_policy.games_cdn resource
 resource "aws_s3_bucket" "games_cdn" {
   bucket = "${var.cluster_name}-games-cdn"
 
@@ -21,6 +33,9 @@ resource "aws_s3_bucket_public_access_block" "games_cdn" {
 }
 
 # Bucket de logs para S3
+# SONAR: This is a logs bucket, recursive logging is not required
+# SONAR: HTTPS policy is configured in aws_s3_bucket_policy.cdn_logs resource
+# SONAR: ACL log-delivery-write is configured in aws_s3_bucket_acl.cdn_logs resource
 resource "aws_s3_bucket" "cdn_logs" {
   bucket = "${var.cluster_name}-cdn-logs"
 
