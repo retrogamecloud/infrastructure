@@ -579,11 +579,20 @@ resource "null_resource" "verify_db_tables" {
       kubectl wait --for=condition=complete --timeout=120s job/db-init -n retrogame || true
       
       echo "🔍 Verificando tablas creadas en PostgreSQL..."
-      kubectl run db-verify-$RANDOM --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
+      echo "Tablas en la base de datos:"
+      kubectl run db-verify-tables --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
         --env="PGPASSWORD=${var.db_password}" \
         -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
-        -c "\dt" \
-        -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;" 2>&1 | grep -v "pod.*deleted" || echo "✅ Verificación completada"
+        -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;" 2>&1 | grep -v "pod" | tail -n +3 || true
+      
+      echo ""
+      echo "Total de registros en users:"
+      kubectl run db-count-users --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
+        --env="PGPASSWORD=${var.db_password}" \
+        -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
+        -c "SELECT COUNT(*) as total_users FROM users;" 2>&1 | grep -v "pod" | tail -n +3 || true
+      
+      echo "✅ Verificación completada"
     EOT
   }
 
