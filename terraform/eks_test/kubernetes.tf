@@ -652,10 +652,11 @@ resource "null_resource" "restart_frontend" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      # Esperar a que kubeconfig esté disponible
-      sleep 10
+      # Actualizar kubeconfig y esperar
+      aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name} || true
+      sleep 15
       # Eliminar el pod para forzar recreación con nuevo configmap
-      kubectl delete pod -n retrogame -l app=frontend --ignore-not-found=true
+      kubectl delete pod -n retrogame -l app=frontend --ignore-not-found=true || true
     EOT
   }
 
