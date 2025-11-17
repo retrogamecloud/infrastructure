@@ -203,6 +203,11 @@ resource "kubernetes_deployment" "frontend" {
         labels = {
           app = "frontend"
         }
+        annotations = {
+          # Forzar recreación del pod cuando cambie el configmap
+          "configmap.checksum" = sha256(jsonencode(kubernetes_config_map.frontend_replacer.data))
+          # Nota: usamos frontend_replacer inicial, la actualización la maneja kubernetes_config_map_v1_data
+        }
       }
 
       spec {
@@ -644,19 +649,22 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
   ]
 }
 
-# Null resource para forzar restart del frontend cuando cambian las URLs
+# Null resource para aplicar el rollout restart del frontend
 resource "null_resource" "restart_frontend" {
   triggers = {
     config_version = kubernetes_config_map_v1_data.frontend_urls.data["replace-urls.sh"]
+    always_run     = timestamp()
   }
 
   provisioner "local-exec" {
     command = <<-EOT
-      # Actualizar kubeconfig y esperar
-      aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name} || true
-      sleep 15
-      # Eliminar el pod para forzar recreación con nuevo configmap
-      kubectl delete pod -n retrogame -l app=frontend --ignore-not-found=true || true
+      echo "⏳ Esperando propagación de ConfigMap actualizado..."
+      sleep 10
+      
+      echo "🔄 Reiniciando deployment frontend..."
+      kubectl rollout restart deployment/frontend -n retrogame || echo "⚠️  Restart falló, continuando..."
+      
+      echo "✅ Proceso completado"
     EOT
   }
 
@@ -665,3 +673,4 @@ resource "null_resource" "restart_frontend" {
     kubernetes_config_map_v1_data.frontend_urls
   ]
 }
+
