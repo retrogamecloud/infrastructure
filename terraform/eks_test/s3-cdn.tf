@@ -10,12 +10,46 @@ resource "aws_s3_bucket" "games_cdn" {
   )
 }
 
+# Bucket de logs para S3
+resource "aws_s3_bucket" "cdn_logs" {
+  bucket = "${var.cluster_name}-cdn-logs"
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.cluster_name}-cdn-logs"
+    }
+  )
+}
+
+resource "aws_s3_bucket_public_access_block" "cdn_logs" {
+  bucket = aws_s3_bucket.cdn_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_acl" "cdn_logs" {
+  bucket = aws_s3_bucket.cdn_logs.id
+  acl    = "log-delivery-write"
+}
+
 # Habilitar versionado
 resource "aws_s3_bucket_versioning" "games_cdn" {
   bucket = aws_s3_bucket.games_cdn.id
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+# Habilitar logging en el bucket principal
+resource "aws_s3_bucket_logging" "games_cdn" {
+  bucket = aws_s3_bucket.games_cdn.id
+
+  target_bucket = aws_s3_bucket.cdn_logs.id
+  target_prefix = "s3-access-logs/"
 }
 
 # Configuración CORS para permitir acceso desde cualquier origen
@@ -41,7 +75,7 @@ resource "aws_s3_bucket_public_access_block" "games_cdn" {
   restrict_public_buckets = true
 }
 
-# Política del bucket - solo CloudFront puede acceder
+# Política del bucket - solo CloudFront puede acceder + HTTPS obligatorio
 resource "aws_s3_bucket_policy" "games_cdn" {
   bucket = aws_s3_bucket.games_cdn.id
 
@@ -59,6 +93,21 @@ resource "aws_s3_bucket_policy" "games_cdn" {
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = aws_cloudfront_distribution.games_cdn.arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.games_cdn.arn,
+          "${aws_s3_bucket.games_cdn.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
           }
         }
       }
@@ -83,6 +132,12 @@ resource "aws_cloudfront_distribution" "games_cdn" {
   is_ipv6_enabled     = true
   comment             = "CDN for RetroGame static assets"
   default_root_object = "index.html"
+
+  logging_config {
+    include_cookies = false
+    bucket          = aws_s3_bucket.cdn_logs.bucket_domain_name
+    prefix          = "cloudfront-logs/"
+  }
 
   origin {
     domain_name              = aws_s3_bucket.games_cdn.bucket_regional_domain_name
@@ -234,9 +289,9 @@ resource "kubernetes_config_map" "cdn_config" {
   }
 
   data = {
-    CDN_URL           = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-    CDN_DISTRIBUTION  = aws_cloudfront_distribution.games_cdn.id
-    S3_BUCKET         = aws_s3_bucket.games_cdn.id
+    CDN_URL          = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
+    CDN_DISTRIBUTION = aws_cloudfront_distribution.games_cdn.id
+    S3_BUCKET        = aws_s3_bucket.games_cdn.id
   }
 
   depends_on = [
