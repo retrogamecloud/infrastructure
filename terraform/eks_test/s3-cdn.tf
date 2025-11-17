@@ -352,3 +352,51 @@ resource "kubernetes_config_map" "cdn_config" {
     aws_cloudfront_distribution.games_cdn
   ]
 }
+
+# Subir archivos estáticos automáticamente al bucket S3
+resource "null_resource" "upload_static_files" {
+  triggers = {
+    bucket_id = aws_s3_bucket.games_cdn.id
+    # Forzar subida en cada apply
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "📦 Subiendo juegos (.jsdos) al CDN..."
+      aws s3 sync ${path.root}/../../../infraestructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ \
+        --region ${var.aws_region} \
+        --delete \
+        --exclude "*" \
+        --include "*.jsdos"
+      
+      echo "🖼️  Subiendo imágenes al CDN..."
+      aws s3 sync ${path.root}/../../../infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ \
+        --region ${var.aws_region} \
+        --delete \
+        --exclude "*" \
+        --include "*.jpg" \
+        --include "*.png" \
+        --include "*.gif"
+      
+      echo "🎮 Subiendo emulador js-dos al CDN..."
+      aws s3 sync ${path.root}/../../../frontend/jsdos/ s3://${aws_s3_bucket.games_cdn.id}/jsdos/ \
+        --region ${var.aws_region} \
+        --delete \
+        --exclude "*" \
+        --include "*.js" \
+        --include "*.css" \
+        --include "*.wasm" \
+        --include "*.html" \
+        --include "*.symbols"
+      
+      echo "✅ Todos los archivos estáticos subidos al CDN"
+    EOT
+  }
+
+  depends_on = [
+    aws_s3_bucket.games_cdn,
+    aws_s3_bucket_public_access_block.games_cdn,
+    aws_cloudfront_distribution.games_cdn
+  ]
+}

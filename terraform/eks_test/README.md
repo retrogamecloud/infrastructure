@@ -4,12 +4,13 @@ Este directorio contiene la infraestructura como código (IaC) para desplegar Re
 
 ## Arquitectura
 
-- **VPC**: Red privada virtual con subnets públicas en 3 Availability Zones
-- **EKS Cluster**: Kubernetes v1.31 con **AWS Fargate** (serverless, sin EC2)
+- **VPC**: Red privada virtual con subnets públicas y privadas en 3 Availability Zones
+- **EKS Cluster**: Kubernetes v1.32 con Node Groups EC2
 - **RDS PostgreSQL**: Base de datos gestionada (PostgreSQL 15.15)
-- **S3 + CloudFront**: CDN para archivos estáticos (juegos .jsdos, imágenes)
+- **S3 + CloudFront**: CDN para archivos estáticos (juegos .jsdos, imágenes, emulador)
 - **Load Balancer**: Network Load Balancer (NLB) para Kong API Gateway
 - **Security Groups**: Aislamiento de red entre componentes
+- **Auto-deploy**: Scripts automáticos para inicialización de BD y subida de assets
 
 ### ¿Por qué Fargate?
 
@@ -22,23 +23,27 @@ Este directorio contiene la infraestructura como código (IaC) para desplegar Re
 ## Componentes
 
 ### Infraestructura AWS
-- `provider.tf`: Configuración de providers (AWS, Kubernetes, Helm)
+- `provider.tf`: Configuración de providers (AWS, Kubernetes, Helm, Null)
 - `variables.tf`: Variables configurables
-- `eks.tf`: Cluster EKS, VPC, **Fargate Profiles**, Security Groups
-- `rds.tf`: RDS PostgreSQL con seed data
-- `s3-cdn.tf`: S3 Bucket y CloudFront Distribution para assets
+- `eks.tf`: Cluster EKS v1.32, VPC, Node Groups, Security Groups
+- `rds.tf`: RDS PostgreSQL con credenciales en Kubernetes Secret
+- `s3-cdn.tf`: S3 Buckets (CDN + logs), CloudFront, auto-upload de assets
 - `outputs.tf`: Outputs útiles post-despliegue
 
 ### Aplicaciones Kubernetes
-- `kubernetes.tf`: Deployments, Services, ConfigMaps, Secrets
-  - Backend (2 réplicas) - 0.5 vCPU, 1GB RAM por pod
-  - Frontend (2 réplicas) - 0.25 vCPU, 512MB RAM por pod
-  - Kong API Gateway (1 réplica) - 0.5 vCPU, 1GB RAM
+- `kubernetes.tf`: Deployments, Services, ConfigMaps, Secrets, Jobs
+  - Backend (1 réplica) - 100m CPU, 256MB RAM
+  - Frontend (1 réplica) - 50m CPU, 128MB RAM con init containers para URL replacement
+  - Kong API Gateway (1 réplica) - 100m CPU, 256MB RAM
+  - Job de inicialización de BD (automático)
+  - Null resource para actualización de URLs post-deploy
 
-### Fargate Profiles Configurados
-- `kube-system`: CoreDNS y componentes del sistema
-- `default`: Namespace default
-- `retrogame`: Aplicaciones de RetroGameCloud
+### Automatización
+- **Init Containers**: Copian y modifican archivos HTML con URLs correctas
+- **Kubernetes Job**: Ejecuta script SQL de inicialización de BD automáticamente
+- **Null Resources**: 
+  - Subida automática de juegos, imágenes y emulador al CDN
+  - Actualización de ConfigMap con URL real del Load Balancer
 
 ## Prerrequisitos
 
