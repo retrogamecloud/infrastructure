@@ -1,0 +1,41 @@
+# Ejemplo de archivo terraform.tfvars
+# Copiar este archivo a terraform.tfvars y ajustar valores
+
+# AWS Configuration
+aws_region = "eu-west-1"
+environment = "dev"
+cluster_name = "retrogame-eks"
+cluster_version = "1.31"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+azs = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnets = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+# EKS Node Group Configuration
+node_instance_types = ["t3.medium"]
+node_desired_size = 2
+node_min_size = 1
+node_max_size = 4
+
+# Feature Flags
+enable_cluster_autoscaler = true
+enable_metrics_server = true
+enable_aws_load_balancer_controller = true
+
+# RDS Configuration
+db_instance_class = "db.t3.micro"
+db_allocated_storage = 20
+db_name = "retrogamedb"
+db_username = "retrogame"
+# db_password = "CHANGE_ME"  # Usar variable de entorno o AWS Secrets Manager
+
+# Application Secrets
+# jwt_secret = "CHANGE_ME"  # Usar variable de entorno o AWS Secrets Manager
+
+# Additional Tags
+tags = {
+  Project = "RetroGameCloud"
+  Owner   = "DevOps Team"
+}
