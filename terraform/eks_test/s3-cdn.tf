@@ -76,7 +76,7 @@ resource "aws_s3_bucket_acl" "cdn_logs" {
   ]
 }
 
-# Política de HTTPS obligatorio para bucket de logs
+# Política de HTTPS obligatorio para bucket de logs + permisos CloudFront
 resource "aws_s3_bucket_policy" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
 
@@ -97,6 +97,27 @@ resource "aws_s3_bucket_policy" "cdn_logs" {
             "aws:SecureTransport" = "false"
           }
         }
+      },
+      {
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action = [
+          "s3:GetBucketAcl",
+          "s3:PutBucketAcl"
+        ]
+        Resource = aws_s3_bucket.cdn_logs.arn
+      },
+      {
+        Sid    = "AllowCloudFrontLogs"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.cdn_logs.arn}/*"
       }
     ]
   })
