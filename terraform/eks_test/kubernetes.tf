@@ -145,7 +145,7 @@ resource "kubernetes_service" "backend" {
   depends_on = [kubernetes_deployment.backend]
 }
 
-# ConfigMap para reemplazar URLs en frontend
+# ConfigMap para reemplazar URLs en frontend (se actualiza después con las URLs reales)
 resource "kubernetes_config_map" "frontend_replacer" {
   metadata {
     name      = "frontend-url-replacer"
@@ -171,6 +171,7 @@ resource "kubernetes_config_map" "frontend_replacer" {
         echo "Processing $${file}..."
         sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
         sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
+        sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
         echo "✓ Replaced URLs in $${file}"
       done
       
@@ -526,15 +527,15 @@ resource "kubernetes_job" "db_init" {
           command = [
             "sh",
             "-c",
-            "psql $DATABASE_URL -f /scripts/01-schema.sql"
+            "psql $DATABASE_URL_PSQL -f /scripts/01-schema.sql"
           ]
 
           env {
-            name = "DATABASE_URL"
+            name = "DATABASE_URL_PSQL"
             value_from {
               secret_key_ref {
                 name = kubernetes_secret.postgres_credentials.metadata[0].name
-                key  = "DATABASE_URL"
+                key  = "DATABASE_URL_PSQL"
               }
             }
           }
@@ -566,25 +567,91 @@ resource "kubernetes_job" "db_init" {
   ]
 }
 
-# Null resource para actualizar ConfigMap con URL real del Load Balancer
-resource "null_resource" "update_frontend_urls" {
+# Null resource para verificar las tablas creadas
+resource "null_resource" "verify_db_tables" {
   triggers = {
-    kong_lb = kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname
-    always_run = timestamp()
+    job_id = kubernetes_job.db_init.metadata[0].uid
   }
 
   provisioner "local-exec" {
     command = <<-EOT
-      kubectl patch configmap frontend-url-replacer -n retrogame --type json -p='[
-        {"op": "replace", "path": "/data/replace-urls.sh", "value": "#!/bin/sh\nset -e\nLB_URL=\"http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}\"\nCDN_URL=\"https://${aws_cloudfront_distribution.games_cdn.domain_name}\"\n\necho \"Starting URL replacement...\"\necho \"Load Balancer URL: $${LB_URL}\"\necho \"CDN URL: $${CDN_URL}\"\n\ncd /app\necho \"Files in /app before replacement:\"\nls -la\n\nfind . -name \"*.html\" -type f | while read file; do\n  echo \"Processing $${file}...\"\n  sed -i \"s|http://localhost:8000|$${LB_URL}|g\" \"$${file}\"\n  sed -i \"s|http://localhost:8086|$${CDN_URL}|g\" \"$${file}\"\n  sed -i \"s|PLACEHOLDER_LB_URL|$${LB_URL}|g\" \"$${file}\"\n  echo \"✓ Replaced URLs in $${file}\"\ndone\n\necho \"URL replacement completed!\"\n"}
-      ]'
-      kubectl rollout restart deployment frontend -n retrogame
+      echo "⏳ Esperando a que el job de inicialización complete..."
+      kubectl wait --for=condition=complete --timeout=120s job/db-init -n retrogame || true
+      
+      echo "🔍 Verificando tablas creadas en PostgreSQL..."
+      kubectl run db-verify-$RANDOM --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
+        --env="PGPASSWORD=${var.db_password}" \
+        -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
+        -c "\dt" \
+        -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;" 2>&1 | grep -v "pod.*deleted" || echo "✅ Verificación completada"
     EOT
   }
 
   depends_on = [
+    kubernetes_job.db_init
+  ]
+}
+
+# ConfigMap actualizado con URLs reales después de crear Kong y CloudFront
+resource "kubernetes_config_map_v1_data" "frontend_urls" {
+  metadata {
+    name      = kubernetes_config_map.frontend_replacer.metadata[0].name
+    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+  }
+
+  data = {
+    "replace-urls.sh" = <<-EOT
+      #!/bin/sh
+      set -e
+      LB_URL="http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}"
+      CDN_URL="https://${aws_cloudfront_distribution.games_cdn.domain_name}"
+      
+      echo "Starting URL replacement..."
+      echo "Load Balancer URL: $${LB_URL}"
+      echo "CDN URL: $${CDN_URL}"
+      
+      cd /app
+      echo "Files in /app before replacement:"
+      ls -la
+      
+      find . -name "*.html" -type f | while read file; do
+        echo "Processing $${file}..."
+        sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
+        sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
+        sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
+        echo "✓ Replaced URLs in $${file}"
+      done
+      
+      echo "URL replacement completed!"
+    EOT
+  }
+
+  force = true
+
+  depends_on = [
     kubernetes_service.kong,
-    kubernetes_deployment.frontend,
+    aws_cloudfront_distribution.games_cdn,
     kubernetes_config_map.frontend_replacer
+  ]
+}
+
+# Null resource para forzar restart del frontend cuando cambian las URLs
+resource "null_resource" "restart_frontend" {
+  triggers = {
+    config_version = kubernetes_config_map_v1_data.frontend_urls.data["replace-urls.sh"]
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Esperar a que kubeconfig esté disponible
+      sleep 10
+      # Eliminar el pod para forzar recreación con nuevo configmap
+      kubectl delete pod -n retrogame -l app=frontend --ignore-not-found=true
+    EOT
+  }
+
+  depends_on = [
+    kubernetes_deployment.frontend,
+    kubernetes_config_map_v1_data.frontend_urls
   ]
 }

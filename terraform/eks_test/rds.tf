@@ -83,12 +83,15 @@ resource "kubernetes_secret" "postgres_credentials" {
   }
 
   data = {
-    POSTGRES_USER     = var.db_username
-    POSTGRES_PASSWORD = var.db_password
-    POSTGRES_DB       = var.db_name
-    POSTGRES_HOST     = aws_db_instance.postgres.address
-    POSTGRES_PORT     = tostring(aws_db_instance.postgres.port)
-    DATABASE_URL      = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?ssl=true&sslmode=no-verify"
+    POSTGRES_USER        = var.db_username
+    POSTGRES_PASSWORD    = var.db_password
+    POSTGRES_DB          = var.db_name
+    POSTGRES_HOST        = aws_db_instance.postgres.address
+    POSTGRES_PORT        = tostring(aws_db_instance.postgres.port)
+    # Para servicios Node.js (pg driver soporta no-verify)
+    DATABASE_URL         = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?ssl=true&sslmode=no-verify"
+    # Para psql CLI (no soporta no-verify, usa require)
+    DATABASE_URL_PSQL    = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require"
   }
 
   depends_on = [
