@@ -55,7 +55,7 @@ output "rds_database_name" {
 
 output "kong_load_balancer_hostname" {
   description = "Hostname del Load Balancer de Kong"
-  value       = kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname
+  value       = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
 }
 
 output "configure_kubectl" {

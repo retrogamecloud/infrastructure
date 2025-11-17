@@ -49,12 +49,20 @@ resource "aws_s3_bucket" "cdn_logs" {
   )
 }
 
+resource "aws_s3_bucket_ownership_controls" "cdn_logs" {
+  bucket = aws_s3_bucket.cdn_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
 
-  block_public_acls       = true
+  block_public_acls       = false
   block_public_policy     = true
-  ignore_public_acls      = true
+  ignore_public_acls      = false
   restrict_public_buckets = true
 }
 
@@ -62,7 +70,10 @@ resource "aws_s3_bucket_acl" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
   acl    = "log-delivery-write"
 
-  depends_on = [aws_s3_bucket_public_access_block.cdn_logs]
+  depends_on = [
+    aws_s3_bucket_ownership_controls.cdn_logs,
+    aws_s3_bucket_public_access_block.cdn_logs
+  ]
 }
 
 # Política de HTTPS obligatorio para bucket de logs

@@ -371,6 +371,8 @@ resource "kubernetes_config_map" "kong" {
 
 # Kong Deployment
 resource "kubernetes_deployment" "kong" {
+  wait_for_rollout = false  # Temporalmente desactivado para permitir escalado de nodos
+
   metadata {
     name      = "kong"
     namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
@@ -430,12 +432,12 @@ resource "kubernetes_deployment" "kong" {
 
           resources {
             requests = {
-              cpu    = "100m"  # Optimizado para t3.micro
-              memory = "256Mi"
+              cpu    = "50m"   # Reducido para t3.micro
+              memory = "128Mi"
             }
             limits = {
-              cpu    = "200m"
-              memory = "512Mi"
+              cpu    = "100m"
+              memory = "256Mi"
             }
           }
         }
