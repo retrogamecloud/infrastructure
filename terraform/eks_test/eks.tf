@@ -174,3 +174,29 @@ resource "aws_iam_role" "eks_admin" {
 }
 
 data "aws_caller_identity" "current" {}
+
+# Null resource para eliminar el tag kubernetes.io/cluster del primary security group
+# Solo el node security group debe tener este tag para evitar conflictos con ELB Controller
+resource "null_resource" "remove_cluster_sg_tag" {
+  depends_on = [module.eks]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Obtener el cluster primary security group ID
+      CLUSTER_SG=$(aws eks describe-cluster --name ${var.cluster_name} --region ${var.aws_region} --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId' --output text)
+      
+      # Eliminar el tag kubernetes.io/cluster/X si existe
+      aws ec2 delete-tags \
+        --region ${var.aws_region} \
+        --resources $CLUSTER_SG \
+        --tags Key=kubernetes.io/cluster/${var.cluster_name} \
+        2>/dev/null || true
+      
+      echo "✅ Tag kubernetes.io/cluster/${var.cluster_name} eliminado del cluster primary SG: $CLUSTER_SG"
+    EOT
+  }
+
+  triggers = {
+    cluster_id = module.eks.cluster_id
+  }
+}

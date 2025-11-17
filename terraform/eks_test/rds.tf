@@ -88,7 +88,7 @@ resource "kubernetes_secret" "postgres_credentials" {
     POSTGRES_DB       = var.db_name
     POSTGRES_HOST     = aws_db_instance.postgres.address
     POSTGRES_PORT     = tostring(aws_db_instance.postgres.port)
-    DATABASE_URL      = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=no-verify"
+    DATABASE_URL      = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require"
   }
 
   depends_on = [
