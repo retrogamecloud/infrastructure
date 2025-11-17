@@ -177,6 +177,8 @@ resource "kubernetes_config_map" "frontend_replacer" {
       echo "URL replacement completed!"
     EOT
   }
+
+  depends_on = [module.eks]
 }
 
 # Frontend Deployment
@@ -223,12 +225,12 @@ resource "kubernetes_deployment" "frontend" {
 
           env {
             name  = "LOAD_BALANCER_URL"
-            value = ""
+            value = "PLACEHOLDER_LB_URL"
           }
 
           env {
             name  = "CDN_URL"
-            value = ""
+            value = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
           }
 
           volume_mount {
@@ -481,4 +483,106 @@ resource "kubernetes_service" "kong" {
   }
 
   depends_on = [kubernetes_deployment.kong]
+}
+
+# ConfigMap con el script SQL de inicialización
+resource "kubernetes_config_map" "db_init_script" {
+  metadata {
+    name      = "db-init-script"
+    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+  }
+
+  data = {
+    "01-schema.sql" = file("${path.root}/../../../backend/init-db/01-schema.sql")
+  }
+
+  depends_on = [module.eks]
+}
+
+# Job para inicializar la base de datos
+resource "kubernetes_job" "db_init" {
+  metadata {
+    name      = "db-init"
+    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+  }
+
+  spec {
+    template {
+      metadata {
+        labels = {
+          app = "db-init"
+        }
+      }
+
+      spec {
+        restart_policy = "Never"
+
+        container {
+          name  = "db-init"
+          image = "postgres:15-alpine"
+
+          command = [
+            "sh",
+            "-c",
+            "psql $DATABASE_URL -f /scripts/01-schema.sql"
+          ]
+
+          env {
+            name = "DATABASE_URL"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.postgres_credentials.metadata[0].name
+                key  = "DATABASE_URL"
+              }
+            }
+          }
+
+          volume_mount {
+            name       = "init-script"
+            mount_path = "/scripts"
+          }
+        }
+
+        volume {
+          name = "init-script"
+          config_map {
+            name = kubernetes_config_map.db_init_script.metadata[0].name
+          }
+        }
+      }
+    }
+
+    backoff_limit = 4
+  }
+
+  wait_for_completion = false
+
+  depends_on = [
+    aws_db_instance.postgres,
+    kubernetes_secret.postgres_credentials,
+    kubernetes_config_map.db_init_script
+  ]
+}
+
+# Null resource para actualizar ConfigMap con URL real del Load Balancer
+resource "null_resource" "update_frontend_urls" {
+  triggers = {
+    kong_lb = kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl patch configmap frontend-url-replacer -n retrogame --type json -p='[
+        {"op": "replace", "path": "/data/replace-urls.sh", "value": "#!/bin/sh\nset -e\nLB_URL=\"http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}\"\nCDN_URL=\"https://${aws_cloudfront_distribution.games_cdn.domain_name}\"\n\necho \"Starting URL replacement...\"\necho \"Load Balancer URL: $${LB_URL}\"\necho \"CDN URL: $${CDN_URL}\"\n\ncd /app\necho \"Files in /app before replacement:\"\nls -la\n\nfind . -name \"*.html\" -type f | while read file; do\n  echo \"Processing $${file}...\"\n  sed -i \"s|http://localhost:8000|$${LB_URL}|g\" \"$${file}\"\n  sed -i \"s|http://localhost:8086|$${CDN_URL}|g\" \"$${file}\"\n  sed -i \"s|PLACEHOLDER_LB_URL|$${LB_URL}|g\" \"$${file}\"\n  echo \"✓ Replaced URLs in $${file}\"\ndone\n\necho \"URL replacement completed!\"\n"}
+      ]'
+      kubectl rollout restart deployment frontend -n retrogame
+    EOT
+  }
+
+  depends_on = [
+    kubernetes_service.kong,
+    kubernetes_deployment.frontend,
+    kubernetes_config_map.frontend_replacer
+  ]
 }
