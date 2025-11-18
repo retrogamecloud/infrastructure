@@ -230,8 +230,13 @@ resource "kubernetes_deployment" "frontend" {
           command = ["sh", "/scripts/replace-urls.sh"]
 
           env {
-            name  = "LOAD_BALANCER_URL"
-            value = "PLACEHOLDER_LB_URL"
+            name = "LOAD_BALANCER_URL"
+            value_from {
+              config_map_key_ref {
+                name = kubernetes_config_map.kong_url.metadata[0].name
+                key  = "kong_url"
+              }
+            }
           }
 
           env {
@@ -349,6 +354,23 @@ resource "kubernetes_config_map" "kong" {
             - name: frontend-route
               paths:
                 - /
+              strip_path: false
+
+        - name: prometheus-service
+          url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+          routes:
+            - name: prometheus-route
+              paths:
+                - /prometheus
+              strip_path: true
+
+        - name: alertmanager-service
+          url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+          routes:
+            - name: alertmanager-route
+              paths:
+                - /alertmanager
+              strip_path: true
 
       plugins:
         - name: cors
@@ -603,6 +625,71 @@ resource "null_resource" "verify_db_tables" {
 
   depends_on = [
     kubernetes_job.db_init
+  ]
+}
+
+# ConfigMap con la URL de Kong para el initContainer del frontend
+resource "kubernetes_config_map" "kong_url" {
+  metadata {
+    name      = "kong-url"
+    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+  }
+
+  data = {
+    kong_url = "http://PLACEHOLDER_KONG_URL"
+  }
+}
+
+# Actualizar URL de Kong después de crear el servicio
+resource "null_resource" "update_kong_url" {
+  triggers = {
+    kong_lb = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Esperar a que el servicio Kong tenga hostname del LoadBalancer
+      echo "⏳ Esperando hostname del LoadBalancer de Kong..."
+      KONG_LB=""
+      i=1
+      while [ $i -le 30 ]; do
+        KONG_LB=$(kubectl get svc kong-service -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        if [ ! -z "$KONG_LB" ]; then
+          echo "✅ LoadBalancer de Kong listo: $KONG_LB"
+          break
+        fi
+        echo "Intento $i/30: Esperando..."
+        sleep 10
+        i=$((i+1))
+      done
+      
+      if [ -z "$KONG_LB" ]; then
+        echo "❌ ERROR: Hostname del LoadBalancer de Kong no disponible después de 5 minutos"
+        exit 1
+      fi
+      
+      # Actualizar ConfigMap con la URL real de Kong
+      echo "🔄 Actualizando ConfigMap kong-url..."
+      kubectl patch configmap kong-url -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} \
+        --type merge \
+        -p '{"data":{"kong_url":"http://'$KONG_LB'"}}'
+      
+      # Reiniciar frontend para aplicar la nueva URL
+      echo "🔄 Reiniciando deployment frontend..."
+      kubectl rollout restart deployment/frontend -n ${kubernetes_namespace.retrogamecloud.metadata[0].name}
+      
+      # Esperar a que complete el rollout
+      echo "⏳ Esperando a que complete el rollout del frontend..."
+      kubectl rollout status deployment/frontend -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} --timeout=5m
+      
+      echo "✅ URL de Kong actualizada y frontend reiniciado exitosamente"
+    EOT
+  }
+
+  depends_on = [
+    kubernetes_service.kong,
+    kubernetes_config_map.kong_url,
+    kubernetes_deployment.frontend
   ]
 }
 
