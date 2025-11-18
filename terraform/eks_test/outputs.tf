@@ -58,6 +58,26 @@ output "kong_load_balancer_hostname" {
   value       = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
 }
 
+output "kong_url" {
+  description = "URL completa del Load Balancer de Kong"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}", "pending")
+}
+
+output "grafana_url" {
+  description = "URL pública de Grafana (LoadBalancer propio)"
+  value       = "Obtener con: kubectl get svc kube-prometheus-stack-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
+}
+
+output "prometheus_url" {
+  description = "URL pública de Prometheus"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/prometheus/", "pending")
+}
+
+output "alertmanager_url" {
+  description = "URL pública de AlertManager"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/alertmanager/", "pending")
+}
+
 output "configure_kubectl" {
   description = "Comando para configurar kubectl"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
