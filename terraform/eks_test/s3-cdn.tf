@@ -53,7 +53,7 @@ resource "aws_s3_bucket_ownership_controls" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
 
   rule {
-    object_ownership = "BucketOwnerPreferred"
+    object_ownership = "ObjectWriter"
   }
 }
 
@@ -61,9 +61,9 @@ resource "aws_s3_bucket_public_access_block" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
 
   block_public_acls       = false
-  block_public_policy     = true
+  block_public_policy     = false
   ignore_public_acls      = false
-  restrict_public_buckets = true
+  restrict_public_buckets = false
 }
 
 resource "aws_s3_bucket_acl" "cdn_logs" {
@@ -99,6 +99,26 @@ resource "aws_s3_bucket_policy" "cdn_logs" {
         }
       },
       {
+        Sid    = "AllowTerraformUser"
+        Effect = "Allow"
+        Principal = {
+          AWS = data.aws_caller_identity.current.arn
+        }
+        Action = [
+          "s3:GetBucketAcl",
+          "s3:PutBucketAcl",
+          "s3:ListBucket",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:PutObjectAcl",
+          "s3:GetObjectAcl"
+        ]
+        Resource = [
+          aws_s3_bucket.cdn_logs.arn,
+          "${aws_s3_bucket.cdn_logs.arn}/*"
+        ]
+      },
+      {
         Sid    = "AllowCloudFrontServicePrincipal"
         Effect = "Allow"
         Principal = {
@@ -106,18 +126,14 @@ resource "aws_s3_bucket_policy" "cdn_logs" {
         }
         Action = [
           "s3:GetBucketAcl",
-          "s3:PutBucketAcl"
+          "s3:PutBucketAcl",
+          "s3:PutObject",
+          "s3:PutObjectAcl"
         ]
-        Resource = aws_s3_bucket.cdn_logs.arn
-      },
-      {
-        Sid    = "AllowCloudFrontLogs"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.cdn_logs.arn}/*"
+        Resource = [
+          aws_s3_bucket.cdn_logs.arn,
+          "${aws_s3_bucket.cdn_logs.arn}/*"
+        ]
       }
     ]
   })
@@ -179,10 +195,10 @@ resource "aws_s3_bucket_policy" "games_cdn" {
         }
       },
       {
-        Sid    = "DenyInsecureTransport"
-        Effect = "Deny"
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
         Principal = "*"
-        Action   = "s3:*"
+        Action    = "s3:*"
         Resource = [
           aws_s3_bucket.games_cdn.arn,
           "${aws_s3_bucket.games_cdn.arn}/*"
@@ -370,13 +386,13 @@ resource "aws_iam_role_policy" "s3_upload_policy" {
 resource "kubernetes_config_map" "cdn_config" {
   metadata {
     name      = "cdn-config"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
-    CDN_URL           = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-    CDN_DISTRIBUTION  = aws_cloudfront_distribution.games_cdn.id
-    S3_BUCKET         = aws_s3_bucket.games_cdn.id
+    CDN_URL          = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
+    CDN_DISTRIBUTION = aws_cloudfront_distribution.games_cdn.id
+    S3_BUCKET        = aws_s3_bucket.games_cdn.id
   }
 
   depends_on = [
@@ -394,17 +410,19 @@ resource "null_resource" "upload_static_files" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    command = replace(<<-EOT
       echo "📦 Subiendo juegos (.jsdos) al CDN..."
-      aws s3 sync ${path.root}/../../../infraestructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ \
+      aws s3 sync ${path.root}/../../../infrastructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ \
         --region ${var.aws_region} \
+        --profile ${var.aws_profile} \
         --delete \
         --exclude "*" \
         --include "*.jsdos"
       
       echo "🖼️  Subiendo imágenes al CDN..."
-      aws s3 sync ${path.root}/../../../infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ \
+      aws s3 sync ${path.root}/../../../infrastructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ \
         --region ${var.aws_region} \
+        --profile ${var.aws_profile} \
         --delete \
         --exclude "*" \
         --include "*.jpg" \
@@ -414,6 +432,7 @@ resource "null_resource" "upload_static_files" {
       echo "🎮 Subiendo emulador js-dos al CDN..."
       aws s3 sync ${path.root}/../../../frontend/jsdos/ s3://${aws_s3_bucket.games_cdn.id}/jsdos/ \
         --region ${var.aws_region} \
+        --profile ${var.aws_profile} \
         --delete \
         --exclude "*" \
         --include "*.js" \
@@ -424,6 +443,7 @@ resource "null_resource" "upload_static_files" {
       
       echo "✅ Todos los archivos estáticos subidos al CDN"
     EOT
+    , "\r", "")
   }
 
   depends_on = [

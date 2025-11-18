@@ -1,7 +1,19 @@
+variable "project_name" {
+  description = "Nombre del proyecto"
+  type        = string
+  default     = "RetroGameCloud"
+}
+
 variable "aws_region" {
   description = "AWS region para el despliegue"
   type        = string
   default     = "eu-west-1"
+}
+
+variable "aws_profile" {
+  description = "Perfil de AWS CLI a utilizar"
+  type        = string
+  default     = "default"
 }
 
 variable "environment" {
@@ -13,7 +25,7 @@ variable "environment" {
 variable "cluster_name" {
   description = "Nombre del cluster EKS"
   type        = string
-  default     = "retrogame-eks"
+  default     = "retrogamecloud-eks"
 }
 
 variable "cluster_version" {
@@ -103,13 +115,13 @@ variable "db_allocated_storage" {
 variable "db_name" {
   description = "Nombre de la base de datos"
   type        = string
-  default     = "retrogamedb"
+  default     = "retrogameclouddb"
 }
 
 variable "db_username" {
   description = "Usuario de la base de datos"
   type        = string
-  default     = "retrogame"
+  default     = "retrogamecloud"
   sensitive   = true
 }
 

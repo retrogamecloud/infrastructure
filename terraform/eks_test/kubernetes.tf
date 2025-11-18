@@ -1,17 +1,21 @@
 # Namespace
-resource "kubernetes_namespace" "retrogamecloud" {
+resource "kubernetes_namespace" "retrogc" {
   metadata {
-    name = "retrogame"  # Coincide con Fargate profile
+    name = "retrogc"
   }
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # JWT Secret
 resource "kubernetes_secret" "jwt_secret" {
   metadata {
     name      = "jwt-secret"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
@@ -25,7 +29,7 @@ resource "kubernetes_secret" "jwt_secret" {
 resource "kubernetes_deployment" "backend" {
   metadata {
     name      = "backend"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -85,7 +89,7 @@ resource "kubernetes_deployment" "backend" {
 
           resources {
             requests = {
-              cpu    = "100m"  # Optimizado para t3.micro
+              cpu    = "100m" # Optimizado para t3.micro
               memory = "256Mi"
             }
             limits = {
@@ -126,7 +130,7 @@ resource "kubernetes_deployment" "backend" {
 resource "kubernetes_service" "backend" {
   metadata {
     name      = "backend-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -149,34 +153,31 @@ resource "kubernetes_service" "backend" {
 resource "kubernetes_config_map" "frontend_replacer" {
   metadata {
     name      = "frontend-url-replacer"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
-    "replace-urls.sh" = <<-EOT
+    "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
-      set -e
-      LB_URL="$${LOAD_BALANCER_URL}"
-      CDN_URL="$${CDN_URL}"
-      
       echo "Starting URL replacement..."
-      echo "Load Balancer URL: $${LB_URL}"
-      echo "CDN URL: $${CDN_URL}"
+      echo "Load Balancer URL: $LOAD_BALANCER_URL"
+      echo "CDN URL: $CDN_URL"
       
       cd /app
       echo "Files in /app before replacement:"
       ls -la
       
       find . -name "*.html" -type f | while read file; do
-        echo "Processing $${file}..."
-        sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
-        sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
-        sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
-        echo "✓ Replaced URLs in $${file}"
+        echo "Processing $file..."
+        sed -i "s|http://localhost:8000|$LOAD_BALANCER_URL|g" "$file"
+        sed -i "s|http://localhost:8086|$CDN_URL|g" "$file"
+        sed -i "s|PLACEHOLDER_LB_URL|$LOAD_BALANCER_URL|g" "$file"
+        echo "Replaced URLs in $file"
       done
       
       echo "URL replacement completed!"
     EOT
+    , "\r", ""), "      \n", "\n")
   }
 
   depends_on = [module.eks]
@@ -186,7 +187,7 @@ resource "kubernetes_config_map" "frontend_replacer" {
 resource "kubernetes_deployment" "frontend" {
   metadata {
     name      = "frontend"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -304,7 +305,7 @@ resource "kubernetes_deployment" "frontend" {
 resource "kubernetes_service" "frontend" {
   metadata {
     name      = "frontend-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -327,7 +328,7 @@ resource "kubernetes_service" "frontend" {
 resource "kubernetes_config_map" "kong" {
   metadata {
     name      = "kong-declarative-config"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
@@ -336,7 +337,7 @@ resource "kubernetes_config_map" "kong" {
 
       services:
         - name: backend-service
-          url: http://backend-service.retrogame.svc.cluster.local:3000
+          url: http://backend-service.retrogc.svc.cluster.local:3000
           routes:
             - name: backend-route
               paths:
@@ -344,7 +345,7 @@ resource "kubernetes_config_map" "kong" {
               strip_path: false
 
         - name: frontend-service
-          url: http://frontend-service.retrogame.svc.cluster.local:8081
+          url: http://frontend-service.retrogc.svc.cluster.local:8081
           routes:
             - name: frontend-route
               paths:
@@ -377,11 +378,11 @@ resource "kubernetes_config_map" "kong" {
 
 # Kong Deployment
 resource "kubernetes_deployment" "kong" {
-  wait_for_rollout = false  # Temporalmente desactivado para permitir escalado de nodos
+  wait_for_rollout = false # Temporalmente desactivado para permitir escalado de nodos
 
   metadata {
     name      = "kong"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -438,7 +439,7 @@ resource "kubernetes_deployment" "kong" {
 
           resources {
             requests = {
-              cpu    = "50m"   # Reducido para t3.micro
+              cpu    = "50m" # Reducido para t3.micro
               memory = "128Mi"
             }
             limits = {
@@ -470,7 +471,7 @@ resource "kubernetes_deployment" "kong" {
 resource "kubernetes_service" "kong" {
   metadata {
     name      = "kong-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
     }
@@ -497,11 +498,11 @@ resource "kubernetes_service" "kong" {
 resource "kubernetes_config_map" "db_init_script" {
   metadata {
     name      = "db-init-script"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
-    "01-schema.sql" = file("${path.root}/../../../backend/init-db/01-schema.sql")
+    "01-schema.sql" = file("${path.module}/../../../backend/init-db/01-schema.sql")
   }
 
   depends_on = [module.eks]
@@ -511,7 +512,7 @@ resource "kubernetes_config_map" "db_init_script" {
 resource "kubernetes_job" "db_init" {
   metadata {
     name      = "db-init"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   spec {
@@ -579,26 +580,27 @@ resource "null_resource" "verify_db_tables" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    command = replace(<<-EOT
       echo "⏳ Esperando a que el job de inicialización complete..."
-      kubectl wait --for=condition=complete --timeout=120s job/db-init -n retrogame || true
+      kubectl wait --for=condition=complete --timeout=120s job/db-init -n retrogc || true
       
       echo "🔍 Verificando tablas creadas en PostgreSQL..."
       echo "Tablas en la base de datos:"
-      kubectl run db-verify-tables --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
+      kubectl run db-verify-tables --rm -i --restart=Never --image=postgres:15-alpine -n retrogc \
         --env="PGPASSWORD=${var.db_password}" \
         -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
         -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;" 2>&1 | grep -v "pod" | tail -n +3 || true
       
       echo ""
       echo "Total de registros en users:"
-      kubectl run db-count-users --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
+      kubectl run db-count-users --rm -i --restart=Never --image=postgres:15-alpine -n retrogc \
         --env="PGPASSWORD=${var.db_password}" \
         -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
         -c "SELECT COUNT(*) as total_users FROM users;" 2>&1 | grep -v "pod" | tail -n +3 || true
       
       echo "✅ Verificación completada"
     EOT
+    , "\r", "")
   }
 
   depends_on = [
@@ -610,14 +612,14 @@ resource "null_resource" "verify_db_tables" {
 resource "kubernetes_config_map_v1_data" "frontend_urls" {
   metadata {
     name      = kubernetes_config_map.frontend_replacer.metadata[0].name
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogc.metadata[0].name
   }
 
   data = {
-    "replace-urls.sh" = <<-EOT
+    "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
       set -e
-      LB_URL="http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}"
+      LB_URL="http://${try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "PENDING")}"
       CDN_URL="https://${aws_cloudfront_distribution.games_cdn.domain_name}"
       
       echo "Starting URL replacement..."
@@ -638,6 +640,7 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
       
       echo "URL replacement completed!"
     EOT
+    , "\r", ""), "      \n", "\n")
   }
 
   force = true
@@ -657,15 +660,16 @@ resource "null_resource" "restart_frontend" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    command = replace(<<-EOT
       echo "⏳ Esperando propagación de ConfigMap actualizado..."
       sleep 10
       
       echo "🔄 Reiniciando deployment frontend..."
-      kubectl rollout restart deployment/frontend -n retrogame || echo "⚠️  Restart falló, continuando..."
+      kubectl rollout restart deployment/frontend -n retrogc || echo "⚠️  Restart falló, continuando..."
       
       echo "✅ Proceso completado"
     EOT
+    , "\r", "")
   }
 
   depends_on = [

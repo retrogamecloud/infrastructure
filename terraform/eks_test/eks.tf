@@ -9,21 +9,21 @@ module "vpc" {
   private_subnets = var.private_subnets
   public_subnets  = var.public_subnets
 
-  enable_nat_gateway   = true   # Fargate requiere NAT Gateway para acceso a Internet desde subnets privadas
-  single_nat_gateway   = true   # Single NAT para dev (prod debería usar 3)
+  enable_nat_gateway   = true # Fargate requiere NAT Gateway para acceso a Internet desde subnets privadas
+  single_nat_gateway   = true # Single NAT para dev (prod debería usar 3)
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   public_subnet_tags = {
-    "kubernetes.io/role/elb"                        = "1"
-    "kubernetes.amazonaws.com/role/elb"             = "1"
-    "kubernetes.io/cluster/${var.cluster_name}"     = "shared"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.amazonaws.com/role/elb"         = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 
   private_subnet_tags = {
-    "kubernetes.io/role/internal-elb"               = "1"
-    "kubernetes.io/cluster/${var.cluster_name}"     = "shared"
-    "karpenter.sh/discovery"                        = var.cluster_name
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 
   tags = merge(
@@ -36,13 +36,13 @@ module "vpc" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
 
   vpc_id                         = module.vpc.vpc_id
-  subnet_ids                     = module.vpc.private_subnets  # Cluster en subnets privadas
+  subnet_ids                     = module.vpc.private_subnets # Cluster en subnets privadas
   cluster_endpoint_public_access = true
 
   cluster_addons = {
@@ -67,7 +67,10 @@ module "eks" {
 
   eks_managed_node_groups = {
     general = {
-      name = "${var.cluster_name}-node-group"
+      name = "general-nodes" # Nombre más corto
+
+      iam_role_name            = "retrogamecloud-eks-node-role"
+      iam_role_use_name_prefix = false # No añadir prefijos automáticos
 
       subnet_ids = module.vpc.private_subnets
 
@@ -86,7 +89,7 @@ module "eks" {
       tags = merge(
         var.tags,
         {
-          Name = "${var.cluster_name}-node-group"
+          Name                                            = "${var.cluster_name}-node-group"
           "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
           "k8s.io/cluster-autoscaler/enabled"             = "true"
         }
@@ -94,14 +97,9 @@ module "eks" {
     }
   }
 
-  manage_aws_auth_configmap = true
-  aws_auth_roles = [
-    {
-      rolearn  = aws_iam_role.eks_admin.arn
-      username = "eks-admin"
-      groups   = ["system:masters"]
-    },
-  ]
+  # En v20, el creador del cluster tiene acceso automático
+  # Habilitamos permisos de administrador para el usuario de Terraform
+  enable_cluster_creator_admin_permissions = true
 
   tags = merge(
     var.tags,
@@ -174,29 +172,3 @@ resource "aws_iam_role" "eks_admin" {
 }
 
 data "aws_caller_identity" "current" {}
-
-# Null resource para eliminar el tag kubernetes.io/cluster del primary security group
-# Solo el node security group debe tener este tag para evitar conflictos con ELB Controller
-resource "null_resource" "remove_cluster_sg_tag" {
-  depends_on = [module.eks]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Obtener el cluster primary security group ID
-      CLUSTER_SG=$(aws eks describe-cluster --name ${var.cluster_name} --region ${var.aws_region} --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId' --output text)
-      
-      # Eliminar el tag kubernetes.io/cluster/X si existe
-      aws ec2 delete-tags \
-        --region ${var.aws_region} \
-        --resources $CLUSTER_SG \
-        --tags Key=kubernetes.io/cluster/${var.cluster_name} \
-        2>/dev/null || true
-      
-      echo "✅ Tag kubernetes.io/cluster/${var.cluster_name} eliminado del cluster primary SG: $CLUSTER_SG"
-    EOT
-  }
-
-  triggers = {
-    cluster_id = module.eks.cluster_id
-  }
-}
