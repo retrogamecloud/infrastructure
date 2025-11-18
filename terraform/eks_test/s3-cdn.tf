@@ -396,14 +396,14 @@ resource "null_resource" "upload_static_files" {
   provisioner "local-exec" {
     command = <<-EOT
       echo "📦 Subiendo juegos (.jsdos) al CDN..."
-      aws s3 sync ${path.root}/../../../infraestructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ \
+      aws s3 sync ${path.root}/../../../infrastructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ \
         --region ${var.aws_region} \
         --delete \
         --exclude "*" \
         --include "*.jsdos"
       
       echo "🖼️  Subiendo imágenes al CDN..."
-      aws s3 sync ${path.root}/../../../infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ \
+      aws s3 sync ${path.root}/../../../infrastructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ \
         --region ${var.aws_region} \
         --delete \
         --exclude "*" \
