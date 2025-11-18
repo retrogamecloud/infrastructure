@@ -38,6 +38,21 @@ Este directorio contiene la infraestructura como código (IaC) para desplegar Re
   - Job de inicialización de BD (automático)
   - Null resource para actualización de URLs post-deploy
 
+### Observabilidad (Monitoring Stack)
+- `monitoring.tf`: Stack completo de Prometheus + Grafana + AlertManager
+  - **Prometheus**: Time-series database para métricas (10Gi storage, 3d retention)
+  - **Grafana**: Dashboards interactivos pre-configurados (20+ dashboards incluidos)
+  - **AlertManager**: Sistema de alertas con notificaciones configurables
+  - **Node Exporter**: Métricas de nodos EC2 (CPU, memoria, disco, red)
+  - **Kube State Metrics**: Estado del cluster (pods, deployments, services)
+  - Namespace separado `monitoring` (no intrusivo)
+- `servicemonitors.tf`: Configuración para scrapear métricas de aplicaciones propias
+  - ServiceMonitor para Backend (/metrics cada 30s)
+  - ServiceMonitor para Frontend (/metrics cada 30s)
+  - ServiceMonitor para Kong (/metrics cada 30s)
+- `example-prometheus-metrics.js`: Código de ejemplo para instrumentar Node.js apps
+- **Ver documentación completa**: [MONITORING_GUIDE.md](./MONITORING_GUIDE.md)
+
 ### Automatización
 - **Init Containers**: Copian y modifican archivos HTML con URLs correctas
 - **Kubernetes Job**: Ejecuta script SQL de inicialización de BD automáticamente
@@ -183,6 +198,35 @@ Los juegos estarán disponibles en:
 - `https://<CLOUDFRONT_URL>/juegos/doom.jsdos`
 - `https://<CLOUDFRONT_URL>/img/doom.png`
 
+### 8. Acceder a Grafana y Prometheus (Monitoring)
+
+Una vez desplegado el stack de monitoring, puedes acceder a Grafana para ver dashboards:
+
+```bash
+# Port-forward Grafana a localhost:3000
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
+```
+
+Abre en tu navegador: **http://localhost:3000**
+
+**Credenciales por defecto:**
+- Usuario: `admin`
+- Contraseña: `admin123` (cambiar en producción!)
+
+**Dashboards recomendados:**
+- `Kubernetes / Compute Resources / Cluster` - Vista general del cluster
+- `Kubernetes / Compute Resources / Namespace (Pods)` - Métricas por namespace
+- `Node Exporter / Nodes` - Métricas de nodos EC2
+- `Prometheus / Overview` - Estado de Prometheus
+
+**Acceder a Prometheus directamente:**
+```bash
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
+```
+Abre: **http://localhost:9090**
+
+**Ver más detalles**: [MONITORING_GUIDE.md](./MONITORING_GUIDE.md)
+
 ## Outputs Importantes
 
 Después del `terraform apply`, obtendrás:
@@ -209,12 +253,19 @@ terraform output kong_load_balancer_hostname
 | RDS PostgreSQL | db.t3.micro | $15 |
 | Load Balancer | NLB | $16 |
 | CloudFront + S3 | CDN | $5 |
-| **TOTAL** | | **~$229/mes** |
+| **Monitoring Stack** | Prometheus + Grafana (EBS) | **$1.50** |
+| **TOTAL** | | **~$230.50/mes** |
 
 #### Desglose Fargate:
 - Backend x2: 0.5 vCPU + 1GB = $60/mes
 - Frontend x2: 0.25 vCPU + 512MB = $30/mes
 - Kong x1: 0.5 vCPU + 1GB = $30/mes
+
+#### Desglose Monitoring:
+- Prometheus: 10Gi EBS gp3 = ~$0.80/mes
+- AlertManager: 2Gi EBS gp3 = ~$0.16/mes
+- Compute: Incluido en Fargate pods (~200m CPU, 512Mi RAM)
+- **Nota**: Si se añade LoadBalancer para Grafana: +$16/mes (no recomendado, usar port-forward)
 
 ### Comparativa con EC2 Node Groups
 
