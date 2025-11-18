@@ -1,29 +1,95 @@
-# Terraform
-.terraform/
-.terraform.lock.hcl
+# ============================================================================
+# Terraform .gitignore
+# ============================================================================
+
+# State files (contienen información sensible y estado de infraestructura)
 terraform.tfstate
 terraform.tfstate.backup
-*.tfvars
-!terraform.tfvars.example
+*.tfstate
+*.tfstate.*
 .terraform.tfstate.lock.info
-crash.log
+
+# Directory de módulos y plugins descargados
+.terraform/
+.terraform.lock.hcl
+
+# Plan files (pueden contener información sensible)
+*.tfplan
+*.tfplan.json
+
+# Variables con valores sensibles
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+!terraform.tfvars.example
+secrets.auto.tfvars
+
+# Archivos de override
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Sensitive files
-*.pem
-*.key
-secrets.auto.tfvars
+# Crash log files
+crash.log
+crash.*.log
 
-# OS files
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# ============================================================================
+# Archivos temporales y de IDEs
+# ============================================================================
+
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
 
-# IDE
-.idea/
+# Linux
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code
 .vscode/
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, PyCharm, etc.)
+.idea/
+*.iml
+*.iws
+
+# Vim
 *.swp
 *.swo
+
+# Emacs
 *~
+\#*\#
+.\#*
+
+# ============================================================================
+# Archivos sensibles
+# ============================================================================
+
+# Certificados y llaves privadas (NO SUBIR NUNCA)
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+
+# ============================================================================
+# Archivos de logs y respaldos
+# ============================================================================
+
+*.log
+*.bak
+*.tmp
+*.temp
