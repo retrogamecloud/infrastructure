@@ -12,13 +12,13 @@ Este directorio contiene la infraestructura como código (IaC) para desplegar Re
 - **Security Groups**: Aislamiento de red entre componentes
 - **Auto-deploy**: Scripts automáticos para inicialización de BD y subida de assets
 
-### ¿Por qué Fargate?
+### ¿Por qué EC2 Node Groups?
 
-✅ **Sin gestión de nodos EC2** - AWS maneja todo el compute
-✅ **Sin NAT Gateway** - Ahorro de $32/mes
-✅ **Pago por uso** - Solo pagas por vCPU/memoria consumida
-✅ **Autoscaling automático** - Escala pods sin gestionar capacidad
-✅ **Despliegue más rápido** - Pods inician en 30-60 segundos
+✅ **Mayor estabilidad** - Control completo sobre los nodos de computación
+✅ **Más económico** - ~$205/mes vs $229 con Fargate
+✅ **Mejor rendimiento** - Networking más rápido con ENIs dedicadas
+✅ **Persistencia** - Nodos dedicados sin cold starts
+✅ **Flexibilidad** - Elección de instance types y configuraciones personalizadas
 
 ## Componentes
 
@@ -130,11 +130,11 @@ Revisa los recursos que se crearán (aprox. 50+ recursos).
 terraform apply
 ```
 
-⏱️ **Tiempo estimado:** 10-12 minutos (Fargate es más rápido que EC2)
+⏱️ **Tiempo estimado:** 15-20 minutos (incluye aprovisionamiento de nodos EC2)
 
 El proceso creará:
-- VPC con subnets públicas
-- EKS Cluster con Fargate Profiles
+- VPC con subnets públicas y privadas
+- EKS Cluster con Node Groups EC2 (3x t3.micro)
 - RDS PostgreSQL (db.t3.micro)
 - S3 + CloudFront CDN
 - Load Balancer para Kong
@@ -151,7 +151,7 @@ aws eks update-kubeconfig --region eu-west-1 --name retrogame-eks
 Verifica la conexión:
 
 ```bash
-kubectl get nodes  # Mostrará "fargate-xxxxx" nodes
+kubectl get nodes  # Mostrará 3 nodos EC2 (ip-10-0-x-x.eu-west-1.compute.internal)
 kubectl get pods -n retrogame
 ```
 
@@ -244,72 +244,91 @@ terraform output kong_load_balancer_hostname
 
 ## Costos Estimados 💰
 
-### Entorno Dev con Fargate (configuración actual)
+### Entorno Dev con EC2 Node Groups (configuración actual)
 
 | Recurso | Tipo | Costo Mensual (aprox.) |
 |---------|------|------------------------|
 | EKS Cluster | Control Plane | $73 |
-| **Fargate Compute** | 5 pods (vCPU + memoria) | **$120** |
-| RDS PostgreSQL | db.t3.micro | $15 |
+| **EC2 Node Groups** | 3x t3.micro (1 vCPU, 1GB cada uno) | **$30** |
+| NAT Gateway | 1x NAT Gateway | **$45** |
+| RDS PostgreSQL | db.t3.micro | $20 |
 | Load Balancer | NLB | $16 |
+| EBS Volumes | 3x 20GB gp3 (nodos) | $6 |
 | CloudFront + S3 | CDN | $5 |
-| **Monitoring Stack** | Prometheus + Grafana (EBS) | **$1.50** |
-| **TOTAL** | | **~$230.50/mes** |
+| **Monitoring Stack** | Prometheus + Grafana (EBS) | **$10** |
+| **TOTAL** | | **~$205/mes** |
 
-#### Desglose Fargate:
-- Backend x2: 0.5 vCPU + 1GB = $60/mes
-- Frontend x2: 0.25 vCPU + 512MB = $30/mes
-- Kong x1: 0.5 vCPU + 1GB = $30/mes
+#### Desglose EC2 Node Groups:
+- 3x t3.micro: $10/mes cada uno = $30/mes
+- NAT Gateway: $32.85/mes (730 horas) + ~$12/mes (tráfico) = ~$45/mes
+- EBS: 3x 20GB gp3 @ $0.08/GB = $6/mes
 
 #### Desglose Monitoring:
 - Prometheus: 10Gi EBS gp3 = ~$0.80/mes
 - AlertManager: 2Gi EBS gp3 = ~$0.16/mes
-- Compute: Incluido en Fargate pods (~200m CPU, 512Mi RAM)
+- Grafana: PVC 10Gi = ~$0.80/mes
+- Node Exporter DaemonSet: ~200m CPU, 512Mi RAM (distribuido en nodos)
+- **Total compute incluido en nodos EC2**
 - **Nota**: Si se añade LoadBalancer para Grafana: +$16/mes (no recomendado, usar port-forward)
 
-### Comparativa con EC2 Node Groups
+### Alternativas de Compute
 
 | Opción | Costo Mensual | Pros | Contras |
 |--------|---------------|------|---------|
-| **Fargate** | **$229** | Sin gestión de nodos, sin NAT Gateway, más simple | Más caro por vCPU |
-| EC2 (t3.medium x2) | $195 | Más barato para uso constante | Gestión de nodos, NAT Gateway, timeouts |
-| EC2 (t4g.medium ARM x2) | $170 | Más económico | Requiere imágenes ARM, gestión |
+| **EC2 (3x t3.micro)** | **$205** | Económico, control total, estable | Requiere NAT Gateway, gestión básica |
+| EC2 (3x t3.small) | $235 | Más recursos (2GB RAM por nodo) | Más caro (+$30/mes) |
+| EC2 (3x t4g.micro ARM) | $185 | Más económico (-$20/mes) | Requiere imágenes ARM compatibles |
 
-**Ventajas de Fargate:**
-- ✅ **Sin NAT Gateway**: Ahorro de $32/mes vs EC2
-- ✅ **Sin gestión**: No más node groups stuck 15 minutos
-- ✅ **Pago justo**: Solo pagas lo que usas (5 pods activos)
-- ✅ **Escalado instantáneo**: Sin esperar aprovisionamiento de nodos
+**Ventajas de EC2 Node Groups:**
+- ✅ **Más económico**: $205/mes total
+- ✅ **Mayor control**: Acceso SSH, configuración personalizada
+- ✅ **Networking optimizado**: ENIs dedicadas, latencia más baja
+- ✅ **Sin cold starts**: Nodos siempre activos
 
 ## Escalabilidad
 
-### Fargate Autoscaling
+### Horizontal Pod Autoscaling (HPA)
 
-Fargate escala automáticamente pods sin gestionar capacidad de nodos:
+Escalar pods basado en CPU/memoria:
 
 ```bash
-# Escalar backend
-kubectl scale deployment backend -n retrogame --replicas=5
+# Crear HPA para backend
+kubectl autoscale deployment backend -n retrogame --cpu-percent=70 --min=1 --max=5
+
+# Ver estado del HPA
+kubectl get hpa -n retrogame
 ```
 
-Cada pod adicional consumirá:
-- Backend: 0.5 vCPU + 1GB = ~$30/mes
-- Frontend: 0.25 vCPU + 512MB = ~$15/mes
+**Nota:** Los 3 nodos t3.micro tienen capacidad total de ~2.5 vCPU y ~2.5GB RAM (después de pods del sistema).
+
+### Cluster Autoscaling (Node Groups)
+
+Configurar autoscaling de nodos EC2:
+
+```bash
+# Actualizar min/max size del node group
+aws eks update-nodegroup-config \
+  --cluster-name retrogame-eks \
+  --nodegroup-name retrogame-node-group \
+  --scaling-config minSize=2,maxSize=6,desiredSize=3
+```
 
 ### Resource Requests/Limits
 
-Configurados para cumplir requisitos mínimos de Fargate:
+Configurados para optimizar uso de t3.micro nodes:
 
 ```yaml
 requests:
-  cpu: 250m     # Mínimo Fargate: 0.25 vCPU
-  memory: 512Mi # Mínimo Fargate: 0.5 GB
+  cpu: 100m     # Backend: 100m, Frontend: 50m, Kong: 100m
+  memory: 256Mi # Backend: 256Mi, Frontend: 128Mi, Kong: 256Mi
 limits:
   cpu: 500m
-  memory: 1Gi
+  memory: 512Mi
 ```
 
-**Importante:** Fargate cobra por el mayor valor entre requests y limits.
+**Capacidad por nodo t3.micro:**
+- CPU: 1 vCPU (~900m disponible para pods)
+- RAM: 1GB (~700MB disponible para pods)
 
 ## Monitoreo y Logs
 
@@ -337,8 +356,9 @@ kubectl logs -n retrogame deployment/backend --tail=50 -f
 # Kong
 kubectl logs -n retrogame deployment/kong --tail=50 -f
 
-# Ver logs de Fargate nodes
+# Ver logs de nodos EC2
 kubectl get pods -n retrogame -o wide
+kubectl describe node <node-name>
 ```
 
 ## Troubleshooting
@@ -349,17 +369,19 @@ kubectl get pods -n retrogame -o wide
 kubectl describe pod <pod-name> -n retrogame
 ```
 
-Posibles causas con Fargate:
-- **Resource requests inválidos**: Fargate requiere mínimo 0.25 vCPU y 512Mi
-- **Namespace sin Fargate profile**: Verificar que exista profile para el namespace
+Posibles causas con EC2 Node Groups:
+- **Recursos insuficientes**: Nodos saturados, necesitan escalar
+- **Node NotReady**: Nodo EC2 con problemas, verificar status
 - **Imagen no encontrada**: DockerHub rate limit o imagen inexistente
-- **Secrets/ConfigMaps faltantes**
+- **Secrets/ConfigMaps faltantes**: Verificar que existan en el namespace
+- **Taints/Tolerations**: Verificar si hay taints en los nodos
 
-Verificar Fargate profiles:
+Verificar estado de nodos:
 
 ```bash
-aws eks list-fargate-profiles --cluster-name retrogame --region eu-west-1
-aws eks describe-fargate-profile --cluster-name retrogame --fargate-profile-name retrogame-retrogame --region eu-west-1
+kubectl get nodes
+kubectl describe node <node-name>
+kubectl top nodes  # Ver uso de CPU/RAM
 ```
 
 ### RDS Connection Timeout
@@ -367,9 +389,13 @@ aws eks describe-fargate-profile --cluster-name retrogame --fargate-profile-name
 Verificar Security Groups:
 
 ```bash
-# Con Fargate, los pods tienen IPs públicas en subnets públicas
-# Verificar que RDS Security Group permita conexiones desde el CIDR de VPC
+# Con EC2 Node Groups, los pods usan IPs privadas
+# Verificar que RDS Security Group permita conexiones desde el CIDR de subnets privadas (10.0.0.0/16)
 aws ec2 describe-security-groups --filters "Name=tag:Name,Values=retrogame-rds-sg"
+
+# Verificar conectividad desde un pod
+kubectl run -it --rm debug --image=postgres:15 --restart=Never -n retrogame -- \
+  psql -h <RDS_ENDPOINT> -U postgres -d retrogame
 ```
 
 ### Load Balancer no responde
@@ -398,7 +424,7 @@ El NLB puede tardar 2-3 minutos en estar completamente operativo.
    kubectl set image deployment/backend backend=retrogamecloud/backend:v2.0 -n retrogame
    ```
 
-3. Con Fargate, el nuevo pod se creará automáticamente sin gestionar capacidad de nodos
+3. Con EC2 Node Groups, el pod se actualizará usando rolling update (max unavailable: 25%, max surge: 25%)
 
 ### Backup de RDS
 
@@ -420,11 +446,15 @@ aws rds create-db-snapshot \
 # Actualizar versión en terraform.tfvars
 cluster_version = "1.32"
 
-# Aplicar cambios (Fargate se actualiza automáticamente)
+# Aplicar cambios
 terraform apply
 ```
 
-⚠️ **Nota:** Con Fargate no gestionas node groups, AWS actualiza la plataforma automáticamente.
+⚠️ **Nota:** Con EC2 Node Groups:
+1. Primero se actualiza el control plane de EKS
+2. Luego se actualiza la versión de Kubernetes en los nodos
+3. Los nodos se actualizan mediante rolling update (uno a la vez)
+4. Pods se drenan y migran automáticamente
 
 ## Destruir Infraestructura
 
@@ -446,9 +476,11 @@ Para entornos de producción, asegúrate de:
 ### Mejores Prácticas Implementadas
 
 ✅ **Network Isolation**
-- VPC dedicada con subnets públicas para Fargate
+- VPC dedicada con subnets públicas y privadas
+- Pods en subnets privadas (sin acceso directo a Internet)
+- NAT Gateway para tráfico saliente
 - Security Groups con reglas restrictivas
-- RDS solo accesible desde EKS VPC CIDR
+- RDS solo accesible desde CIDR de VPC (10.0.0.0/16)
 
 ✅ **Secrets Management**
 - Secrets de Kubernetes para credenciales
@@ -458,10 +490,12 @@ Para entornos de producción, asegúrate de:
 ✅ **Encryption**
 - RDS storage encriptado
 - Tráfico CloudFront con HTTPS
+- EBS volumes encriptados
 
-✅ **Serverless**
-- Sin gestión de EC2 instances
-- AWS maneja seguridad de compute layer
+✅ **Instance Security**
+- EC2 instances con IAM roles (no access keys)
+- Security Groups: solo tráfico necesario
+- SSM Session Manager para acceso (sin SSH keys)
 
 ### Recomendaciones Adicionales
 
