@@ -93,3 +93,4 @@ Desktop.ini
 *.bak
 *.tmp
 *.temp
+terraform.tfvars
