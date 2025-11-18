@@ -1,0 +1,1441 @@
+[0m[1mrandom_password.oauth2_proxy_cookie_secret: Refreshing state... [id=none][0m
+[0m[1maws_cloudfront_origin_access_control.games_cdn: Refreshing state... [id=E1X7HLAIO5UU5I][0m
+[0m[1maws_route53_zone.main: Refreshing state... [id=Z056369526JPMZRQ9HKCF][0m
+[0m[1mmodule.eks.aws_cloudwatch_log_group.this[0]: Refreshing state... [id=/aws/eks/retrogame/cluster][0m
+[0m[1maws_acm_certificate.main: Refreshing state... [id=arn:aws:acm:eu-west-1:813975404649:certificate/af77e722-e05d-44c5-9d71-283179a63d99][0m
+[0m[1maws_s3_bucket.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0] (deposed object dc7821de): Refreshing state... [id=retrogame:retrogame-node-group-20251118101747566200000002][0m
+[0m[1maws_s3_bucket.cdn_logs: Refreshing state... [id=retrogame-cdn-logs][0m
+[0m[1mmodule.eks.module.kms.data.aws_caller_identity.current[0]: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_caller_identity.current: Reading...[0m[0m
+[0m[1mmodule.eks.module.kms.data.aws_partition.current[0]: Reading...[0m[0m
+[0m[1mmodule.eks.module.kms.data.aws_partition.current[0]: Read complete after 0s [id=aws][0m
+[0m[1mmodule.eks.data.aws_partition.current: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_partition.current: Read complete after 0s [id=aws][0m
+[0m[1mdata.aws_caller_identity.current: Reading...[0m[0m
+[0m[1mmodule.eks.module.kms.data.aws_caller_identity.current[0]: Read complete after 0s [id=813975404649][0m
+[0m[1mmodule.vpc.aws_vpc.this[0]: Refreshing state... [id=vpc-0ab34f1d41e26d845][0m
+[0m[1mmodule.eks.data.aws_caller_identity.current: Read complete after 0s [id=813975404649][0m
+[0m[1mmodule.eks.data.aws_iam_session_context.current: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_iam_session_context.current: Read complete after 0s [id=arn:aws:iam::813975404649:user/admin][0m
+[0m[1mmodule.eks.data.aws_iam_policy_document.assume_role_policy[0]: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_iam_policy_document.assume_role_policy[0]: Read complete after 0s [id=2764486067][0m
+[0m[1mmodule.eks.aws_iam_role.this[0]: Refreshing state... [id=retrogame-cluster-20251118094613152600000001][0m
+[0m[1mdata.aws_caller_identity.current: Read complete after 0s [id=813975404649][0m
+[0m[1maws_iam_role.eks_admin: Refreshing state... [id=retrogame-admin-role][0m
+[0m[1maws_route53_record.cert_validation["retrogamehub.games"]: Refreshing state... [id=Z056369526JPMZRQ9HKCF__82145a0d8c4769cd78e52df6abf075fe.retrogamehub.games._CNAME][0m
+[0m[1maws_route53_record.cert_validation["*.retrogamehub.games"]: Refreshing state... [id=Z056369526JPMZRQ9HKCF__82145a0d8c4769cd78e52df6abf075fe.retrogamehub.games._CNAME][0m
+[0m[1mmodule.eks.aws_iam_role_policy_attachment.this["AmazonEKSVPCResourceController"]: Refreshing state... [id=retrogame-cluster-20251118094613152600000001-20251118094614557700000003][0m
+[0m[1mmodule.eks.aws_iam_role_policy_attachment.this["AmazonEKSClusterPolicy"]: Refreshing state... [id=retrogame-cluster-20251118094613152600000001-20251118094614537200000002][0m
+[0m[1mmodule.eks.module.kms.data.aws_iam_policy_document.this[0]: Reading...[0m[0m
+[0m[1mmodule.eks.module.kms.data.aws_iam_policy_document.this[0]: Read complete after 0s [id=1838921296][0m
+[0m[1mmodule.eks.module.kms.aws_kms_key.this[0]: Refreshing state... [id=5ee398c1-afac-4b20-a1c5-b2f1eedc84a8][0m
+[0m[1mmodule.eks.module.kms.aws_kms_alias.this["cluster"]: Refreshing state... [id=alias/eks/retrogame][0m
+[0m[1mmodule.eks.aws_iam_policy.cluster_encryption[0]: Refreshing state... [id=arn:aws:iam::813975404649:policy/retrogame-cluster-ClusterEncryption20251118094635211400000010][0m
+[0m[1mmodule.eks.aws_iam_role_policy_attachment.cluster_encryption[0]: Refreshing state... [id=retrogame-cluster-20251118094613152600000001-20251118094635848000000011][0m
+[0m[1maws_s3_bucket_ownership_controls.cdn_logs: Refreshing state... [id=retrogame-cdn-logs][0m
+[0m[1maws_s3_bucket_public_access_block.cdn_logs: Refreshing state... [id=retrogame-cdn-logs][0m
+[0m[1maws_s3_bucket_acl.cdn_logs: Refreshing state... [id=retrogame-cdn-logs,log-delivery-write][0m
+[0m[1maws_s3_bucket_policy.cdn_logs: Refreshing state... [id=retrogame-cdn-logs][0m
+[0m[1maws_s3_bucket_public_access_block.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1maws_s3_bucket_logging.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1maws_s3_bucket_versioning.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1maws_s3_bucket_cors_configuration.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1maws_cloudfront_distribution.games_cdn: Refreshing state... [id=E18PMZZXQ1B2C0][0m
+[0m[1maws_s3_bucket_policy.games_cdn: Refreshing state... [id=retrogame-games-cdn][0m
+[0m[1mnull_resource.upload_static_files: Refreshing state... [id=1884136552282423077][0m
+[0m[1mmodule.vpc.aws_default_network_acl.this[0]: Refreshing state... [id=acl-0472672e48cf8a440][0m
+[0m[1maws_lb_target_group.alertmanager: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-alertmanager-tg/83adb9c223f7fb64][0m
+[0m[1maws_security_group.rds: Refreshing state... [id=sg-0abf10e5468aab8f5][0m
+[0m[1maws_security_group.node_group: Refreshing state... [id=sg-054915f5a51e93951][0m
+[0m[1maws_lb_target_group.grafana: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-grafana-tg/1127925752c0b93f][0m
+[0m[1mmodule.vpc.aws_default_route_table.default[0]: Refreshing state... [id=rtb-04299845b7eadfffb][0m
+[0m[1mmodule.vpc.aws_internet_gateway.this[0]: Refreshing state... [id=igw-0a85fb6254cd411a9][0m
+[0m[1mmodule.vpc.aws_subnet.public[0]: Refreshing state... [id=subnet-092af2964ff699ed4][0m
+[0m[1mmodule.vpc.aws_subnet.public[1]: Refreshing state... [id=subnet-0f12b60fe43eede39][0m
+[0m[1mmodule.vpc.aws_subnet.public[2]: Refreshing state... [id=subnet-0ec233be1c29bdc9c][0m
+[0m[1mmodule.vpc.aws_subnet.private[1]: Refreshing state... [id=subnet-0638b5c9b5e8d54b1][0m
+[0m[1mmodule.vpc.aws_subnet.private[2]: Refreshing state... [id=subnet-03eb1506f36df06e8][0m
+[0m[1mmodule.vpc.aws_subnet.private[0]: Refreshing state... [id=subnet-081d0a226ecdd7ae4][0m
+[0m[1maws_lb_target_group.prometheus: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-prometheus-tg/174573f9bdc6ba16][0m
+[0m[1maws_lb_target_group.oauth2_proxy: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-oauth2-tg/7d1250cd8ee20c20][0m
+[0m[1maws_lb_target_group.frontend: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-frontend-tg/016f09bfa5e0f3f9][0m
+[0m[1maws_security_group.alb: Refreshing state... [id=sg-056b745017aa87d81][0m
+[0m[1mmodule.vpc.aws_route_table.public[0]: Refreshing state... [id=rtb-0ea0800333b8cb023][0m
+[0m[1mmodule.eks.aws_security_group.node[0]: Refreshing state... [id=sg-0f769df4ee1b794f1][0m
+[0m[1mmodule.eks.aws_security_group.cluster[0]: Refreshing state... [id=sg-0c11592102aef1556][0m
+[0m[1mmodule.vpc.aws_route_table.private[0]: Refreshing state... [id=rtb-0df59804accc0261b][0m
+[0m[1mmodule.vpc.aws_default_security_group.this[0]: Refreshing state... [id=sg-0aa8332d933146eba][0m
+[0m[1mmodule.vpc.aws_eip.nat[0]: Refreshing state... [id=eipalloc-056030725904484f5][0m
+[0m[1mmodule.vpc.aws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-06fedbf6c9371caa9][0m
+[0m[1mmodule.vpc.aws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-01009eff76fcb27bb][0m
+[0m[1mmodule.vpc.aws_route.public_internet_gateway[0]: Refreshing state... [id=r-rtb-0ea0800333b8cb0231080289494][0m
+[0m[1mmodule.vpc.aws_route_table_association.public[2]: Refreshing state... [id=rtbassoc-0dbc9cd20f7b01b83][0m
+[0m[1mmodule.vpc.aws_route_table_association.private[1]: Refreshing state... [id=rtbassoc-0caca8cbd1fc05f86][0m
+[0m[1mmodule.vpc.aws_route_table_association.private[2]: Refreshing state... [id=rtbassoc-05a0bb8a6b0b3b172][0m
+[0m[1mmodule.vpc.aws_route_table_association.private[0]: Refreshing state... [id=rtbassoc-060d54f685933d12b][0m
+[0m[1maws_lb.main: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:loadbalancer/app/retrogame-alb/15a37cf3103f642c][0m
+[0m[1maws_db_subnet_group.postgres: Refreshing state... [id=retrogame-db-subnet][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_9443_webhook"]: Refreshing state... [id=sgrule-124230451][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_self_coredns_tcp"]: Refreshing state... [id=sgrule-1463631153][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_6443_webhook"]: Refreshing state... [id=sgrule-1889178841][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["egress_all"]: Refreshing state... [id=sgrule-3973541772][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_self_coredns_udp"]: Refreshing state... [id=sgrule-4083326686][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_443"]: Refreshing state... [id=sgrule-2424119380][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_4443_webhook"]: Refreshing state... [id=sgrule-3118003023][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_nodes_ephemeral"]: Refreshing state... [id=sgrule-764648294][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_8443_webhook"]: Refreshing state... [id=sgrule-1673963768][0m
+[0m[1mmodule.eks.aws_security_group_rule.node["ingress_cluster_kubelet"]: Refreshing state... [id=sgrule-3025290640][0m
+[0m[1mmodule.eks.aws_security_group_rule.cluster["ingress_nodes_443"]: Refreshing state... [id=sgrule-2333636853][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_caller_identity.current: Reading...[0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_partition.current: Reading...[0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_partition.current: Read complete after 0s [id=aws][0m
+[0m[1maws_route53_record.wildcard: Refreshing state... [id=Z056369526JPMZRQ9HKCF_*.retrogamehub.games_A][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_caller_identity.current: Read complete after 0s [id=813975404649][0m
+[0m[1maws_lb_listener.http: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-1:813975404649:listener/app/retrogame-alb/15a37cf3103f642c/e6f94649466d838f][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_iam_policy_document.assume_role_policy[0]: Reading...[0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].data.aws_iam_policy_document.assume_role_policy[0]: Read complete after 0s [id=2560088296][0m
+[0m[1mmodule.vpc.aws_nat_gateway.this[0]: Refreshing state... [id=nat-0e63f382bb4a11f9a][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_iam_role.this[0]: Refreshing state... [id=retrogame-node-group-eks-node-group-2025111809463203780000000c][0m
+[0m[1maws_db_instance.postgres: Refreshing state... [id=db-SQGGX6FDCO5ALT2VROYOPLQQOM][0m
+[0m[1mmodule.vpc.aws_route.private_nat_gateway[0]: Refreshing state... [id=r-rtb-0df59804accc0261b1080289494][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_iam_role_policy_attachment.this["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"]: Refreshing state... [id=retrogame-node-group-eks-node-group-2025111809463203780000000c-2025111809463278240000000e][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_iam_role_policy_attachment.this["arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"]: Refreshing state... [id=retrogame-node-group-eks-node-group-2025111809463203780000000c-2025111809463278060000000d][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_iam_role_policy_attachment.this["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"]: Refreshing state... [id=retrogame-node-group-eks-node-group-2025111809463203780000000c-2025111809463294750000000f][0m
+[0m[1mmodule.eks.aws_eks_cluster.this[0]: Refreshing state... [id=retrogame][0m
+[0m[1mmodule.eks.data.tls_certificate.this[0]: Reading...[0m[0m
+[0m[1mmodule.eks.data.tls_certificate.this[0]: Read complete after 0s [id=08332733484502a5c0ee4f44b59e6f9baaa72352][0m
+[0m[1mmodule.eks.time_sleep.this[0]: Refreshing state... [id=2025-11-18T09:56:23Z][0m
+[0m[1mmodule.eks.aws_iam_openid_connect_provider.oidc_provider[0]: Refreshing state... [id=arn:aws:iam::813975404649:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/3585D667C5B04BD8F141DC0C9BDAE8D6][0m
+[0m[1mkubernetes_namespace.monitoring: Refreshing state... [id=monitoring][0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_launch_template.this[0]: Refreshing state... [id=lt-071e7f0a8ec5e77a4][0m
+[0m[1maws_iam_role.s3_upload_role: Refreshing state... [id=retrogame-s3-upload-role][0m
+[0m[1mdata.aws_iam_policy_document.ebs_csi_driver_assume_role: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.ebs_csi_driver_assume_role: Read complete after 0s [id=1348197109][0m
+[0m[1maws_iam_role.ebs_csi_driver: Refreshing state... [id=retrogame-ebs-csi-driver][0m
+[0m[1maws_iam_role_policy_attachment.ebs_csi_driver: Refreshing state... [id=retrogame-ebs-csi-driver-20251118160751560300000008][0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["coredns"]: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["kube-proxy"]: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["aws-ebs-csi-driver"]: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["vpc-cni"]: Reading...[0m[0m
+[0m[1mkubernetes_secret.alertmanager_slack: Refreshing state... [id=monitoring/alertmanager-slack-webhook][0m
+[0m[1maws_iam_role_policy.s3_upload_policy: Refreshing state... [id=retrogame-s3-upload-role:retrogame-s3-upload-policy][0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["aws-ebs-csi-driver"]: Read complete after 0s [id=aws-ebs-csi-driver][0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["kube-proxy"]: Read complete after 0s [id=kube-proxy][0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["vpc-cni"]: Read complete after 0s [id=vpc-cni][0m
+[0m[1mdata.kubernetes_secret.alertmanager_slack: Reading...[0m[0m
+[0m[1mmodule.eks.data.aws_eks_addon_version.this["coredns"]: Read complete after 0s [id=coredns][0m
+[0m[1mdata.kubernetes_secret.alertmanager_slack: Read complete after 0s [id=monitoring/alertmanager-slack-webhook][0m
+[0m[1mmodule.eks.aws_eks_addon.this["aws-ebs-csi-driver"]: Refreshing state... [id=retrogame:aws-ebs-csi-driver][0m
+[0m[1mmodule.eks.aws_eks_addon.this["vpc-cni"]: Refreshing state... [id=retrogame:vpc-cni][0m
+[0m[1mmodule.eks.aws_eks_addon.this["coredns"]: Refreshing state... [id=retrogame:coredns][0m
+[0m[1mmodule.eks.aws_eks_addon.this["kube-proxy"]: Refreshing state... [id=retrogame:kube-proxy][0m
+[0m[1mmodule.eks.kubernetes_config_map_v1_data.aws_auth[0]: Refreshing state... [id=kube-system/aws-auth][0m
+[0m[1mkubernetes_namespace.retrogamecloud: Refreshing state... [id=retrogame][0m
+[0m[1mkubernetes_secret.jwt_secret: Refreshing state... [id=retrogame/jwt-secret][0m
+[0m[1mkubernetes_secret.postgres_credentials: Refreshing state... [id=retrogame/postgres-credentials][0m
+[0m[1mkubernetes_config_map.kong: Refreshing state... [id=retrogame/kong-declarative-config][0m
+[0m[1mkubernetes_config_map.frontend_replacer: Refreshing state... [id=retrogame/frontend-url-replacer][0m
+[0m[1mkubernetes_config_map.kong_url: Refreshing state... [id=retrogame/kong-url][0m
+[0m[1mkubernetes_deployment.backend: Refreshing state... [id=retrogame/backend][0m
+[0m[1mkubernetes_deployment.frontend: Refreshing state... [id=retrogame/frontend][0m
+[0m[1mkubernetes_service.backend: Refreshing state... [id=retrogame/backend-service][0m
+[0m[1mkubernetes_service.frontend: Refreshing state... [id=retrogame/frontend-service][0m
+[0m[1mkubernetes_deployment.kong: Refreshing state... [id=retrogame/kong][0m
+[0m[1mkubernetes_service.kong: Refreshing state... [id=retrogame/kong-service][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+  [33m~[0m update in-place[0m
+  [31m-[0m destroy[0m
+[31m-[0m/[32m+[0m destroy and then create replacement[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_acm_certificate_validation.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_acm_certificate_validation" "main" {
+      [32m+[0m[0m certificate_arn         = "arn:aws:acm:eu-west-1:813975404649:certificate/af77e722-e05d-44c5-9d71-283179a63d99"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m validation_record_fqdns = [
+          [32m+[0m[0m "_82145a0d8c4769cd78e52df6abf075fe.retrogamehub.games",
+        ]
+
+      [32m+[0m[0m timeouts {
+          [32m+[0m[0m create = "10m"
+        }
+    }
+
+[1m  # aws_lb_listener.https[0m will be created
+[0m  [32m+[0m[0m resource "aws_lb_listener" "https" {
+      [32m+[0m[0m arn                                                                   = (known after apply)
+      [32m+[0m[0m certificate_arn                                                       = "arn:aws:acm:eu-west-1:813975404649:certificate/af77e722-e05d-44c5-9d71-283179a63d99"
+      [32m+[0m[0m id                                                                    = (known after apply)
+      [32m+[0m[0m load_balancer_arn                                                     = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:loadbalancer/app/retrogame-alb/15a37cf3103f642c"
+      [32m+[0m[0m port                                                                  = 443
+      [32m+[0m[0m protocol                                                              = "HTTPS"
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_header_name               = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_issuer_header_name        = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_leaf_header_name          = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_serial_number_header_name = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_subject_header_name       = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_mtls_clientcert_validity_header_name      = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_tls_cipher_suite_header_name              = (known after apply)
+      [32m+[0m[0m routing_http_request_x_amzn_tls_version_header_name                   = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_allow_credentials_header_value   = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_allow_headers_header_value       = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_allow_methods_header_value       = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_allow_origin_header_value        = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_expose_headers_header_value      = (known after apply)
+      [32m+[0m[0m routing_http_response_access_control_max_age_header_value             = (known after apply)
+      [32m+[0m[0m routing_http_response_content_security_policy_header_value            = (known after apply)
+      [32m+[0m[0m routing_http_response_server_enabled                                  = (known after apply)
+      [32m+[0m[0m routing_http_response_strict_transport_security_header_value          = (known after apply)
+      [32m+[0m[0m routing_http_response_x_content_type_options_header_value             = (known after apply)
+      [32m+[0m[0m routing_http_response_x_frame_options_header_value                    = (known after apply)
+      [32m+[0m[0m ssl_policy                                                            = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+      [32m+[0m[0m tags_all                                                              = {
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "Terraform"
+          [32m+[0m[0m "Project"     = "RetroGameCloud"
+        }
+      [32m+[0m[0m tcp_idle_timeout_seconds                                              = (known after apply)
+
+      [32m+[0m[0m default_action {
+          [32m+[0m[0m order            = (known after apply)
+          [32m+[0m[0m target_group_arn = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-frontend-tg/016f09bfa5e0f3f9"
+          [32m+[0m[0m type             = "forward"
+        }
+
+      [32m+[0m[0m mutual_authentication (known after apply)
+    }
+
+[1m  # aws_lb_listener_rule.alertmanager[0m will be created
+[0m  [32m+[0m[0m resource "aws_lb_listener_rule" "alertmanager" {
+      [32m+[0m[0m arn          = (known after apply)
+      [32m+[0m[0m id           = (known after apply)
+      [32m+[0m[0m listener_arn = (known after apply)
+      [32m+[0m[0m priority     = 30
+      [32m+[0m[0m tags_all     = {
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "Terraform"
+          [32m+[0m[0m "Project"     = "RetroGameCloud"
+        }
+
+      [32m+[0m[0m action {
+          [32m+[0m[0m order            = (known after apply)
+          [32m+[0m[0m target_group_arn = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-oauth2-tg/7d1250cd8ee20c20"
+          [32m+[0m[0m type             = "forward"
+        }
+
+      [32m+[0m[0m condition {
+          [32m+[0m[0m path_pattern {
+              [32m+[0m[0m values = [
+                  [32m+[0m[0m "/alertmanager",
+                  [32m+[0m[0m "/alertmanager/*",
+                ]
+            }
+        }
+    }
+
+[1m  # aws_lb_listener_rule.grafana[0m will be created
+[0m  [32m+[0m[0m resource "aws_lb_listener_rule" "grafana" {
+      [32m+[0m[0m arn          = (known after apply)
+      [32m+[0m[0m id           = (known after apply)
+      [32m+[0m[0m listener_arn = (known after apply)
+      [32m+[0m[0m priority     = 10
+      [32m+[0m[0m tags_all     = {
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "Terraform"
+          [32m+[0m[0m "Project"     = "RetroGameCloud"
+        }
+
+      [32m+[0m[0m action {
+          [32m+[0m[0m order            = (known after apply)
+          [32m+[0m[0m target_group_arn = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-oauth2-tg/7d1250cd8ee20c20"
+          [32m+[0m[0m type             = "forward"
+        }
+
+      [32m+[0m[0m condition {
+          [32m+[0m[0m path_pattern {
+              [32m+[0m[0m values = [
+                  [32m+[0m[0m "/grafana",
+                  [32m+[0m[0m "/grafana/*",
+                ]
+            }
+        }
+    }
+
+[1m  # aws_lb_listener_rule.oauth2_callback[0m will be created
+[0m  [32m+[0m[0m resource "aws_lb_listener_rule" "oauth2_callback" {
+      [32m+[0m[0m arn          = (known after apply)
+      [32m+[0m[0m id           = (known after apply)
+      [32m+[0m[0m listener_arn = (known after apply)
+      [32m+[0m[0m priority     = 5
+      [32m+[0m[0m tags_all     = {
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "Terraform"
+          [32m+[0m[0m "Project"     = "RetroGameCloud"
+        }
+
+      [32m+[0m[0m action {
+          [32m+[0m[0m order            = (known after apply)
+          [32m+[0m[0m target_group_arn = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-oauth2-tg/7d1250cd8ee20c20"
+          [32m+[0m[0m type             = "forward"
+        }
+
+      [32m+[0m[0m condition {
+          [32m+[0m[0m path_pattern {
+              [32m+[0m[0m values = [
+                  [32m+[0m[0m "/oauth2/*",
+                ]
+            }
+        }
+    }
+
+[1m  # aws_lb_listener_rule.prometheus[0m will be created
+[0m  [32m+[0m[0m resource "aws_lb_listener_rule" "prometheus" {
+      [32m+[0m[0m arn          = (known after apply)
+      [32m+[0m[0m id           = (known after apply)
+      [32m+[0m[0m listener_arn = (known after apply)
+      [32m+[0m[0m priority     = 20
+      [32m+[0m[0m tags_all     = {
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "Terraform"
+          [32m+[0m[0m "Project"     = "RetroGameCloud"
+        }
+
+      [32m+[0m[0m action {
+          [32m+[0m[0m order            = (known after apply)
+          [32m+[0m[0m target_group_arn = "arn:aws:elasticloadbalancing:eu-west-1:813975404649:targetgroup/retrogame-oauth2-tg/7d1250cd8ee20c20"
+          [32m+[0m[0m type             = "forward"
+        }
+
+      [32m+[0m[0m condition {
+          [32m+[0m[0m path_pattern {
+              [32m+[0m[0m values = [
+                  [32m+[0m[0m "/prometheus",
+                  [32m+[0m[0m "/prometheus/*",
+                ]
+            }
+        }
+    }
+
+[1m  # aws_route53_record.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_route53_record" "main" {
+      [32m+[0m[0m allow_overwrite = (known after apply)
+      [32m+[0m[0m fqdn            = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+      [32m+[0m[0m name            = "retrogamehub.games"
+      [32m+[0m[0m type            = "A"
+      [32m+[0m[0m zone_id         = "Z056369526JPMZRQ9HKCF"
+
+      [32m+[0m[0m alias {
+          [32m+[0m[0m evaluate_target_health = true
+          [32m+[0m[0m name                   = "retrogame-alb-414404732.eu-west-1.elb.amazonaws.com"
+          [32m+[0m[0m zone_id                = "Z32O12XQLNTSW2"
+        }
+    }
+
+[1m  # helm_release.kube_prometheus_stack[0m will be created
+[0m  [32m+[0m[0m resource "helm_release" "kube_prometheus_stack" {
+      [32m+[0m[0m atomic                     = false
+      [32m+[0m[0m chart                      = "kube-prometheus-stack"
+      [32m+[0m[0m cleanup_on_fail            = false
+      [32m+[0m[0m create_namespace           = false
+      [32m+[0m[0m dependency_update          = false
+      [32m+[0m[0m disable_crd_hooks          = false
+      [32m+[0m[0m disable_openapi_validation = false
+      [32m+[0m[0m disable_webhooks           = false
+      [32m+[0m[0m force_update               = false
+      [32m+[0m[0m id                         = (known after apply)
+      [32m+[0m[0m lint                       = false
+      [32m+[0m[0m manifest                   = (known after apply)
+      [32m+[0m[0m max_history                = 0
+      [32m+[0m[0m metadata                   = (known after apply)
+      [32m+[0m[0m name                       = "kube-prometheus-stack"
+      [32m+[0m[0m namespace                  = "monitoring"
+      [32m+[0m[0m pass_credentials           = false
+      [32m+[0m[0m recreate_pods              = false
+      [32m+[0m[0m render_subchart_notes      = true
+      [32m+[0m[0m replace                    = false
+      [32m+[0m[0m repository                 = "https://prometheus-community.github.io/helm-charts"
+      [32m+[0m[0m reset_values               = false
+      [32m+[0m[0m reuse_values               = false
+      [32m+[0m[0m skip_crds                  = false
+      [32m+[0m[0m status                     = "deployed"
+      [32m+[0m[0m timeout                    = 600
+      [32m+[0m[0m values                     = [
+          [32m+[0m[0m (sensitive value),
+        ]
+      [32m+[0m[0m verify                     = false
+      [32m+[0m[0m version                    = "55.5.0"
+      [32m+[0m[0m wait                       = true
+      [32m+[0m[0m wait_for_jobs              = false
+    }
+
+[1m  # kubernetes_config_map.cdn_config[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_config_map" "cdn_config" {
+      [32m+[0m[0m data = {
+          [32m+[0m[0m "CDN_DISTRIBUTION" = "E18PMZZXQ1B2C0"
+          [32m+[0m[0m "CDN_URL"          = "https://d3tadcvnks8g1v.cloudfront.net"
+          [32m+[0m[0m "S3_BUCKET"        = "retrogame-games-cdn"
+        }
+      [32m+[0m[0m id   = (known after apply)
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m name             = "cdn-config"
+          [32m+[0m[0m namespace        = "retrogame"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+    }
+
+[1m  # kubernetes_config_map.db_init_script[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_config_map" "db_init_script" {
+      [32m+[0m[0m data = {
+          [32m+[0m[0m "01-schema.sql" = <<-EOT
+                -- Esquema único para RetroGameCloud
+                
+                CREATE TABLE IF NOT EXISTS users (
+                  id SERIAL PRIMARY KEY,
+                  username VARCHAR(50) UNIQUE NOT NULL,
+                  email VARCHAR(255) UNIQUE,
+                  password_hash VARCHAR(255) NOT NULL,
+                  display_name VARCHAR(100),
+                  avatar_url TEXT,
+                  bio TEXT,
+                  is_active BOOLEAN DEFAULT true,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS refresh_tokens (
+                  id SERIAL PRIMARY KEY,
+                  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                  token VARCHAR(500) UNIQUE NOT NULL,
+                  expires_at TIMESTAMP NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS user_stats (
+                  id SERIAL PRIMARY KEY,
+                  user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                  total_games_played INTEGER DEFAULT 0,
+                  total_score INTEGER DEFAULT 0,
+                  highest_score INTEGER DEFAULT 0,
+                  favorite_game VARCHAR(100),
+                  last_played_at TIMESTAMP,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS games (
+                  id SERIAL PRIMARY KEY,
+                  slug VARCHAR(100) UNIQUE NOT NULL,
+                  name VARCHAR(100) NOT NULL,
+                  description TEXT,
+                  thumbnail TEXT,
+                  file_url TEXT,
+                  year INTEGER,
+                  developer VARCHAR(100),
+                  tags TEXT[],
+                  controls JSONB
+                );
+                
+                CREATE TABLE IF NOT EXISTS scores (
+                  id SERIAL PRIMARY KEY,
+                  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                  game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+                  score BIGINT NOT NULL DEFAULT 0,
+                  metadata JSONB,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS score_history (
+                  id SERIAL PRIMARY KEY,
+                  score_id INTEGER NOT NULL REFERENCES scores(id) ON DELETE CASCADE,
+                  old_score BIGINT,
+                  new_score BIGINT,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                -- Insertar juegos disponibles
+                INSERT INTO games (slug, name, description, year, developer) VALUES
+                  ('doom', 'DOOM', 'Classic first-person shooter', 1993, 'id Software'),
+                  ('wolf', 'Wolfenstein 3D', 'The game that started it all', 1992, 'id Software'),
+                  ('duke3d', 'Duke Nukem 3D', 'Hail to the king, baby!', 1996, '3D Realms'),
+                  ('digger', 'Digger', 'Classic arcade game', 1983, 'Windmill Software'),
+                  ('tetris', 'Tetris', 'The ultimate puzzle game', 1984, 'Alexey Pajitnov'),
+                  ('dangerousdave2', 'Dangerous Dave 2', 'Platform adventure', 1990, 'John Romero'),
+                  ('lostvikings', 'The Lost Vikings', 'Puzzle platformer', 1992, 'Silicon & Synapse'),
+                  ('mortalkombat', 'Mortal Kombat', 'Fighting game', 1992, 'Midway Games'),
+                  ('streetfighter2', 'Street Fighter II', 'Fighting game classic', 1991, 'Capcom'),
+                  ('heroesofmightandmagic2', 'Heroes of Might and Magic II', 'Turn-based strategy', 1996, 'New World Computing')
+                ON CONFLICT (slug) DO NOTHING;
+            EOT
+        }
+      [32m+[0m[0m id   = (known after apply)
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m name             = "db-init-script"
+          [32m+[0m[0m namespace        = "retrogame"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+    }
+
+[1m  # kubernetes_config_map.frontend_replacer[0m will be updated in-place
+[0m  [33m~[0m[0m resource "kubernetes_config_map" "frontend_replacer" {
+      [33m~[0m[0m data        = {
+          [32m+[0m[0m "replace-urls.sh" = <<-EOT
+                #!/bin/sh
+                set -e
+                LB_URL="${LOAD_BALANCER_URL}"
+                CDN_URL="${CDN_URL}"
+                      
+                echo "Starting URL replacement..."
+                echo "Load Balancer URL: ${LB_URL}"
+                echo "CDN URL: ${CDN_URL}"
+                      
+                cd /app
+                echo "Files in /app before replacement:"
+                ls -la
+                      
+                find . -name "*.html" -type f | while read file; do
+                  echo "Processing ${file}..."
+                  sed -i "s|http://localhost:8000|${LB_URL}|g" "${file}"
+                  sed -i "s|http://localhost:8086|${CDN_URL}|g" "${file}"
+                  sed -i "s|PLACEHOLDER_LB_URL|${LB_URL}|g" "${file}"
+                  echo "✓ Replaced URLs in ${file}"
+                done
+                      
+                echo "URL replacement completed!"
+            EOT
+        }
+        id          = "retrogame/frontend-url-replacer"
+        [90m# (2 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # kubernetes_config_map.oauth2_proxy[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_config_map" "oauth2_proxy" {
+      [32m+[0m[0m data = {
+          [32m+[0m[0m "oauth2_proxy.cfg" = <<-EOT
+                # Proveedor OAuth2
+                provider = "github"
+                      
+                # Dominios de email - dejar vacío para permitir cualquier usuario de GitHub
+                # O configurar al dominio de tu organización, ej: "tuempresa.com"
+                email_domains = [ "*" ]
+                      
+                # Restringir a una organización específica de GitHub (opcional)
+                # Descomenta y configura el nombre de tu organización:
+                # github_org = "nombre-de-tu-org"
+                      
+                # Restringir a un equipo específico de GitHub (opcional)
+                # Requiere que github_org esté configurado
+                # github_team = "nombre-de-tu-equipo"
+                      
+                # Restringir a usuarios específicos de GitHub (opcional)
+                # github_users = [ "usuario1", "usuario2" ]
+                      
+                # Configuración de upstream - enrutar a servicios backend basado en path
+                upstreams = [
+                  "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80/grafana/=http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80/",
+                  "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/prometheus/=http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/",
+                  "http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093/alertmanager/=http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093/"
+                ]
+                      
+                # Configuración HTTP
+                http_address = "0.0.0.0:4180"
+                      
+                # Configuración de cookies
+                cookie_name = "_oauth2_proxy"
+                cookie_secure = true
+                cookie_httponly = true
+                cookie_samesite = "lax"
+                cookie_domains = [ ".retrogamehub.games" ]
+                      
+                # Configuración de sesión
+                cookie_expire = "168h"  # 7 días
+                cookie_refresh = "1h"
+                      
+                # Pasar headers al upstream
+                pass_access_token = false
+                pass_authorization_header = true
+                pass_user_headers = true
+                set_xauthrequest = true
+                set_authorization_header = true
+                      
+                # Logging
+                request_logging = true
+                auth_logging = true
+                      
+                # Seguridad
+                reverse_proxy = true
+                      
+                # Omitir autenticación para health checks y OAuth callback
+                skip_auth_routes = [
+                  "^/ping$",
+                  "^/oauth2/callback$"
+                ]
+            EOT
+        }
+      [32m+[0m[0m id   = (known after apply)
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m name             = "oauth2-proxy"
+          [32m+[0m[0m namespace        = "monitoring"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+    }
+
+[1m  # kubernetes_config_map.postgres_init[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_config_map" "postgres_init" {
+      [32m+[0m[0m data = {
+          [32m+[0m[0m "init.sql" = <<-EOT
+                -- Crear tablas si no existen
+                CREATE TABLE IF NOT EXISTS games (
+                  id VARCHAR(255) PRIMARY KEY,
+                  title VARCHAR(255) NOT NULL,
+                  slug VARCHAR(255) UNIQUE NOT NULL,
+                  description TEXT,
+                  file_url VARCHAR(255) NOT NULL,
+                  thumbnail_url VARCHAR(255),
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS users (
+                  id SERIAL PRIMARY KEY,
+                  username VARCHAR(255) UNIQUE NOT NULL,
+                  email VARCHAR(255) UNIQUE NOT NULL,
+                  password VARCHAR(255) NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS scores (
+                  id SERIAL PRIMARY KEY,
+                  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                  game_id VARCHAR(255) REFERENCES games(id) ON DELETE CASCADE,
+                  score INTEGER NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE(user_id, game_id)
+                );
+                
+                -- Insertar juegos seed data
+                INSERT INTO games (id, title, slug, description, file_url, thumbnail_url) VALUES
+                  ('1', 'DOOM', 'doom', 'Iconic first-person shooter', '/juegos/doom.jsdos', '/img/doom.png'),
+                  ('2', 'Duke Nukem 3D', 'duke3d', 'Action-packed FPS classic', '/juegos/duke3d.jsdos', '/img/duke3d.png'),
+                  ('3', 'Wolfenstein 3D', 'wolf', 'Pioneering first-person shooter', '/juegos/wolf.jsdos', '/img/wolf.png'),
+                  ('4', 'Digger', 'digger', 'Classic arcade digging game', '/juegos/digger.jsdos', '/img/digger.png'),
+                  ('5', 'Tetris', 'tetris', 'Timeless puzzle game', '/juegos/tetris.jsdos', '/img/tetris.png'),
+                  ('6', 'Street Fighter II', 'streetfighter2', 'Legendary fighting game', '/juegos/streetfighter2.jsdos', '/img/streetfighter2.png'),
+                  ('7', 'Mortal Kombat', 'mortalkombat', 'Brutal fighting game', '/juegos/mortalkombat.jsdos', '/img/mortalkombat.png'),
+                  ('8', 'The Lost Vikings', 'lostvikings', 'Puzzle-platformer adventure', '/juegos/lostvikings.jsdos', '/img/lostvikings.png'),
+                  ('9', 'Heroes of Might and Magic II', 'heroesofmightandmagic2', 'Turn-based strategy game', '/juegos/heroesofmightandmagic2.jsdos', '/img/heroesofmightandmagic2.png'),
+                  ('10', 'Dangerous Dave 2', 'dangerousdave2', 'Platform adventure game', '/juegos/dangerousdave2.jsdos', '/img/dangerousdave2.png')
+                ON CONFLICT (slug) DO NOTHING;
+            EOT
+        }
+      [32m+[0m[0m id   = (known after apply)
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m name             = "postgres-init-script"
+          [32m+[0m[0m namespace        = "retrogame"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+    }
+
+[1m  # kubernetes_config_map_v1_data.frontend_urls[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_config_map_v1_data" "frontend_urls" {
+      [32m+[0m[0m data          = {
+          [32m+[0m[0m "replace-urls.sh" = <<-EOT
+                #!/bin/sh
+                set -e
+                LB_URL="http://af09473f9379c4f5aa8105e08e61b01a-b14ba6735f4e7e68.elb.eu-west-1.amazonaws.com"
+                CDN_URL="https://d3tadcvnks8g1v.cloudfront.net"
+                      
+                echo "Starting URL replacement..."
+                echo "Load Balancer URL: ${LB_URL}"
+                echo "CDN URL: ${CDN_URL}"
+                      
+                cd /app
+                echo "Files in /app before replacement:"
+                ls -la
+                      
+                find . -name "*.html" -type f | while read file; do
+                  echo "Processing ${file}..."
+                  sed -i "s|http://localhost:8000|${LB_URL}|g" "${file}"
+                  sed -i "s|http://localhost:8086|${CDN_URL}|g" "${file}"
+                  sed -i "s|PLACEHOLDER_LB_URL|${LB_URL}|g" "${file}"
+                  echo "✓ Replaced URLs in ${file}"
+                done
+                      
+                echo "URL replacement completed!"
+            EOT
+        }
+      [32m+[0m[0m field_manager = "Terraform"
+      [32m+[0m[0m force         = true
+      [32m+[0m[0m id            = (known after apply)
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m name      = "frontend-url-replacer"
+          [32m+[0m[0m namespace = "retrogame"
+        }
+    }
+
+[1m  # kubernetes_deployment.frontend[0m will be updated in-place
+[0m  [33m~[0m[0m resource "kubernetes_deployment" "frontend" {
+        id               = "retrogame/frontend"
+        [90m# (1 unchanged attribute hidden)[0m[0m
+
+      [33m~[0m[0m spec {
+            [90m# (5 unchanged attributes hidden)[0m[0m
+
+          [33m~[0m[0m template {
+              [33m~[0m[0m metadata {
+                  [33m~[0m[0m annotations      = {
+                      [31m-[0m[0m "kubectl.kubernetes.io/restartedAt" = "2025-11-18T14:39:27+01:00" [90m-> null[0m[0m
+                        [90m# (1 unchanged element hidden)[0m[0m
+                    }
+                    name             = [90mnull[0m[0m
+                    [90m# (6 unchanged attributes hidden)[0m[0m
+                }
+
+                [90m# (1 unchanged block hidden)[0m[0m
+            }
+
+            [90m# (2 unchanged blocks hidden)[0m[0m
+        }
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # kubernetes_deployment.oauth2_proxy[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_deployment" "oauth2_proxy" {
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m wait_for_rollout = true
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m labels           = {
+              [32m+[0m[0m "app" = "oauth2-proxy"
+            }
+          [32m+[0m[0m name             = "oauth2-proxy"
+          [32m+[0m[0m namespace        = "monitoring"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+
+      [32m+[0m[0m spec {
+          [32m+[0m[0m min_ready_seconds         = 0
+          [32m+[0m[0m paused                    = false
+          [32m+[0m[0m progress_deadline_seconds = 600
+          [32m+[0m[0m replicas                  = "2"
+          [32m+[0m[0m revision_history_limit    = 10
+
+          [32m+[0m[0m selector {
+              [32m+[0m[0m match_labels = {
+                  [32m+[0m[0m "app" = "oauth2-proxy"
+                }
+            }
+
+          [32m+[0m[0m strategy (known after apply)
+
+          [32m+[0m[0m template {
+              [32m+[0m[0m metadata {
+                  [32m+[0m[0m generation       = (known after apply)
+                  [32m+[0m[0m labels           = {
+                      [32m+[0m[0m "app" = "oauth2-proxy"
+                    }
+                  [32m+[0m[0m name             = (known after apply)
+                  [32m+[0m[0m resource_version = (known after apply)
+                  [32m+[0m[0m uid              = (known after apply)
+                }
+              [32m+[0m[0m spec {
+                  [32m+[0m[0m automount_service_account_token  = true
+                  [32m+[0m[0m dns_policy                       = "ClusterFirst"
+                  [32m+[0m[0m enable_service_links             = true
+                  [32m+[0m[0m host_ipc                         = false
+                  [32m+[0m[0m host_network                     = false
+                  [32m+[0m[0m host_pid                         = false
+                  [32m+[0m[0m hostname                         = (known after apply)
+                  [32m+[0m[0m node_name                        = (known after apply)
+                  [32m+[0m[0m restart_policy                   = "Always"
+                  [32m+[0m[0m scheduler_name                   = (known after apply)
+                  [32m+[0m[0m service_account_name             = (known after apply)
+                  [32m+[0m[0m share_process_namespace          = false
+                  [32m+[0m[0m termination_grace_period_seconds = 30
+
+                  [32m+[0m[0m container {
+                      [32m+[0m[0m args                       = [
+                          [32m+[0m[0m "--config=/etc/oauth2-proxy/oauth2_proxy.cfg",
+                          [32m+[0m[0m "--client-id=$(CLIENT_ID)",
+                          [32m+[0m[0m "--client-secret=$(CLIENT_SECRET)",
+                          [32m+[0m[0m "--cookie-secret=$(COOKIE_SECRET)",
+                          [32m+[0m[0m "--redirect-url=https://retrogamehub.games/oauth2/callback",
+                        ]
+                      [32m+[0m[0m image                      = "quay.io/oauth2-proxy/oauth2-proxy:v7.6.0"
+                      [32m+[0m[0m image_pull_policy          = (known after apply)
+                      [32m+[0m[0m name                       = "oauth2-proxy"
+                      [32m+[0m[0m stdin                      = false
+                      [32m+[0m[0m stdin_once                 = false
+                      [32m+[0m[0m termination_message_path   = "/dev/termination-log"
+                      [32m+[0m[0m termination_message_policy = (known after apply)
+                      [32m+[0m[0m tty                        = false
+
+                      [32m+[0m[0m env {
+                          [32m+[0m[0m name = "CLIENT_ID"
+
+                          [32m+[0m[0m value_from {
+                              [32m+[0m[0m secret_key_ref {
+                                  [32m+[0m[0m key  = "client-id"
+                                  [32m+[0m[0m name = "oauth2-proxy"
+                                }
+                            }
+                        }
+                      [32m+[0m[0m env {
+                          [32m+[0m[0m name = "CLIENT_SECRET"
+
+                          [32m+[0m[0m value_from {
+                              [32m+[0m[0m secret_key_ref {
+                                  [32m+[0m[0m key  = "client-secret"
+                                  [32m+[0m[0m name = "oauth2-proxy"
+                                }
+                            }
+                        }
+                      [32m+[0m[0m env {
+                          [32m+[0m[0m name = "COOKIE_SECRET"
+
+                          [32m+[0m[0m value_from {
+                              [32m+[0m[0m secret_key_ref {
+                                  [32m+[0m[0m key  = "cookie-secret"
+                                  [32m+[0m[0m name = "oauth2-proxy"
+                                }
+                            }
+                        }
+
+                      [32m+[0m[0m liveness_probe {
+                          [32m+[0m[0m failure_threshold     = 3
+                          [32m+[0m[0m initial_delay_seconds = 10
+                          [32m+[0m[0m period_seconds        = 10
+                          [32m+[0m[0m success_threshold     = 1
+                          [32m+[0m[0m timeout_seconds       = 1
+
+                          [32m+[0m[0m http_get {
+                              [32m+[0m[0m path   = "/ping"
+                              [32m+[0m[0m port   = "4180"
+                              [32m+[0m[0m scheme = "HTTP"
+                            }
+                        }
+
+                      [32m+[0m[0m port {
+                          [32m+[0m[0m container_port = 4180
+                          [32m+[0m[0m protocol       = "TCP"
+                        }
+
+                      [32m+[0m[0m readiness_probe {
+                          [32m+[0m[0m failure_threshold     = 3
+                          [32m+[0m[0m initial_delay_seconds = 5
+                          [32m+[0m[0m period_seconds        = 5
+                          [32m+[0m[0m success_threshold     = 1
+                          [32m+[0m[0m timeout_seconds       = 1
+
+                          [32m+[0m[0m http_get {
+                              [32m+[0m[0m path   = "/ping"
+                              [32m+[0m[0m port   = "4180"
+                              [32m+[0m[0m scheme = "HTTP"
+                            }
+                        }
+
+                      [32m+[0m[0m resources {
+                          [32m+[0m[0m limits   = {
+                              [32m+[0m[0m "cpu"    = "200m"
+                              [32m+[0m[0m "memory" = "256Mi"
+                            }
+                          [32m+[0m[0m requests = {
+                              [32m+[0m[0m "cpu"    = "50m"
+                              [32m+[0m[0m "memory" = "64Mi"
+                            }
+                        }
+
+                      [32m+[0m[0m volume_mount {
+                          [32m+[0m[0m mount_path        = "/etc/oauth2-proxy"
+                          [32m+[0m[0m mount_propagation = "None"
+                          [32m+[0m[0m name              = "config"
+                          [32m+[0m[0m read_only         = true
+                        }
+                    }
+
+                  [32m+[0m[0m image_pull_secrets (known after apply)
+
+                  [32m+[0m[0m readiness_gate (known after apply)
+
+                  [32m+[0m[0m volume {
+                      [32m+[0m[0m name = "config"
+
+                      [32m+[0m[0m config_map {
+                          [32m+[0m[0m default_mode = "0644"
+                          [32m+[0m[0m name         = "oauth2-proxy"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+[1m  # kubernetes_job.db_init[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_job" "db_init" {
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m wait_for_completion = false
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m labels           = (known after apply)
+          [32m+[0m[0m name             = "db-init"
+          [32m+[0m[0m namespace        = "retrogame"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+
+      [32m+[0m[0m spec {
+          [32m+[0m[0m backoff_limit   = 4
+          [32m+[0m[0m completion_mode = (known after apply)
+          [32m+[0m[0m completions     = 1
+          [32m+[0m[0m parallelism     = 1
+
+          [32m+[0m[0m selector (known after apply)
+
+          [32m+[0m[0m template {
+              [32m+[0m[0m metadata {
+                  [32m+[0m[0m generation       = (known after apply)
+                  [32m+[0m[0m labels           = {
+                      [32m+[0m[0m "app" = "db-init"
+                    }
+                  [32m+[0m[0m name             = (known after apply)
+                  [32m+[0m[0m resource_version = (known after apply)
+                  [32m+[0m[0m uid              = (known after apply)
+                }
+              [32m+[0m[0m spec {
+                  [32m+[0m[0m automount_service_account_token  = true
+                  [32m+[0m[0m dns_policy                       = "ClusterFirst"
+                  [32m+[0m[0m enable_service_links             = true
+                  [32m+[0m[0m host_ipc                         = false
+                  [32m+[0m[0m host_network                     = false
+                  [32m+[0m[0m host_pid                         = false
+                  [32m+[0m[0m hostname                         = (known after apply)
+                  [32m+[0m[0m node_name                        = (known after apply)
+                  [32m+[0m[0m restart_policy                   = "Never"
+                  [32m+[0m[0m scheduler_name                   = (known after apply)
+                  [32m+[0m[0m service_account_name             = (known after apply)
+                  [32m+[0m[0m share_process_namespace          = false
+                  [32m+[0m[0m termination_grace_period_seconds = 30
+
+                  [32m+[0m[0m container {
+                      [32m+[0m[0m command                    = [
+                          [32m+[0m[0m "sh",
+                          [32m+[0m[0m "-c",
+                          [32m+[0m[0m "psql $DATABASE_URL_PSQL -f /scripts/01-schema.sql",
+                        ]
+                      [32m+[0m[0m image                      = "postgres:15-alpine"
+                      [32m+[0m[0m image_pull_policy          = (known after apply)
+                      [32m+[0m[0m name                       = "db-init"
+                      [32m+[0m[0m stdin                      = false
+                      [32m+[0m[0m stdin_once                 = false
+                      [32m+[0m[0m termination_message_path   = "/dev/termination-log"
+                      [32m+[0m[0m termination_message_policy = (known after apply)
+                      [32m+[0m[0m tty                        = false
+
+                      [32m+[0m[0m env {
+                          [32m+[0m[0m name = "DATABASE_URL_PSQL"
+
+                          [32m+[0m[0m value_from {
+                              [32m+[0m[0m secret_key_ref {
+                                  [32m+[0m[0m key  = "DATABASE_URL_PSQL"
+                                  [32m+[0m[0m name = "postgres-credentials"
+                                }
+                            }
+                        }
+
+                      [32m+[0m[0m resources (known after apply)
+
+                      [32m+[0m[0m volume_mount {
+                          [32m+[0m[0m mount_path        = "/scripts"
+                          [32m+[0m[0m mount_propagation = "None"
+                          [32m+[0m[0m name              = "init-script"
+                          [32m+[0m[0m read_only         = false
+                        }
+                    }
+
+                  [32m+[0m[0m image_pull_secrets (known after apply)
+
+                  [32m+[0m[0m readiness_gate (known after apply)
+
+                  [32m+[0m[0m volume {
+                      [32m+[0m[0m name = "init-script"
+
+                      [32m+[0m[0m config_map {
+                          [32m+[0m[0m default_mode = "0644"
+                          [32m+[0m[0m name         = "db-init-script"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+[1m  # kubernetes_secret.jwt_secret[0m will be updated in-place
+[0m  [33m~[0m[0m resource "kubernetes_secret" "jwt_secret" {
+      [33m~[0m[0m data                           = (sensitive value)
+        id                             = "retrogame/jwt-secret"
+        [90m# (5 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # kubernetes_secret.oauth2_proxy[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_secret" "oauth2_proxy" {
+      [32m+[0m[0m binary_data_wo                 = (write-only attribute)
+      [32m+[0m[0m data                           = (sensitive value)
+      [32m+[0m[0m data_wo                        = (write-only attribute)
+      [32m+[0m[0m id                             = (known after apply)
+      [32m+[0m[0m type                           = "Opaque"
+      [32m+[0m[0m wait_for_service_account_token = true
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m name             = "oauth2-proxy"
+          [32m+[0m[0m namespace        = "monitoring"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+    }
+
+[1m  # kubernetes_secret.postgres_credentials[0m will be updated in-place
+[0m  [33m~[0m[0m resource "kubernetes_secret" "postgres_credentials" {
+      [33m~[0m[0m data                           = (sensitive value)
+        id                             = "retrogame/postgres-credentials"
+        [90m# (5 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # kubernetes_service.oauth2_proxy[0m will be created
+[0m  [32m+[0m[0m resource "kubernetes_service" "oauth2_proxy" {
+      [32m+[0m[0m id                     = (known after apply)
+      [32m+[0m[0m status                 = (known after apply)
+      [32m+[0m[0m wait_for_load_balancer = true
+
+      [32m+[0m[0m metadata {
+          [32m+[0m[0m annotations      = {
+              [32m+[0m[0m "service.beta.kubernetes.io/aws-load-balancer-backend-protocol" = "http"
+            }
+          [32m+[0m[0m generation       = (known after apply)
+          [32m+[0m[0m labels           = {
+              [32m+[0m[0m "app" = "oauth2-proxy"
+            }
+          [32m+[0m[0m name             = "oauth2-proxy"
+          [32m+[0m[0m namespace        = "monitoring"
+          [32m+[0m[0m resource_version = (known after apply)
+          [32m+[0m[0m uid              = (known after apply)
+        }
+
+      [32m+[0m[0m spec {
+          [32m+[0m[0m allocate_load_balancer_node_ports = true
+          [32m+[0m[0m cluster_ip                        = (known after apply)
+          [32m+[0m[0m cluster_ips                       = (known after apply)
+          [32m+[0m[0m external_traffic_policy           = (known after apply)
+          [32m+[0m[0m health_check_node_port            = (known after apply)
+          [32m+[0m[0m internal_traffic_policy           = (known after apply)
+          [32m+[0m[0m ip_families                       = (known after apply)
+          [32m+[0m[0m ip_family_policy                  = (known after apply)
+          [32m+[0m[0m publish_not_ready_addresses       = false
+          [32m+[0m[0m selector                          = {
+              [32m+[0m[0m "app" = "oauth2-proxy"
+            }
+          [32m+[0m[0m session_affinity                  = "None"
+          [32m+[0m[0m type                              = "ClusterIP"
+
+          [32m+[0m[0m port {
+              [32m+[0m[0m name        = "http"
+              [32m+[0m[0m node_port   = (known after apply)
+              [32m+[0m[0m port        = 4180
+              [32m+[0m[0m protocol    = "TCP"
+              [32m+[0m[0m target_port = "4180"
+            }
+
+          [32m+[0m[0m session_affinity_config (known after apply)
+        }
+    }
+
+[1m  # null_resource.register_targets[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "register_targets" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "always_run" = (known after apply)
+        }
+    }
+
+[1m  # null_resource.remove_cluster_sg_tag[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "remove_cluster_sg_tag" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "cluster_id" = [90mnull[0m[0m
+        }
+    }
+
+[1m  # null_resource.restart_frontend[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "restart_frontend" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "always_run"     = (known after apply)
+          [32m+[0m[0m "config_version" = <<-EOT
+                #!/bin/sh
+                set -e
+                LB_URL="http://af09473f9379c4f5aa8105e08e61b01a-b14ba6735f4e7e68.elb.eu-west-1.amazonaws.com"
+                CDN_URL="https://d3tadcvnks8g1v.cloudfront.net"
+                      
+                echo "Starting URL replacement..."
+                echo "Load Balancer URL: ${LB_URL}"
+                echo "CDN URL: ${CDN_URL}"
+                      
+                cd /app
+                echo "Files in /app before replacement:"
+                ls -la
+                      
+                find . -name "*.html" -type f | while read file; do
+                  echo "Processing ${file}..."
+                  sed -i "s|http://localhost:8000|${LB_URL}|g" "${file}"
+                  sed -i "s|http://localhost:8086|${CDN_URL}|g" "${file}"
+                  sed -i "s|PLACEHOLDER_LB_URL|${LB_URL}|g" "${file}"
+                  echo "✓ Replaced URLs in ${file}"
+                done
+                      
+                echo "URL replacement completed!"
+            EOT
+        }
+    }
+
+[1m  # null_resource.update_kong_url[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "update_kong_url" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "kong_lb" = "af09473f9379c4f5aa8105e08e61b01a-b14ba6735f4e7e68.elb.eu-west-1.amazonaws.com"
+        }
+    }
+
+[1m  # null_resource.upload_static_files[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "null_resource" "upload_static_files" {
+      [33m~[0m[0m id       = "1884136552282423077" -> (known after apply)
+      [33m~[0m[0m triggers = { [31m# forces replacement[0m[0m
+          [33m~[0m[0m "always_run" = "2025-11-18T16:07:49Z" -> (known after apply)
+            [90m# (1 unchanged element hidden)[0m[0m
+        }
+    }
+
+[1m  # null_resource.verify_db_tables[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "verify_db_tables" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "job_id" = (known after apply)
+        }
+    }
+
+[1m  # module.eks.aws_eks_addon.this["aws-ebs-csi-driver"][0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_eks_addon" "this" {
+        id                       = "retrogame:aws-ebs-csi-driver"
+      [33m~[0m[0m tags                     = {
+            "Name"    = "retrogame"
+          [31m-[0m[0m "Owner"   = "DevOps Team" [90m-> null[0m[0m
+          [31m-[0m[0m "Project" = "RetroGameCloud" [90m-> null[0m[0m
+        }
+      [33m~[0m[0m tags_all                 = {
+          [31m-[0m[0m "Owner"       = "DevOps Team" [90m-> null[0m[0m
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # module.eks.aws_eks_addon.this["coredns"][0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_eks_addon" "this" {
+        id                       = "retrogame:coredns"
+      [33m~[0m[0m tags                     = {
+            "Name"    = "retrogame"
+          [31m-[0m[0m "Owner"   = "DevOps Team" [90m-> null[0m[0m
+          [31m-[0m[0m "Project" = "RetroGameCloud" [90m-> null[0m[0m
+        }
+      [33m~[0m[0m tags_all                 = {
+          [31m-[0m[0m "Owner"       = "DevOps Team" [90m-> null[0m[0m
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # module.eks.aws_eks_addon.this["kube-proxy"][0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_eks_addon" "this" {
+        id                       = "retrogame:kube-proxy"
+      [33m~[0m[0m tags                     = {
+            "Name"    = "retrogame"
+          [31m-[0m[0m "Owner"   = "DevOps Team" [90m-> null[0m[0m
+          [31m-[0m[0m "Project" = "RetroGameCloud" [90m-> null[0m[0m
+        }
+      [33m~[0m[0m tags_all                 = {
+          [31m-[0m[0m "Owner"       = "DevOps Team" [90m-> null[0m[0m
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # module.eks.aws_eks_addon.this["vpc-cni"][0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_eks_addon" "this" {
+        id                       = "retrogame:vpc-cni"
+      [33m~[0m[0m tags                     = {
+            "Name"    = "retrogame"
+          [31m-[0m[0m "Owner"   = "DevOps Team" [90m-> null[0m[0m
+          [31m-[0m[0m "Project" = "RetroGameCloud" [90m-> null[0m[0m
+        }
+      [33m~[0m[0m tags_all                 = {
+          [31m-[0m[0m "Owner"       = "DevOps Team" [90m-> null[0m[0m
+            [90m# (4 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # module.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0][0m will be created
+[0m  [32m+[0m[0m resource "aws_eks_node_group" "this" {
+      [32m+[0m[0m ami_type               = "AL2_x86_64"
+      [32m+[0m[0m arn                    = (known after apply)
+      [32m+[0m[0m capacity_type          = "ON_DEMAND"
+      [32m+[0m[0m cluster_name           = "retrogame"
+      [32m+[0m[0m disk_size              = (known after apply)
+      [32m+[0m[0m id                     = (known after apply)
+      [32m+[0m[0m instance_types         = [
+          [32m+[0m[0m "t3.medium",
+        ]
+      [32m+[0m[0m labels                 = {
+          [32m+[0m[0m "environment" = "dev"
+          [32m+[0m[0m "role"        = "general"
+        }
+      [32m+[0m[0m node_group_name        = (known after apply)
+      [32m+[0m[0m node_group_name_prefix = "retrogame-node-group-"
+      [32m+[0m[0m node_role_arn          = "arn:aws:iam::813975404649:role/retrogame-node-group-eks-node-group-2025111809463203780000000c"
+      [32m+[0m[0m release_version        = (known after apply)
+      [32m+[0m[0m resources              = (known after apply)
+      [32m+[0m[0m status                 = (known after apply)
+      [32m+[0m[0m subnet_ids             = [
+          [32m+[0m[0m "subnet-03eb1506f36df06e8",
+          [32m+[0m[0m "subnet-0638b5c9b5e8d54b1",
+          [32m+[0m[0m "subnet-081d0a226ecdd7ae4",
+        ]
+      [32m+[0m[0m tags                   = {
+          [32m+[0m[0m "Name"                                = "retrogame-node-group"
+          [32m+[0m[0m "k8s.io/cluster-autoscaler/enabled"   = "true"
+          [32m+[0m[0m "k8s.io/cluster-autoscaler/retrogame" = "owned"
+        }
+      [32m+[0m[0m tags_all               = {
+          [32m+[0m[0m "Environment"                         = "dev"
+          [32m+[0m[0m "ManagedBy"                           = "Terraform"
+          [32m+[0m[0m "Name"                                = "retrogame-node-group"
+          [32m+[0m[0m "Project"                             = "RetroGameCloud"
+          [32m+[0m[0m "k8s.io/cluster-autoscaler/enabled"   = "true"
+          [32m+[0m[0m "k8s.io/cluster-autoscaler/retrogame" = "owned"
+        }
+      [32m+[0m[0m version                = "1.32"
+
+      [32m+[0m[0m launch_template {
+          [32m+[0m[0m id      = "lt-071e7f0a8ec5e77a4"
+          [32m+[0m[0m name    = (known after apply)
+          [32m+[0m[0m version = "2"
+        }
+
+      [32m+[0m[0m node_repair_config (known after apply)
+
+      [32m+[0m[0m scaling_config {
+          [32m+[0m[0m desired_size = 2
+          [32m+[0m[0m max_size     = 4
+          [32m+[0m[0m min_size     = 1
+        }
+
+      [32m+[0m[0m timeouts {}
+
+      [32m+[0m[0m update_config {
+          [32m+[0m[0m max_unavailable_percentage = 33
+        }
+    }
+
+[1m  # module.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0] (deposed object dc7821de)[0m will be [1m[31mdestroyed[0m
+  # (left over from a partially-failed replacement of this instance)
+[0m  [31m-[0m[0m resource "aws_eks_node_group" "this" {
+      [31m-[0m[0m ami_type               = "AL2_x86_64" [90m-> null[0m[0m
+      [31m-[0m[0m arn                    = "arn:aws:eks:eu-west-1:813975404649:nodegroup/retrogame/retrogame-node-group-20251118101747566200000002/74cd4b3c-39ed-cc86-f4b4-69c0c48fe943" [90m-> null[0m[0m
+      [31m-[0m[0m capacity_type          = "ON_DEMAND" [90m-> null[0m[0m
+      [31m-[0m[0m cluster_name           = "retrogame" [90m-> null[0m[0m
+      [31m-[0m[0m disk_size              = 0 [90m-> null[0m[0m
+      [31m-[0m[0m id                     = "retrogame:retrogame-node-group-20251118101747566200000002" [90m-> null[0m[0m
+      [31m-[0m[0m instance_types         = [
+          [31m-[0m[0m "t3.small",
+        ] [90m-> null[0m[0m
+      [31m-[0m[0m labels                 = {
+          [31m-[0m[0m "environment" = "dev"
+          [31m-[0m[0m "role"        = "general"
+        } [90m-> null[0m[0m
+      [31m-[0m[0m node_group_name        = "retrogame-node-group-20251118101747566200000002" [90m-> null[0m[0m
+      [31m-[0m[0m node_group_name_prefix = "retrogame-node-group-" [90m-> null[0m[0m
+      [31m-[0m[0m node_role_arn          = "arn:aws:iam::813975404649:role/retrogame-node-group-eks-node-group-2025111809463203780000000c" [90m-> null[0m[0m
+      [31m-[0m[0m release_version        = "1.32.9-20251112" [90m-> null[0m[0m
+      [31m-[0m[0m resources              = [
+          [31m-[0m[0m {
+              [31m-[0m[0m autoscaling_groups              = [
+                  [31m-[0m[0m {
+                      [31m-[0m[0m name = "eks-retrogame-node-group-20251118101747566200000002-74cd4b3c-39ed-cc86-f4b4-69c0c48fe943"
+                    },
+                ]
+                [90m# (1 unchanged attribute hidden)[0m[0m
+            },
+        ] [90m-> null[0m[0m
+      [31m-[0m[0m status                 = "ACTIVE" [90m-> null[0m[0m
+      [31m-[0m[0m subnet_ids             = [
+          [31m-[0m[0m "subnet-03eb1506f36df06e8",
+          [31m-[0m[0m "subnet-0638b5c9b5e8d54b1",
+          [31m-[0m[0m "subnet-081d0a226ecdd7ae4",
+        ] [90m-> null[0m[0m
+      [31m-[0m[0m tags                   = {
+          [31m-[0m[0m "Name"                                = "retrogame-node-group"
+          [31m-[0m[0m "Owner"                               = "DevOps Team"
+          [31m-[0m[0m "Project"                             = "RetroGameCloud"
+          [31m-[0m[0m "k8s.io/cluster-autoscaler/enabled"   = "true"
+          [31m-[0m[0m "k8s.io/cluster-autoscaler/retrogame" = "owned"
+        } [90m-> null[0m[0m
+      [31m-[0m[0m tags_all               = {
+          [31m-[0m[0m "Environment"                         = "dev"
+          [31m-[0m[0m "ManagedBy"                           = "Terraform"
+          [31m-[0m[0m "Name"                                = "retrogame-node-group"
+          [31m-[0m[0m "Owner"                               = "DevOps Team"
+          [31m-[0m[0m "Project"                             = "RetroGameCloud"
+          [31m-[0m[0m "k8s.io/cluster-autoscaler/enabled"   = "true"
+          [31m-[0m[0m "k8s.io/cluster-autoscaler/retrogame" = "owned"
+        } [90m-> null[0m[0m
+      [31m-[0m[0m version                = "1.32" [90m-> null[0m[0m
+
+      [31m-[0m[0m launch_template {
+          [31m-[0m[0m id      = "lt-071e7f0a8ec5e77a4" [90m-> null[0m[0m
+          [31m-[0m[0m name    = "general-20251118095623778800000012" [90m-> null[0m[0m
+          [31m-[0m[0m version = "1" [90m-> null[0m[0m
+        }
+
+      [31m-[0m[0m scaling_config {
+          [31m-[0m[0m desired_size = 3 [90m-> null[0m[0m
+          [31m-[0m[0m max_size     = 5 [90m-> null[0m[0m
+          [31m-[0m[0m min_size     = 2 [90m-> null[0m[0m
+        }
+
+      [31m-[0m[0m timeouts {}
+
+      [31m-[0m[0m update_config {
+          [31m-[0m[0m max_unavailable            = 0 [90m-> null[0m[0m
+          [31m-[0m[0m max_unavailable_percentage = 33 [90m-> null[0m[0m
+        }
+    }
+
+[1mPlan:[0m 24 to add, 8 to change, 2 to destroy.
+[0m[0m[1mnull_resource.upload_static_files: Destroying... [id=1884136552282423077][0m[0m
+[0m[1mnull_resource.upload_static_files: Destruction complete after 0s[0m
+[0m[1mnull_resource.upload_static_files: Creating...[0m[0m
+[0m[1maws_acm_certificate_validation.main: Creating...[0m[0m
+[0m[1maws_route53_record.main: Creating...[0m[0m
+[0m[1mnull_resource.upload_static_files: Provisioning with 'local-exec'...[0m[0m
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0mExecuting: ["/bin/sh" "-c" "echo \"📦 Subiendo juegos (.jsdos) al CDN...\"\naws s3 sync ./../../../infraestructure/cdn/juegos/ s3://retrogame-games-cdn/juegos/ \\\n  --region eu-west-1 \\\n  --delete \\\n  --exclude \"*\" \\\n  --include \"*.jsdos\"\n      \necho \"🖼️  Subiendo imágenes al CDN...\"\naws s3 sync ./../../../infraestructure/cdn/img/ s3://retrogame-games-cdn/img/ \\\n  --region eu-west-1 \\\n  --delete \\\n  --exclude \"*\" \\\n  --include \"*.jpg\" \\\n  --include \"*.png\" \\\n  --include \"*.gif\"\n      \necho \"🎮 Subiendo emulador js-dos al CDN...\"\naws s3 sync ./../../../frontend/jsdos/ s3://retrogame-games-cdn/jsdos/ \\\n  --region eu-west-1 \\\n  --delete \\\n  --exclude \"*\" \\\n  --include \"*.js\" \\\n  --include \"*.css\" \\\n  --include \"*.wasm\" \\\n  --include \"*.html\" \\\n  --include \"*.symbols\"\n      \necho \"✅ Todos los archivos estáticos subidos al CDN\"\n"]
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0m📦 Subiendo juegos (.jsdos) al CDN...
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Creating...[0m[0m
+
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0mThe user-provided path ./../../../infraestructure/cdn/juegos/ does not exist.
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0m🖼️  Subiendo imágenes al CDN...
+
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0mThe user-provided path ./../../../infraestructure/cdn/img/ does not exist.
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0m🎮 Subiendo emulador js-dos al CDN...
+[0m[1mnull_resource.upload_static_files (local-exec):[0m [0m✅ Todos los archivos estáticos subidos al CDN
+[0m[1mnull_resource.upload_static_files: Creation complete after 9s [id=4511095208727677484][0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [00m20s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [00m30s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [00m30s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [00m40s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [00m40s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [00m50s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [00m50s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m00s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m00s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m10s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m10s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m20s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m20s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m31s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m30s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m41s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m40s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [01m51s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [01m50s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m01s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m00s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m11s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m10s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m21s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m20s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m31s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m30s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m41s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m40s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [02m51s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [02m50s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m01s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m00s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m11s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m10s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m21s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m20s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m31s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m30s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m41s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m40s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [03m51s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [03m50s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [04m01s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [04m00s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [04m11s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [04m10s elapsed][0m[0m
+[0m[1maws_acm_certificate_validation.main: Still creating... [04m21s elapsed][0m[0m
+[0m[1mmodule.eks.module.eks_managed_node_group["general"].aws_eks_node_group.this[0]: Still creating... [04m20s elapsed][0m[0m
+Stopping operation...
+
+Interrupt received.
+Please wait for Terraform to exit or data loss may occur.
+Gracefully shutting down...
+
+
+Two interrupts received. Exiting immediately. Note that data loss may have
+occurred.
+
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1moperation canceled[0m
+[31m│[0m [0m
+[31m│[0m [0m[0m
+[31m╵[0m[0m

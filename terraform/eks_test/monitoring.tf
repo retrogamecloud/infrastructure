@@ -80,9 +80,9 @@ resource "helm_release" "kube_prometheus_stack" {
       # ============================================================================
       prometheus = {
         prometheusSpec = {
-          # Configuración para funcionar bajo subpath /prometheus
-          externalUrl = "http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/prometheus"
-          routePrefix = "/"
+          # Configuración para funcionar bajo subpath /prometheus vía ALB
+          externalUrl = "https://retrogamehub.games/prometheus"
+          routePrefix = "/prometheus"
           
           # Retención de métricas (reducida para ahorrar espacio)
           retention = "3d"
@@ -119,10 +119,13 @@ resource "helm_release" "kube_prometheus_stack" {
           podMonitorSelectorNilUsesHelmValues     = false
         }
 
-        # Service para acceder a Prometheus
+        # Service para acceder a Prometheus desde ALB
         service = {
           type = "ClusterIP"
           port = 9090
+          annotations = {
+            "alb.ingress.kubernetes.io/healthcheck-path" = "/prometheus/-/healthy"
+          }
         }
       }
 
@@ -135,10 +138,11 @@ resource "helm_release" "kube_prometheus_stack" {
         # Admin credentials (cambiar en producción)
         adminPassword = "admin123"
 
-        # Configuración para acceso directo vía LoadBalancer
+        # Configuración para trabajar con ALB y path /grafana
         "grafana.ini" = {
           server = {
-            root_url = "%(protocol)s://%(domain)s:%(http_port)s/"
+            root_url = "https://retrogamehub.games/grafana"
+            serve_from_sub_path = true
           }
           security = {
             allow_embedding = true
@@ -161,11 +165,10 @@ resource "helm_release" "kube_prometheus_stack" {
 
         # Service LoadBalancer para acceso directo sin Kong
         service = {
-          type = "LoadBalancer"
+          type = "ClusterIP"
           port = 80
           annotations = {
-            "service.beta.kubernetes.io/aws-load-balancer-type"   = "nlb"
-            "service.beta.kubernetes.io/aws-load-balancer-scheme" = "internet-facing"
+            "alb.ingress.kubernetes.io/healthcheck-path" = "/grafana/api/health"
           }
         }
 
@@ -271,9 +274,9 @@ resource "helm_release" "kube_prometheus_stack" {
         enabled = true
 
         alertmanagerSpec = {
-          # Configuración para funcionar bajo subpath /alertmanager
-          externalUrl = "http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/alertmanager"
-          routePrefix = "/"
+          # Configuración para funcionar bajo subpath /alertmanager vía ALB
+          externalUrl = "https://retrogamehub.games/alertmanager"
+          routePrefix = "/alertmanager"
           
           # Recursos ajustados
           resources = {
@@ -303,10 +306,13 @@ resource "helm_release" "kube_prometheus_stack" {
           }
         }
 
-        # Service
+        # Service para AlertManager accesible desde ALB
         service = {
           type = "ClusterIP"
           port = 9093
+          annotations = {
+            "alb.ingress.kubernetes.io/healthcheck-path" = "/alertmanager/-/healthy"
+          }
         }
 
         # Configuración de AlertManager con integración Slack
