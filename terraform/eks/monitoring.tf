@@ -119,13 +119,10 @@ resource "helm_release" "kube_prometheus_stack" {
           podMonitorSelectorNilUsesHelmValues     = false
         }
 
-        # Service para acceder a Prometheus desde ALB
+        # Service para acceder a Prometheus (sin ALB)
         service = {
           type = "ClusterIP"
           port = 9090
-          annotations = {
-            "alb.ingress.kubernetes.io/healthcheck-path" = "/prometheus/-/healthy"
-          }
         }
       }
 
@@ -163,7 +160,7 @@ resource "helm_release" "kube_prometheus_stack" {
           }
         }
 
-        # Service LoadBalancer para acceso directo sin Kong
+        # Service para acceso desde ALB
         service = {
           type = "ClusterIP"
           port = 80

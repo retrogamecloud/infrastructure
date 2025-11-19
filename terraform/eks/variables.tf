@@ -149,3 +149,15 @@ variable "slack_webhook_url" {
   sensitive   = true
   default     = "https://hooks.slack.com/services/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"
 }
+
+variable "github_oauth_client_id" {
+  description = "Client ID de GitHub OAuth App"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_oauth_client_secret" {
+  description = "Client Secret de GitHub OAuth App"
+  type        = string
+  sensitive   = true
+}

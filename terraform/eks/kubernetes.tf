@@ -159,6 +159,7 @@ resource "kubernetes_config_map" "frontend_replacer" {
   data = {
     "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
+      set -e
       echo "Starting URL replacement..."
       echo "Load Balancer URL: $LOAD_BALANCER_URL"
       echo "CDN URL: $CDN_URL"
@@ -172,6 +173,9 @@ resource "kubernetes_config_map" "frontend_replacer" {
         sed -i "s|http://localhost:8000|$LOAD_BALANCER_URL|g" "$file"
         sed -i "s|http://localhost:8086|$CDN_URL|g" "$file"
         sed -i "s|PLACEHOLDER_LB_URL|$LOAD_BALANCER_URL|g" "$file"
+        # Reemplazar rutas relativas a CDN para imágenes y juegos
+        sed -i "s#src=\"/img/#src=\"$CDN_URL/img/#g" "$file"
+        sed -i "s#const CDN_URL = window.CDN_URL || '/juegos'#const CDN_URL = window.CDN_URL || '$CDN_URL/juegos'#g" "$file"
         echo "Replaced URLs in $file"
       done
       
@@ -229,16 +233,6 @@ resource "kubernetes_deployment" "frontend" {
           name    = "url-replacer"
           image   = "busybox:1.35"
           command = ["sh", "/scripts/replace-urls.sh"]
-
-          env {
-            name  = "LOAD_BALANCER_URL"
-            value = "PLACEHOLDER_LB_URL"
-          }
-
-          env {
-            name  = "CDN_URL"
-            value = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-          }
 
           volume_mount {
             name       = "app-files"
@@ -498,6 +492,88 @@ resource "kubernetes_service" "kong" {
   depends_on = [kubernetes_deployment.kong]
 }
 
+# Ingress para Backend (API directamente, sin Kong)
+resource "kubernetes_ingress_v1" "backend" {
+  metadata {
+    name      = "backend-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+      "nginx.ingress.kubernetes.io/use-regex"    = "true"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/api(/|$)(.*)"
+          path_type = "ImplementationSpecific"
+
+          backend {
+            service {
+              name = kubernetes_service.backend.metadata[0].name
+              port {
+                number = 3000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_service.backend,
+    helm_release.ingress_nginx
+  ]
+}
+
+# Ingress para Frontend (debe ir después de Kong para que /api tenga prioridad)
+resource "kubernetes_ingress_v1" "frontend" {
+  metadata {
+    name      = "frontend-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = kubernetes_service.frontend.metadata[0].name
+              port {
+                number = 8081
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_service.frontend,
+    helm_release.ingress_nginx,
+    kubernetes_ingress_v1.backend
+  ]
+}
+
 # ConfigMap con el script SQL de inicialización
 resource "kubernetes_config_map" "db_init_script" {
   metadata {
@@ -623,7 +699,7 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
     "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
       set -e
-      LB_URL="http://${try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "PENDING")}"
+      LB_URL="https://retrogamehub.games"
       CDN_URL="https://${aws_cloudfront_distribution.games_cdn.domain_name}"
       
       echo "Starting URL replacement..."
@@ -639,6 +715,9 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
         sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
         sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
         sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
+        # Reemplazar rutas relativas a CDN para imágenes y juegos
+        sed -i "s#src=\"/img/#src=\"$${CDN_URL}/img/#g" "$${file}"
+        sed -i "s#const CDN_URL = window.CDN_URL || '/juegos'#const CDN_URL = window.CDN_URL || '$${CDN_URL}/juegos'#g" "$${file}"
         echo "✓ Replaced URLs in $${file}"
       done
       
