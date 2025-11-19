@@ -11,7 +11,7 @@ variable "aws_region" {
 }
 
 variable "aws_profile" {
-  description = "Perfil de AWS CLI a utilizar"
+  description = "Perfil de AWS a usar"
   type        = string
   default     = "retrogamecloud-terraform"
 }

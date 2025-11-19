@@ -45,11 +45,15 @@ module "eks" {
   subnet_ids                     = module.vpc.private_subnets # Cluster en subnets privadas
   cluster_endpoint_public_access = true
 
-  # Evitar el tag automático del security group del cluster que causa conflictos con Load Balancers
+  # Usar el security group del cluster pero sin tags conflictivos
   create_cluster_security_group = true
   cluster_security_group_tags = {
-    # NO incluir el tag kubernetes.io/cluster/<nombre> aquí
     Name = "${var.cluster_name}-cluster-sg"
+  }
+  
+  # Evitar security groups adicionales en los nodos
+  node_security_group_tags = {
+    Name = "${var.cluster_name}-node-sg-additional"
   }
 
   cluster_addons = {
@@ -65,10 +69,10 @@ module "eks" {
   }
 
   eks_managed_node_group_defaults = {
-    ami_type       = "AL2_x86_64"
+    ami_type       = "AL2023_x86_64_STANDARD"
     instance_types = var.node_instance_types
 
-    attach_cluster_primary_security_group = true
+    attach_cluster_primary_security_group = false
     vpc_security_group_ids                = [aws_security_group.node_group.id]
   }
 
@@ -87,6 +91,14 @@ module "eks" {
 
       instance_types = var.node_instance_types
       capacity_type  = "ON_DEMAND"
+
+      # Estrategia de actualización: fuerza reciclado de nodos cuando cambia el launch template
+      update_config = {
+        max_unavailable_percentage = 50 # Permite actualizar hasta 50% de nodos simultáneamente
+      }
+
+      # Forzar recreación al cambiar launch template
+      force_update_version = true
 
       labels = {
         role        = "general"
@@ -129,13 +141,15 @@ resource "aws_security_group" "node_group" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  ingress {
-    description = "Allow NodePort range from anywhere"
-    from_port   = 30000
-    to_port     = 32767
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # NodePort no es necesario ya que usamos LoadBalancer (Kong)
+  # Si necesitas NodePort en el futuro, descomenta:
+  # ingress {
+  #   description = "Allow NodePort range"
+  #   from_port   = 30000
+  #   to_port     = 32767
+  #   protocol    = "tcp"
+  #   cidr_blocks = [var.vpc_cidr]  # Solo desde la VPC, no desde internet
+  # }
 
   egress {
     description = "Allow all outbound traffic"
@@ -148,8 +162,7 @@ resource "aws_security_group" "node_group" {
   tags = merge(
     var.tags,
     {
-      Name                                        = "${var.cluster_name}-node-sg"
-      "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+      Name = "${var.cluster_name}-node-sg"
     }
   )
 }
@@ -180,3 +193,42 @@ resource "aws_iam_role" "eks_admin" {
 }
 
 data "aws_caller_identity" "current" {}
+
+# Actualizar kubeconfig automáticamente
+resource "null_resource" "update_kubeconfig" {
+  depends_on = [module.eks]
+
+  triggers = {
+    cluster_endpoint = module.eks.cluster_endpoint
+    always_run       = timestamp() # Forzar ejecución en cada apply
+  }
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --name ${var.cluster_name} --region ${var.aws_region} --profile ${var.aws_profile}"
+  }
+}
+
+# Forzar actualización de nodos cuando cambie la configuración del nodegroup
+resource "null_resource" "force_node_update" {
+  depends_on = [module.eks]
+
+  triggers = {
+    # Ejecutar cuando cambien configuraciones clave del nodegroup
+    node_instance_types = join(",", var.node_instance_types)
+    node_desired_size   = var.node_desired_size
+    node_min_size       = var.node_min_size
+    node_max_size       = var.node_max_size
+    ami_type            = "AL2023_x86_64_STANDARD"
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws eks update-nodegroup-version \
+        --cluster-name ${var.cluster_name} \
+        --nodegroup-name general-nodes \
+        --force \
+        --region ${var.aws_region} \
+        --profile ${var.aws_profile} || true
+    EOT
+  }
+}

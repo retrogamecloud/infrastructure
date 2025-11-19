@@ -1,9 +1,3 @@
-variable "project_name" {
-  description = "Nombre del proyecto"
-  type        = string
-  default     = "RetroGameCloud"
-}
-
 variable "aws_region" {
   description = "AWS region para el despliegue"
   type        = string
@@ -13,7 +7,13 @@ variable "aws_region" {
 variable "aws_profile" {
   description = "Perfil de AWS CLI a utilizar"
   type        = string
-  default     = "default"
+  default     = "retrogamecloud-terraform"
+}
+
+variable "project_name" {
+  description = "Nombre del proyecto"
+  type        = string
+  default     = "RetroGameCloud"
 }
 
 variable "environment" {
@@ -25,13 +25,13 @@ variable "environment" {
 variable "cluster_name" {
   description = "Nombre del cluster EKS"
   type        = string
-  default     = "retrogamecloud-eks"
+  default     = "retrogame"
 }
 
 variable "cluster_version" {
   description = "Versión de Kubernetes para EKS"
   type        = string
-  default     = "1.31"
+  default     = "1.34"
 }
 
 variable "vpc_cidr" {
@@ -61,25 +61,25 @@ variable "public_subnets" {
 variable "node_instance_types" {
   description = "Tipos de instancia EC2 para los nodos"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.small"]
 }
 
 variable "node_desired_size" {
   description = "Número deseado de nodos"
   type        = number
-  default     = 2
+  default     = 4
 }
 
 variable "node_min_size" {
   description = "Número mínimo de nodos"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "node_max_size" {
   description = "Número máximo de nodos"
   type        = number
-  default     = 4
+  default     = 6
 }
 
 variable "enable_cluster_autoscaler" {
@@ -115,13 +115,13 @@ variable "db_allocated_storage" {
 variable "db_name" {
   description = "Nombre de la base de datos"
   type        = string
-  default     = "retrogameclouddb"
+  default     = "retrogamedb"
 }
 
 variable "db_username" {
   description = "Usuario de la base de datos"
   type        = string
-  default     = "retrogamecloud"
+  default     = "retrogame"
   sensitive   = true
 }
 

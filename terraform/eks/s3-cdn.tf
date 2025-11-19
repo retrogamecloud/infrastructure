@@ -408,7 +408,7 @@ resource "aws_iam_role_policy" "s3_upload_policy" {
 resource "kubernetes_config_map" "cdn_config" {
   metadata {
     name      = "cdn-config"
-    namespace = kubernetes_namespace.retrogc.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {

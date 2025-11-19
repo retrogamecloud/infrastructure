@@ -4,7 +4,8 @@
 # Bucket S3 para almacenar el estado de Terraform de forma remota
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "retrogamecloud-terraform-state-${data.aws_caller_identity.current.account_id}"
+  bucket        = "retrogamecloud-terraform-state-${data.aws_caller_identity.current.account_id}"
+  force_destroy = false
 
   tags = {
     Name        = "Terraform State Bucket"
@@ -12,7 +13,7 @@ resource "aws_s3_bucket" "terraform_state" {
   }
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 

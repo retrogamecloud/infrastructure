@@ -21,11 +21,15 @@ terraform {
   }
 
   # Backend S3 - Los valores vienen del proyecto bootstrap via remote state
+  # IMPORTANTE: Actualizar después de ejecutar bootstrap con:
+  # terraform init -backend-config=backend.conf
   backend "s3" {
-    # Estos valores se configuran después de crear el bootstrap
-    # O se pueden usar con -backend-config
-    key     = "eks/terraform.tfstate"
-    encrypt = true
+    bucket         = "retrogamecloud-terraform-state-450545962171"
+    key            = "eks/terraform.tfstate"
+    region         = "eu-west-1"
+    dynamodb_table = "terraform-lock"
+    encrypt        = true
+    profile        = "terraform"
   }
 }
 

@@ -79,7 +79,7 @@ resource "aws_db_instance" "postgres" {
 resource "kubernetes_secret" "postgres_credentials" {
   metadata {
     name      = "postgres-credentials"
-    namespace = kubernetes_namespace.retrogc.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
@@ -104,7 +104,7 @@ resource "kubernetes_secret" "postgres_credentials" {
 resource "kubernetes_config_map" "postgres_init" {
   metadata {
     name      = "postgres-init-script"
-    namespace = kubernetes_namespace.retrogc.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {

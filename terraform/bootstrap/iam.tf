@@ -28,27 +28,16 @@ resource "aws_iam_user" "terraform_user" {
     Protected = "true"
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_iam_user_group_membership" "terraform_membership" {
   user   = aws_iam_user.terraform_user.name
   groups = [aws_iam_group.admins.name]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_iam_user_policy_attachment" "terraform_admin_policy" {
   user       = aws_iam_user.terraform_user.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # ============================================================================

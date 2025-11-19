@@ -17,7 +17,7 @@ CloudFront CDN (Assets estáticos: juegos .jsdos, imágenes, emulador js-dos)
     ↓
 Kong Load Balancer (NLB) → Kong API Gateway (Kubernetes)
     ↓
-┌─────────────────── EKS Cluster (Kubernetes 1.32) ───────────────────┐
+┌─────────────────── EKS Cluster (Kubernetes 1.34) ───────────────────┐
 │                                                                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
 │  │   Frontend   │  │   Backend    │  │     Kong     │             │
@@ -67,7 +67,7 @@ Configura los providers necesarios:
 Define variables configurables del proyecto:
 - `aws_region`: Región de AWS (default: eu-west-1 - Irlanda)
 - `cluster_name`: Nombre del cluster EKS (default: retrogame)
-- `cluster_version`: Versión de Kubernetes (default: 1.32)
+- `cluster_version`: Versión de Kubernetes (default: 1.34)
 - `db_password`: Contraseña de PostgreSQL (sensitive)
 - `jwt_secret`: Secret para tokens JWT (sensitive)
 - `node_instance_type`: Tipo de instancias EC2 (default: t3.micro)
@@ -77,7 +77,7 @@ Define variables configurables del proyecto:
 - **VPC** (10.0.0.0/16) con 6 subnets (3 públicas + 3 privadas) en 3 AZs
 - **Internet Gateway** para acceso público
 - **NAT Gateway** para que pods en subnets privadas accedan a internet
-- **EKS Cluster** (Kubernetes 1.32)
+- **EKS Cluster** (Kubernetes 1.34)
 - **Node Group** con 3 nodos t3.micro en subnets privadas
 - **Security Groups** para controlar tráfico
 
