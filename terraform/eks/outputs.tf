@@ -102,3 +102,96 @@ output "upload_images_command" {
   description = "Comando para subir imágenes al bucket S3"
   value       = "aws s3 sync ./infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ --region ${var.aws_region}"
 }
+
+# ============================================================================
+# Outputs de Route53 y SSL
+# ============================================================================
+
+output "route53_zone_id" {
+  description = "ID de la zona Route53"
+  value       = try(aws_route53_zone.main.zone_id, null)
+}
+
+output "route53_nameservers" {
+  description = "Nameservers de Route53 (configurar en Namecheap)"
+  value       = try(aws_route53_zone.main.name_servers, null)
+}
+
+output "ssl_certificate_arn" {
+  description = "ARN del certificado SSL"
+  value       = try(aws_acm_certificate.main.arn, null)
+}
+
+# ============================================================================
+# Outputs de ALB
+# ============================================================================
+
+output "alb_dns_name" {
+  description = "DNS name del Application Load Balancer"
+  value       = try(aws_lb.main.dns_name, null)
+}
+
+output "alb_zone_id" {
+  description = "Zone ID del ALB"
+  value       = try(aws_lb.main.zone_id, null)
+}
+
+output "domain_url" {
+  description = "URL del dominio principal"
+  value       = "https://retrogamehub.games"
+}
+
+# ============================================================================
+# Outputs de Monitoring
+# ============================================================================
+
+output "grafana_url" {
+  description = "URL de Grafana"
+  value       = "https://retrogamehub.games/grafana"
+}
+
+output "prometheus_url" {
+  description = "URL de Prometheus"
+  value       = "https://retrogamehub.games/prometheus"
+}
+
+output "alertmanager_url" {
+  description = "URL de AlertManager"
+  value       = "https://retrogamehub.games/alertmanager"
+}
+
+output "grafana_admin_user" {
+  description = "Usuario admin de Grafana"
+  value       = "admin"
+}
+
+output "grafana_admin_password" {
+  description = "Password admin de Grafana"
+  value       = "admin123"
+  sensitive   = true
+}
+
+output "prometheus_internal_url" {
+  description = "URL interna de Prometheus Server"
+  value       = "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
+}
+
+output "grafana_internal_url" {
+  description = "URL interna de Grafana"
+  value       = "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80"
+}
+
+output "alertmanager_internal_url" {
+  description = "URL interna de AlertManager"
+  value       = "http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093"
+}
+
+output "grafana_port_forward_command" {
+  description = "Comando para acceder a Grafana localmente"
+  value       = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80"
+}
+
+output "prometheus_port_forward_command" {
+  description = "Comando para acceder a Prometheus localmente"
+  value       = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090"
+}

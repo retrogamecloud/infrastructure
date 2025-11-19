@@ -142,3 +142,10 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "slack_webhook_url" {
+  description = "Webhook URL de Slack para alertas de AlertManager"
+  type        = string
+  sensitive   = true
+  default     = "https://hooks.slack.com/services/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"
+}

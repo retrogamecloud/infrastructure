@@ -34,7 +34,7 @@ resource "kubernetes_secret" "alertmanager_slack" {
   }
 
   data = {
-    webhook_url = "https://hooks.slack.com/services/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"
+    webhook_url = var.slack_webhook_url
   }
 
   type = "Opaque"
@@ -850,37 +850,5 @@ resource "helm_release" "kube_prometheus_stack" {
 }
 
 # ============================================================================
-# Outputs útiles
+# Outputs movidos a outputs.tf para evitar duplicados
 # ============================================================================
-
-# Outputs internos (no duplicar en outputs.tf)
-output "prometheus_internal_url" {
-  description = "URL interna de Prometheus Server"
-  value       = "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
-}
-
-output "grafana_internal_url" {
-  description = "URL interna de Grafana"
-  value       = "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80"
-}
-
-output "alertmanager_internal_url" {
-  description = "URL interna de AlertManager"
-  value       = "http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093"
-}
-
-output "grafana_admin_password" {
-  description = "Password del admin de Grafana (cambiar en producción)"
-  value       = "admin123"
-  sensitive   = true
-}
-
-output "grafana_port_forward_command" {
-  description = "Comando para acceder a Grafana localmente"
-  value       = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80"
-}
-
-output "prometheus_port_forward_command" {
-  description = "Comando para acceder a Prometheus localmente"
-  value       = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090"
-}
