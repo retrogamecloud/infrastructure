@@ -533,7 +533,172 @@ resource "kubernetes_ingress_v1" "backend" {
   ]
 }
 
-# Ingress para Frontend (debe ir después de Kong para que /api tenga prioridad)
+# Ingress para Wiki (Mintlify) - proxy externo con soporte para assets
+resource "kubernetes_ingress_v1" "wiki" {
+  metadata {
+    name      = "wiki-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"           = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
+      "nginx.ingress.kubernetes.io/rewrite-target"      = "/$2"
+      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
+        sub_filter_once off;
+        sub_filter_types text/html;
+        sub_filter '</head>' '<script>
+(function() {
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+  
+  function addWikiPrefix(url) {
+    if (!url) return url;
+    if (url.startsWith("http") || url.startsWith("//")) return url;
+    if (url.startsWith("/wiki/")) return url;
+    if (url.startsWith("#")) return url;
+    if (url.startsWith("/mintlify-assets")) return url;
+    if (url.startsWith("/_next")) return url;
+    if (url.startsWith("/_mintlify")) return url;
+    if (url.startsWith("/api/")) return url;
+    if (url.includes("?_rsc=")) return url;
+    if (url === "/") return "/wiki/";
+    if (url.startsWith("/")) return "/wiki" + url;
+    return url;
+  }
+  
+  history.pushState = function(state, title, url) {
+    return originalPushState.call(this, state, title, addWikiPrefix(url));
+  };
+  
+  history.replaceState = function(state, title, url) {
+    return originalReplaceState.call(this, state, title, addWikiPrefix(url));
+  };
+  
+  document.addEventListener("click", function(e) {
+    const link = e.target.closest("a");
+    if (!link) return;
+    
+    const href = link.getAttribute("href");
+    if (!href) return;
+    if (href.startsWith("http") || href.startsWith("//")) return;
+    if (href.startsWith("/wiki/")) return;
+    if (href.startsWith("#")) return;
+    if (href.startsWith("/mintlify-assets")) return;
+    if (href === "/") {
+      e.preventDefault();
+      window.location.href = "/wiki/";
+      return;
+    }
+    if (href.startsWith("/") && !href.includes("?_rsc=")) {
+      e.preventDefault();
+      window.location.href = "/wiki" + href;
+    }
+  }, true);
+})();
+</script></head>';
+        proxy_set_header Accept-Encoding "";
+      EOT
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/wiki(/|$)(.*)"
+          path_type = "ImplementationSpecific"
+
+          backend {
+            service {
+              name = "wiki-external-service"
+              port {
+                number = 443
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.ingress_nginx,
+    kubernetes_service.wiki_external
+  ]
+}
+
+# Ingress adicional para assets de Mintlify
+resource "kubernetes_ingress_v1" "wiki_assets" {
+  metadata {
+    name      = "wiki-assets-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"           = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/mintlify-assets"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = "wiki-external-service"
+              port {
+                number = 443
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.ingress_nginx,
+    kubernetes_service.wiki_external
+  ]
+}
+
+# Service externo para Mintlify
+resource "kubernetes_service" "wiki_external" {
+  metadata {
+    name      = "wiki-external-service"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+  }
+
+  spec {
+    type          = "ExternalName"
+    external_name = "retrogamecloud.mintlify.app"
+
+    port {
+      port        = 443
+      target_port = 443
+      protocol    = "TCP"
+    }
+  }
+}
+
+# Ingress para Frontend (debe ir después de otros paths para que tengan prioridad)
 resource "kubernetes_ingress_v1" "frontend" {
   metadata {
     name      = "frontend-ingress"
@@ -570,7 +735,8 @@ resource "kubernetes_ingress_v1" "frontend" {
   depends_on = [
     kubernetes_service.frontend,
     helm_release.ingress_nginx,
-    kubernetes_ingress_v1.backend
+    kubernetes_ingress_v1.backend,
+    kubernetes_ingress_v1.wiki
   ]
 }
 
