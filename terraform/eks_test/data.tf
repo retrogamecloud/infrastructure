@@ -23,3 +23,6 @@ data "aws_eks_cluster_auth" "cluster" {
 
   depends_on = [module.eks]
 }
+
+# Canonical User ID para ACLs de S3
+data "aws_canonical_user_id" "current" {}

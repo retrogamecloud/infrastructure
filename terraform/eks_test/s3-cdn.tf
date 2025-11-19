@@ -53,7 +53,7 @@ resource "aws_s3_bucket_ownership_controls" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
 
   rule {
-    object_ownership = "ObjectWriter"
+    object_ownership = "BucketOwnerPreferred"
   }
 }
 
@@ -68,7 +68,28 @@ resource "aws_s3_bucket_public_access_block" "cdn_logs" {
 
 resource "aws_s3_bucket_acl" "cdn_logs" {
   bucket = aws_s3_bucket.cdn_logs.id
-  acl    = "log-delivery-write"
+
+  access_control_policy {
+    grant {
+      grantee {
+        type = "CanonicalUser"
+        id   = data.aws_canonical_user_id.current.id
+      }
+      permission = "FULL_CONTROL"
+    }
+
+    grant {
+      grantee {
+        type = "Group"
+        uri  = "http://acs.amazonaws.com/groups/s3/LogDelivery"
+      }
+      permission = "FULL_CONTROL"
+    }
+
+    owner {
+      id = data.aws_canonical_user_id.current.id
+    }
+  }
 
   depends_on = [
     aws_s3_bucket_ownership_controls.cdn_logs,
@@ -234,11 +255,12 @@ resource "aws_cloudfront_distribution" "games_cdn" {
   comment             = "CDN for RetroGame static assets"
   default_root_object = "index.html"
 
-  logging_config {
-    include_cookies = false
-    bucket          = aws_s3_bucket.cdn_logs.bucket_domain_name
-    prefix          = "cloudfront-logs/"
-  }
+  # Logging deshabilitado temporalmente por problemas de permisos con ACLs
+  # logging_config {
+  #   include_cookies = false
+  #   bucket          = aws_s3_bucket.cdn_logs.bucket_domain_name
+  #   prefix          = "cloudfront-logs/"
+  # }
 
   origin {
     domain_name              = aws_s3_bucket.games_cdn.bucket_regional_domain_name

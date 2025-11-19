@@ -45,6 +45,13 @@ module "eks" {
   subnet_ids                     = module.vpc.private_subnets # Cluster en subnets privadas
   cluster_endpoint_public_access = true
 
+  # Evitar el tag automático del security group del cluster que causa conflictos con Load Balancers
+  create_cluster_security_group = true
+  cluster_security_group_tags = {
+    # NO incluir el tag kubernetes.io/cluster/<nombre> aquí
+    Name = "${var.cluster_name}-cluster-sg"
+  }
+
   cluster_addons = {
     coredns = {
       most_recent = true
@@ -141,7 +148,8 @@ resource "aws_security_group" "node_group" {
   tags = merge(
     var.tags,
     {
-      Name = "${var.cluster_name}-node-sg"
+      Name                                        = "${var.cluster_name}-node-sg"
+      "kubernetes.io/cluster/${var.cluster_name}" = "owned"
     }
   )
 }

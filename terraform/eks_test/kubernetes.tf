@@ -491,6 +491,10 @@ resource "kubernetes_service" "kong" {
     type = "LoadBalancer"
   }
 
+  timeouts {
+    create = "20m"
+  }
+
   depends_on = [kubernetes_deployment.kong]
 }
 
