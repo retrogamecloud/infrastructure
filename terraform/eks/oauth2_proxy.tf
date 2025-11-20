@@ -60,12 +60,10 @@ resource "kubernetes_config_map" "oauth2_proxy" {
       # Restringir a usuarios específicos de GitHub (opcional)
       # github_users = [ "usuario1", "usuario2" ]
       
-      # Configuración de upstream - enrutar a servicios backend basado en path
-      upstreams = [
-        "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80/grafana/=http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80/",
-        "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/prometheus/=http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/",
-        "http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093/alertmanager/=http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093/"
-      ]
+      # Configuración de upstream con path-based routing
+      # Usando static:// para indicar que NO hacemos proxy, solo autenticamos
+      # El ALB enviará el tráfico directamente a los servicios después de pasar por oauth2-proxy
+      upstreams = [ "static://202" ]
       
       # Configuración HTTP
       http_address = "0.0.0.0:4180"
@@ -76,6 +74,7 @@ resource "kubernetes_config_map" "oauth2_proxy" {
       cookie_httponly = true
       cookie_samesite = "lax"
       cookie_domains = [ ".retrogamehub.games" ]
+      cookie_path = "/"
       
       # Configuración de sesión
       cookie_expire = "168h"  # 7 días

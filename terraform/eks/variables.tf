@@ -4,6 +4,18 @@ variable "aws_region" {
   default     = "eu-west-1"
 }
 
+variable "aws_profile" {
+  description = "Perfil de AWS CLI a utilizar"
+  type        = string
+  default     = "retrogamecloud-terraform"
+}
+
+variable "project_name" {
+  description = "Nombre del proyecto"
+  type        = string
+  default     = "RetroGameCloud"
+}
+
 variable "environment" {
   description = "Entorno de despliegue (dev, staging, prod)"
   type        = string
@@ -19,7 +31,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Versión de Kubernetes para EKS"
   type        = string
-  default     = "1.32"
+  default     = "1.34"
 }
 
 variable "vpc_cidr" {
@@ -49,7 +61,7 @@ variable "public_subnets" {
 variable "node_instance_types" {
   description = "Tipos de instancia EC2 para los nodos"
   type        = list(string)
-  default     = ["t3.micro"]
+  default     = ["t3.small"]
 }
 
 variable "node_desired_size" {
@@ -129,4 +141,23 @@ variable "tags" {
   description = "Tags adicionales para recursos"
   type        = map(string)
   default     = {}
+}
+
+variable "slack_webhook_url" {
+  description = "Webhook URL de Slack para alertas de AlertManager"
+  type        = string
+  sensitive   = true
+  default     = "https://hooks.slack.com/services/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"
+}
+
+variable "github_oauth_client_id" {
+  description = "Client ID de GitHub OAuth App"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_oauth_client_secret" {
+  description = "Client Secret de GitHub OAuth App"
+  type        = string
+  sensitive   = true
 }

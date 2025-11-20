@@ -8,7 +8,7 @@ resource "aws_security_group" "rds" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]  # Fargate pods en subnets públicas
+    cidr_blocks = [var.vpc_cidr] # Fargate pods en subnets públicas
   }
 
   egress {
@@ -79,19 +79,19 @@ resource "aws_db_instance" "postgres" {
 resource "kubernetes_secret" "postgres_credentials" {
   metadata {
     name      = "postgres-credentials"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
-    POSTGRES_USER        = var.db_username
-    POSTGRES_PASSWORD    = var.db_password
-    POSTGRES_DB          = var.db_name
-    POSTGRES_HOST        = aws_db_instance.postgres.address
-    POSTGRES_PORT        = tostring(aws_db_instance.postgres.port)
+    POSTGRES_USER     = var.db_username
+    POSTGRES_PASSWORD = var.db_password
+    POSTGRES_DB       = var.db_name
+    POSTGRES_HOST     = aws_db_instance.postgres.address
+    POSTGRES_PORT     = tostring(aws_db_instance.postgres.port)
     # Para servicios Node.js (pg driver soporta no-verify)
-    DATABASE_URL         = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?ssl=true&sslmode=no-verify"
+    DATABASE_URL = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?ssl=true&sslmode=no-verify"
     # Para psql CLI (no soporta no-verify, usa require)
-    DATABASE_URL_PSQL    = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require"
+    DATABASE_URL_PSQL = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require"
   }
 
   depends_on = [
@@ -104,7 +104,7 @@ resource "kubernetes_secret" "postgres_credentials" {
 resource "kubernetes_config_map" "postgres_init" {
   metadata {
     name      = "postgres-init-script"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
