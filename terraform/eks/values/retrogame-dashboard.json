@@ -32,6 +32,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -41,10 +42,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -105,8 +107,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"backend.*\"}[5m])) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Backend - Uso de CPU por Pod",
@@ -123,6 +125,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -132,10 +135,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -196,8 +200,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"backend.*\"}) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Backend - Uso de Memoria por Pod",
@@ -214,6 +218,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -223,10 +228,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -287,8 +293,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"frontend.*\"}[5m])) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Frontend - Uso de CPU",
@@ -305,6 +311,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -314,10 +321,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -378,8 +386,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"frontend.*\"}) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Frontend - Uso de Memoria",
@@ -396,6 +404,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -405,10 +414,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -469,8 +479,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"kong.*\"}[5m])) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Kong - Uso de CPU",
@@ -487,6 +497,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -496,10 +507,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -560,8 +572,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"kong.*\"}) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Kong - Uso de Memoria",
@@ -603,19 +615,21 @@
       },
       "id": 7,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -665,19 +679,21 @@
       },
       "id": 8,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -722,24 +738,26 @@
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 4,
-        "y": 30
+        "x": 8,
+        "y": 24
       },
       "id": 9,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -789,19 +807,21 @@
       },
       "id": 10,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -823,9 +843,78 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 24
+      },
+      "id": 17,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "10.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "avg(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\"}[5m])) * 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Uso Promedio CPU Cluster (%)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -835,10 +924,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -899,8 +989,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"retrogame\"}[5m])) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}} - RX"
+          "legendFormat": "{{pod}} - RX",
+          "refId": "A"
         },
         {
           "datasource": {
@@ -908,8 +998,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"retrogame\"}[5m])) by (pod)",
-          "refId": "B",
-          "legendFormat": "{{pod}} - TX"
+          "legendFormat": "{{pod}} - TX",
+          "refId": "B"
         }
       ],
       "title": "Tráfico de Red",
@@ -987,6 +1077,7 @@
       },
       "id": 12,
       "options": {
+        "cellHeight": "sm",
         "footer": {
           "countRows": false,
           "fields": "",
@@ -997,7 +1088,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -1049,75 +1140,10 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 80
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 38
-      },
-      "id": 17,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
-      },
-      "pluginVersion": "9.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "avg(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\"}[5m])) * 100",
-          "refId": "A"
-        }
-      ],
-      "title": "Uso Promedio CPU Cluster (%)",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1127,10 +1153,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1163,14 +1190,17 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 6,
+        "w": 18,
+        "x": 0,
         "y": 38
       },
       "id": 23,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -1187,8 +1217,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}) by (pod)",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Reinicios de Containers por Pod",
@@ -1227,7 +1257,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 6,
         "x": 18,
         "y": 38
@@ -1239,15 +1269,16 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.2",
+      "pluginVersion": "10.2.2",
       "targets": [
         {
           "datasource": {
@@ -1269,7 +1300,39 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1278,47 +1341,49 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
-          "unit": "dateTimeAsIso"
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 12,
         "x": 0,
         "y": 46
       },
-      "id": 27,
+      "id": 45,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "textMode": "auto"
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
-      "pluginVersion": "9.5.2",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "time() * 1000",
+          "expr": "container_memory_usage_bytes{namespace=\"monitoring\", pod=~\"prometheus.*\"}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Última Actualización",
-      "type": "stat"
+      "title": "Prometheus - Memoria por Pod",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -1331,6 +1396,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1340,10 +1406,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1404,8 +1471,8 @@
             "uid": "prometheus"
           },
           "expr": "rate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus.*\"}[5m])",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Prometheus - CPU por Pod",
@@ -1422,6 +1489,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1431,10 +1499,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1475,7 +1544,7 @@
         "x": 0,
         "y": 54
       },
-      "id": 45,
+      "id": 49,
       "options": {
         "legend": {
           "calcs": [],
@@ -1494,12 +1563,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "container_memory_usage_bytes{namespace=\"monitoring\", pod=~\"prometheus.*\"}",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "expr": "container_memory_usage_bytes{namespace=\"monitoring\", pod=~\"alertmanager.*\"}",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
-      "title": "Prometheus - Memoria por Pod",
+      "title": "Alertmanager - Memoria por Pod",
       "type": "timeseries"
     },
     {
@@ -1513,6 +1582,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1522,10 +1592,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1586,8 +1657,8 @@
             "uid": "prometheus"
           },
           "expr": "rate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"alertmanager.*\"}[5m])",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "Alertmanager - CPU por Pod",
@@ -1604,6 +1675,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1613,10 +1685,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1657,7 +1730,7 @@
         "x": 0,
         "y": 62
       },
-      "id": 49,
+      "id": 51,
       "options": {
         "legend": {
           "calcs": [],
@@ -1676,12 +1749,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "container_memory_usage_bytes{namespace=\"monitoring\", pod=~\"alertmanager.*\"}",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "expr": "container_memory_usage_bytes{namespace=\"ingress-nginx\", pod=~\"ingress-nginx.*\"}",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
-      "title": "Alertmanager - Memoria por Pod",
+      "title": "NGINX Ingress Controller - Memoria por Pod",
       "type": "timeseries"
     },
     {
@@ -1695,6 +1768,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1704,10 +1778,11 @@
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
@@ -1768,102 +1843,11 @@
             "uid": "prometheus"
           },
           "expr": "rate(container_cpu_usage_seconds_total{namespace=\"ingress-nginx\", pod=~\"ingress-nginx.*\"}[5m])",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
+          "legendFormat": "{{pod}}",
+          "refId": "A"
         }
       ],
       "title": "NGINX Ingress Controller - CPU por Pod",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 70
-      },
-      "id": 51,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "container_memory_usage_bytes{namespace=\"ingress-nginx\", pod=~\"ingress-nginx.*\"}",
-          "refId": "A",
-          "legendFormat": "{{pod}}"
-        }
-      ],
-      "title": "NGINX Ingress Controller - Memoria por Pod",
       "type": "timeseries"
     }
   ],
