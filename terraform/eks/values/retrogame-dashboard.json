@@ -1050,251 +1050,6 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 38
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(kong_http_requests_total{service=\"auth-service\"}[5m])) by (code)",
-          "refId": "A",
-          "legendFormat": "Auth - {{code}}"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(kong_http_requests_total{service=\"user-service\"}[5m])) by (code)",
-          "refId": "B",
-          "legendFormat": "User - {{code}}"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(kong_http_requests_total{service=\"score-service\"}[5m])) by (code)",
-          "refId": "C",
-          "legendFormat": "Score - {{code}}"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(kong_http_requests_total{service=\"ranking-service\"}[5m])) by (code)",
-          "refId": "D",
-          "legendFormat": "Ranking - {{code}}"
-        }
-      ],
-      "title": "Kong - Requests por Servicio y Código HTTP",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1000
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 38
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max", "lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum(rate(kong_latency_ms_bucket{service=\"auth-service\"}[5m])) by (le))",
-          "refId": "A",
-          "legendFormat": "Auth - p50"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum(rate(kong_latency_ms_bucket{service=\"auth-service\"}[5m])) by (le))",
-          "refId": "B",
-          "legendFormat": "Auth - p95"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum(rate(kong_latency_ms_bucket{service=\"auth-service\"}[5m])) by (le))",
-          "refId": "C",
-          "legendFormat": "Auth - p99"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum(rate(kong_latency_ms_bucket{service=\"score-service\"}[5m])) by (le))",
-          "refId": "D",
-          "legendFormat": "Score - p95"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum(rate(kong_latency_ms_bucket{service=\"ranking-service\"}[5m])) by (le))",
-          "refId": "E",
-          "legendFormat": "Ranking - p95"
-        }
-      ],
-      "title": "Kong - Latencia por Servicio (Percentiles)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
             "mode": "thresholds"
           },
           "mappings": [],
@@ -1322,8 +1077,8 @@
       "gridPos": {
         "h": 6,
         "w": 6,
-        "x": 12,
-        "y": 46
+        "x": 0,
+        "y": 38
       },
       "id": 17,
       "options": {
@@ -1410,8 +1165,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 68
+        "x": 6,
+        "y": 38
       },
       "id": 23,
       "options": {
@@ -1474,9 +1229,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 8,
-        "x": 0,
-        "y": 76
+        "w": 6,
+        "x": 18,
+        "y": 38
       },
       "id": 25,
       "options": {
@@ -1533,9 +1288,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 8,
-        "x": 16,
-        "y": 76
+        "w": 12,
+        "x": 0,
+        "y": 46
       },
       "id": 27,
       "options": {
@@ -1627,8 +1382,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 130
+        "x": 12,
+        "y": 46
       },
       "id": 44,
       "options": {
@@ -1718,8 +1473,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 130
+        "x": 0,
+        "y": 54
       },
       "id": 45,
       "options": {
@@ -1809,8 +1564,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 146
+        "x": 12,
+        "y": 54
       },
       "id": 48,
       "options": {
@@ -1900,8 +1655,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 146
+        "x": 0,
+        "y": 62
       },
       "id": 49,
       "options": {
@@ -1991,8 +1746,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 154
+        "x": 12,
+        "y": 62
       },
       "id": 50,
       "options": {
@@ -2082,8 +1837,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 154
+        "x": 0,
+        "y": 70
       },
       "id": 51,
       "options": {
