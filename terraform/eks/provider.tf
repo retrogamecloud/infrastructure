@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.13"
 
   required_providers {
     aws = {
@@ -18,23 +18,32 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.2"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
   }
 
+  # Backend S3 - Los valores vienen del proyecto bootstrap via remote state
+  # IMPORTANTE: Actualizar después de ejecutar bootstrap con:
+  # terraform init -backend-config=backend.conf
   backend "s3" {
-    bucket         = "retrogame-terraform-state"
+    bucket         = "retrogamecloud-terraform-state-450545962171"
     key            = "eks/terraform.tfstate"
     region         = "eu-west-1"
     dynamodb_table = "terraform-lock"
     encrypt        = true
+    profile        = "terraform"
   }
 }
 
 provider "aws" {
-  region = var.aws_region
+  region  = var.aws_region
+  profile = var.aws_profile
 
   default_tags {
     tags = {
-      Project     = "RetroGameCloud"
+      Project     = var.project_name
       Environment = var.environment
       ManagedBy   = "Terraform"
     }
@@ -52,7 +61,11 @@ provider "kubernetes" {
       "eks",
       "get-token",
       "--cluster-name",
-      module.eks.cluster_name
+      var.cluster_name,
+      "--region",
+      var.aws_region,
+      "--profile",
+      var.aws_profile
     ]
   }
 }
@@ -69,7 +82,11 @@ provider "helm" {
         "eks",
         "get-token",
         "--cluster-name",
-        module.eks.cluster_name
+        var.cluster_name,
+        "--region",
+        var.aws_region,
+        "--profile",
+        var.aws_profile
       ]
     }
   }

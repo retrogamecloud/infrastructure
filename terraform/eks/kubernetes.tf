@@ -1,17 +1,21 @@
 # Namespace
-resource "kubernetes_namespace" "retrogamecloud" {
+resource "kubernetes_namespace" "retrogame" {
   metadata {
-    name = "retrogame"  # Coincide con Fargate profile
+    name = "retrogame"
   }
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    data.aws_eks_cluster.cluster,
+    data.aws_eks_cluster_auth.cluster
+  ]
 }
 
 # JWT Secret
 resource "kubernetes_secret" "jwt_secret" {
   metadata {
     name      = "jwt-secret"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
@@ -25,7 +29,7 @@ resource "kubernetes_secret" "jwt_secret" {
 resource "kubernetes_deployment" "backend" {
   metadata {
     name      = "backend"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -85,7 +89,7 @@ resource "kubernetes_deployment" "backend" {
 
           resources {
             requests = {
-              cpu    = "100m"  # Optimizado para t3.micro
+              cpu    = "100m" # Optimizado para t3.micro
               memory = "256Mi"
             }
             limits = {
@@ -126,7 +130,7 @@ resource "kubernetes_deployment" "backend" {
 resource "kubernetes_service" "backend" {
   metadata {
     name      = "backend-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -148,35 +152,36 @@ resource "kubernetes_service" "backend" {
 # ConfigMap para reemplazar URLs en frontend (se actualiza después con las URLs reales)
 resource "kubernetes_config_map" "frontend_replacer" {
   metadata {
-    name      = "frontend-url-replacer"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    name      = "frontend-replacer"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
-    "replace-urls.sh" = <<-EOT
+    "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
       set -e
-      LB_URL="$${LOAD_BALANCER_URL}"
-      CDN_URL="$${CDN_URL}"
-      
       echo "Starting URL replacement..."
-      echo "Load Balancer URL: $${LB_URL}"
-      echo "CDN URL: $${CDN_URL}"
+      echo "Load Balancer URL: $LOAD_BALANCER_URL"
+      echo "CDN URL: $CDN_URL"
       
       cd /app
       echo "Files in /app before replacement:"
       ls -la
       
       find . -name "*.html" -type f | while read file; do
-        echo "Processing $${file}..."
-        sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
-        sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
-        sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
-        echo "✓ Replaced URLs in $${file}"
+        echo "Processing $file..."
+        sed -i "s|http://localhost:8000|$LOAD_BALANCER_URL|g" "$file"
+        sed -i "s|http://localhost:8086|$CDN_URL|g" "$file"
+        sed -i "s|PLACEHOLDER_LB_URL|$LOAD_BALANCER_URL|g" "$file"
+        # Reemplazar rutas relativas a CDN para imágenes y juegos
+        sed -i "s#src=\"/img/#src=\"$CDN_URL/img/#g" "$file"
+        sed -i "s#const CDN_URL = window.CDN_URL || '/juegos'#const CDN_URL = window.CDN_URL || '$CDN_URL/juegos'#g" "$file"
+        echo "Replaced URLs in $file"
       done
       
       echo "URL replacement completed!"
     EOT
+    , "\r", ""), "      \n", "\n")
   }
 
   depends_on = [module.eks]
@@ -186,7 +191,7 @@ resource "kubernetes_config_map" "frontend_replacer" {
 resource "kubernetes_deployment" "frontend" {
   metadata {
     name      = "frontend"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -228,21 +233,6 @@ resource "kubernetes_deployment" "frontend" {
           name    = "url-replacer"
           image   = "busybox:1.35"
           command = ["sh", "/scripts/replace-urls.sh"]
-
-          env {
-            name = "LOAD_BALANCER_URL"
-            value_from {
-              config_map_key_ref {
-                name = kubernetes_config_map.kong_url.metadata[0].name
-                key  = "kong_url"
-              }
-            }
-          }
-
-          env {
-            name  = "CDN_URL"
-            value = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-          }
 
           volume_mount {
             name       = "app-files"
@@ -309,7 +299,7 @@ resource "kubernetes_deployment" "frontend" {
 resource "kubernetes_service" "frontend" {
   metadata {
     name      = "frontend-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -332,7 +322,7 @@ resource "kubernetes_service" "frontend" {
 resource "kubernetes_config_map" "kong" {
   metadata {
     name      = "kong-declarative-config"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
@@ -354,23 +344,6 @@ resource "kubernetes_config_map" "kong" {
             - name: frontend-route
               paths:
                 - /
-              strip_path: false
-
-        - name: prometheus-service
-          url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-          routes:
-            - name: prometheus-route
-              paths:
-                - /prometheus
-              strip_path: true
-
-        - name: alertmanager-service
-          url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
-          routes:
-            - name: alertmanager-route
-              paths:
-                - /alertmanager
-              strip_path: true
 
       plugins:
         - name: cors
@@ -399,11 +372,11 @@ resource "kubernetes_config_map" "kong" {
 
 # Kong Deployment
 resource "kubernetes_deployment" "kong" {
-  wait_for_rollout = false  # Temporalmente desactivado para permitir escalado de nodos
+  wait_for_rollout = false # Temporalmente desactivado para permitir escalado de nodos
 
   metadata {
     name      = "kong"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -460,7 +433,7 @@ resource "kubernetes_deployment" "kong" {
 
           resources {
             requests = {
-              cpu    = "50m"   # Reducido para t3.micro
+              cpu    = "50m" # Reducido para t3.micro
               memory = "128Mi"
             }
             limits = {
@@ -492,7 +465,7 @@ resource "kubernetes_deployment" "kong" {
 resource "kubernetes_service" "kong" {
   metadata {
     name      = "kong-service"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
     }
@@ -512,18 +485,270 @@ resource "kubernetes_service" "kong" {
     type = "LoadBalancer"
   }
 
+  timeouts {
+    create = "2m"
+  }
+
   depends_on = [kubernetes_deployment.kong]
+}
+
+# Ingress para Backend (API directamente, sin Kong)
+resource "kubernetes_ingress_v1" "backend" {
+  metadata {
+    name      = "backend-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+      "nginx.ingress.kubernetes.io/use-regex"    = "true"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/api(/|$)(.*)"
+          path_type = "ImplementationSpecific"
+
+          backend {
+            service {
+              name = kubernetes_service.backend.metadata[0].name
+              port {
+                number = 3000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_service.backend,
+    helm_release.ingress_nginx
+  ]
+}
+
+# Ingress para Wiki (Mintlify) - proxy externo con soporte para assets
+resource "kubernetes_ingress_v1" "wiki" {
+  metadata {
+    name      = "wiki-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"           = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
+      "nginx.ingress.kubernetes.io/rewrite-target"      = "/$2"
+      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
+        sub_filter_once off;
+        sub_filter_types text/html;
+        sub_filter '</head>' '<script>
+(function() {
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+  
+  function addWikiPrefix(url) {
+    if (!url) return url;
+    if (url.startsWith("http") || url.startsWith("//")) return url;
+    if (url.startsWith("/wiki/")) return url;
+    if (url.startsWith("#")) return url;
+    if (url.startsWith("/mintlify-assets")) return url;
+    if (url.startsWith("/_next")) return url;
+    if (url.startsWith("/_mintlify")) return url;
+    if (url.startsWith("/api/")) return url;
+    if (url.includes("?_rsc=")) return url;
+    if (url === "/") return "/wiki/";
+    if (url.startsWith("/")) return "/wiki" + url;
+    return url;
+  }
+  
+  history.pushState = function(state, title, url) {
+    return originalPushState.call(this, state, title, addWikiPrefix(url));
+  };
+  
+  history.replaceState = function(state, title, url) {
+    return originalReplaceState.call(this, state, title, addWikiPrefix(url));
+  };
+  
+  document.addEventListener("click", function(e) {
+    const link = e.target.closest("a");
+    if (!link) return;
+    
+    const href = link.getAttribute("href");
+    if (!href) return;
+    if (href.startsWith("http") || href.startsWith("//")) return;
+    if (href.startsWith("/wiki/")) return;
+    if (href.startsWith("#")) return;
+    if (href.startsWith("/mintlify-assets")) return;
+    if (href === "/") {
+      e.preventDefault();
+      window.location.href = "/wiki/";
+      return;
+    }
+    if (href.startsWith("/") && !href.includes("?_rsc=")) {
+      e.preventDefault();
+      window.location.href = "/wiki" + href;
+    }
+  }, true);
+})();
+</script></head>';
+        proxy_set_header Accept-Encoding "";
+      EOT
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/wiki(/|$)(.*)"
+          path_type = "ImplementationSpecific"
+
+          backend {
+            service {
+              name = "wiki-external-service"
+              port {
+                number = 443
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.ingress_nginx,
+    kubernetes_service.wiki_external
+  ]
+}
+
+# Ingress adicional para assets de Mintlify
+resource "kubernetes_ingress_v1" "wiki_assets" {
+  metadata {
+    name      = "wiki-assets-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"           = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/mintlify-assets"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = "wiki-external-service"
+              port {
+                number = 443
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.ingress_nginx,
+    kubernetes_service.wiki_external
+  ]
+}
+
+# Service externo para Mintlify
+resource "kubernetes_service" "wiki_external" {
+  metadata {
+    name      = "wiki-external-service"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+  }
+
+  spec {
+    type          = "ExternalName"
+    external_name = "retrogamecloud.mintlify.app"
+
+    port {
+      port        = 443
+      target_port = 443
+      protocol    = "TCP"
+    }
+  }
+}
+
+# Ingress para Frontend (debe ir después de otros paths para que tengan prioridad)
+resource "kubernetes_ingress_v1" "frontend" {
+  metadata {
+    name      = "frontend-ingress"
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "retrogamehub.games"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = kubernetes_service.frontend.metadata[0].name
+              port {
+                number = 8081
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_service.frontend,
+    helm_release.ingress_nginx,
+    kubernetes_ingress_v1.backend,
+    kubernetes_ingress_v1.wiki
+  ]
 }
 
 # ConfigMap con el script SQL de inicialización
 resource "kubernetes_config_map" "db_init_script" {
   metadata {
     name      = "db-init-script"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
-    "01-schema.sql" = file("${path.root}/../../../backend/init-db/01-schema.sql")
+    "01-schema.sql" = file("${path.module}/../../../backend/init-db/01-schema.sql")
   }
 
   depends_on = [module.eks]
@@ -533,7 +758,7 @@ resource "kubernetes_config_map" "db_init_script" {
 resource "kubernetes_job" "db_init" {
   metadata {
     name      = "db-init"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   spec {
@@ -601,7 +826,7 @@ resource "null_resource" "verify_db_tables" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    command = replace(<<-EOT
       echo "⏳ Esperando a que el job de inicialización complete..."
       kubectl wait --for=condition=complete --timeout=120s job/db-init -n retrogame || true
       
@@ -621,6 +846,7 @@ resource "null_resource" "verify_db_tables" {
       
       echo "✅ Verificación completada"
     EOT
+    , "\r", "")
   }
 
   depends_on = [
@@ -628,83 +854,18 @@ resource "null_resource" "verify_db_tables" {
   ]
 }
 
-# ConfigMap con la URL de Kong para el initContainer del frontend
-resource "kubernetes_config_map" "kong_url" {
-  metadata {
-    name      = "kong-url"
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
-  }
-
-  data = {
-    kong_url = "http://PLACEHOLDER_KONG_URL"
-  }
-}
-
-# Actualizar URL de Kong después de crear el servicio
-resource "null_resource" "update_kong_url" {
-  triggers = {
-    kong_lb = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Esperar a que el servicio Kong tenga hostname del LoadBalancer
-      echo "⏳ Esperando hostname del LoadBalancer de Kong..."
-      KONG_LB=""
-      i=1
-      while [ $i -le 30 ]; do
-        KONG_LB=$(kubectl get svc kong-service -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
-        if [ ! -z "$KONG_LB" ]; then
-          echo "✅ LoadBalancer de Kong listo: $KONG_LB"
-          break
-        fi
-        echo "Intento $i/30: Esperando..."
-        sleep 10
-        i=$((i+1))
-      done
-      
-      if [ -z "$KONG_LB" ]; then
-        echo "❌ ERROR: Hostname del LoadBalancer de Kong no disponible después de 5 minutos"
-        exit 1
-      fi
-      
-      # Actualizar ConfigMap con la URL real de Kong
-      echo "🔄 Actualizando ConfigMap kong-url..."
-      kubectl patch configmap kong-url -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} \
-        --type merge \
-        -p '{"data":{"kong_url":"http://'$KONG_LB'"}}'
-      
-      # Reiniciar frontend para aplicar la nueva URL
-      echo "🔄 Reiniciando deployment frontend..."
-      kubectl rollout restart deployment/frontend -n ${kubernetes_namespace.retrogamecloud.metadata[0].name}
-      
-      # Esperar a que complete el rollout
-      echo "⏳ Esperando a que complete el rollout del frontend..."
-      kubectl rollout status deployment/frontend -n ${kubernetes_namespace.retrogamecloud.metadata[0].name} --timeout=5m
-      
-      echo "✅ URL de Kong actualizada y frontend reiniciado exitosamente"
-    EOT
-  }
-
-  depends_on = [
-    kubernetes_service.kong,
-    kubernetes_config_map.kong_url,
-    kubernetes_deployment.frontend
-  ]
-}
-
 # ConfigMap actualizado con URLs reales después de crear Kong y CloudFront
 resource "kubernetes_config_map_v1_data" "frontend_urls" {
   metadata {
     name      = kubernetes_config_map.frontend_replacer.metadata[0].name
-    namespace = kubernetes_namespace.retrogamecloud.metadata[0].name
+    namespace = kubernetes_namespace.retrogame.metadata[0].name
   }
 
   data = {
-    "replace-urls.sh" = <<-EOT
+    "replace-urls.sh" = replace(replace(<<-EOT
       #!/bin/sh
       set -e
-      LB_URL="http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}"
+      LB_URL="https://retrogamehub.games"
       CDN_URL="https://${aws_cloudfront_distribution.games_cdn.domain_name}"
       
       echo "Starting URL replacement..."
@@ -720,11 +881,15 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
         sed -i "s|http://localhost:8000|$${LB_URL}|g" "$${file}"
         sed -i "s|http://localhost:8086|$${CDN_URL}|g" "$${file}"
         sed -i "s|PLACEHOLDER_LB_URL|$${LB_URL}|g" "$${file}"
+        # Reemplazar rutas relativas a CDN para imágenes y juegos
+        sed -i "s#src=\"/img/#src=\"$${CDN_URL}/img/#g" "$${file}"
+        sed -i "s#const CDN_URL = window.CDN_URL || '/juegos'#const CDN_URL = window.CDN_URL || '$${CDN_URL}/juegos'#g" "$${file}"
         echo "✓ Replaced URLs in $${file}"
       done
       
       echo "URL replacement completed!"
     EOT
+    , "\r", ""), "      \n", "\n")
   }
 
   force = true
@@ -744,7 +909,7 @@ resource "null_resource" "restart_frontend" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    command = replace(<<-EOT
       echo "⏳ Esperando propagación de ConfigMap actualizado..."
       sleep 10
       
@@ -753,6 +918,7 @@ resource "null_resource" "restart_frontend" {
       
       echo "✅ Proceso completado"
     EOT
+    , "\r", "")
   }
 
   depends_on = [

@@ -112,8 +112,8 @@ resource "aws_lb_target_group" "oauth2_proxy" {
 
 # Target Group para Frontend
 resource "aws_lb_target_group" "frontend" {
-  name        = "retrogame-frontend-tg"
-  port        = 80
+  name        = "retrogame-frontend-v2-tg"
+  port        = 8081
   protocol    = "HTTP"
   vpc_id      = module.vpc.vpc_id
   target_type = "ip"
@@ -132,6 +132,10 @@ resource "aws_lb_target_group" "frontend" {
 
   deregistration_delay = 30
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Name        = "retrogame-frontend-tg"
     Environment = var.environment
@@ -143,7 +147,7 @@ resource "aws_lb_target_group" "frontend" {
 # Target Group para Grafana
 resource "aws_lb_target_group" "grafana" {
   name        = "retrogame-grafana-tg"
-  port        = 80
+  port        = 3000
   protocol    = "HTTP"
   vpc_id      = module.vpc.vpc_id
   target_type = "ip"
@@ -161,6 +165,10 @@ resource "aws_lb_target_group" "grafana" {
   }
 
   deregistration_delay = 30
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   stickiness {
     type            = "lb_cookie"
@@ -236,6 +244,36 @@ resource "aws_lb_target_group" "alertmanager" {
   }
 }
 
+# Target Group para Ingress NGINX (maneja OAuth internamente)
+resource "aws_lb_target_group" "ingress_nginx" {
+  name        = "retrogame-ingress-nginx-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = module.vpc.vpc_id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    interval            = 30
+    matcher             = "200,404"
+    path                = "/healthz"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 3
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name        = "retrogame-ingress-nginx-tg"
+    Environment = var.environment
+    Project     = "retrogame"
+    ManagedBy   = "terraform"
+  }
+}
+
 # ============================================================================
 # Listeners
 # ============================================================================
@@ -265,87 +303,53 @@ resource "aws_lb_listener" "https" {
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = aws_acm_certificate.main.arn
 
-  # Default action: Frontend (sin autenticación)
+  # Default action: Todo pasa por Ingress NGINX
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    target_group_arn = aws_lb_target_group.ingress_nginx.arn
   }
 
   depends_on = [aws_acm_certificate_validation.main]
 }
 
 # ============================================================================
-# Listener Rules - Path-based routing con GitHub OAuth
+# Listener Rules - Routing a Ingress NGINX para OAuth
 # ============================================================================
 
-# Rule para OAuth2-proxy callback (máxima prioridad)
-resource "aws_lb_listener_rule" "oauth2_callback" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 5
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.oauth2_proxy.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/oauth2/*"]
-    }
-  }
-}
-
-# Rule para Grafana (con GitHub OAuth via oauth2-proxy)
-resource "aws_lb_listener_rule" "grafana" {
+# Rule para enviar todo el tráfico de monitoring a Ingress NGINX
+# Ingress NGINX manejará OAuth2-Proxy internamente - Paths con trailing slash y subpaths
+resource "aws_lb_listener_rule" "monitoring_ingress" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 10
 
-  # Primero: Verificar autenticación con oauth2-proxy
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.oauth2_proxy.arn
+    target_group_arn = aws_lb_target_group.ingress_nginx.arn
   }
 
   condition {
     path_pattern {
-      values = ["/grafana", "/grafana/*"]
-    }
-  }
-
-  # oauth2-proxy verificará la cookie y redirigirá a GitHub si es necesario
-  # Después de la auth, oauth2-proxy hace proxy inverso a Grafana
-}
-
-# Rule para Prometheus (con GitHub OAuth via oauth2-proxy)
-resource "aws_lb_listener_rule" "prometheus" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 20
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.oauth2_proxy.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/prometheus", "/prometheus/*"]
+      values = ["/grafana/*", "/prometheus/*", "/alertmanager/*", "/oauth2/*"]
     }
   }
 }
 
-# Rule para AlertManager (con GitHub OAuth via oauth2-proxy)
-resource "aws_lb_listener_rule" "alertmanager" {
+# Rule para redirect de paths sin trailing slash a paths con trailing slash
+resource "aws_lb_listener_rule" "monitoring_ingress_redirect" {
   listener_arn = aws_lb_listener.https.arn
-  priority     = 30
+  priority     = 9
 
   action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.oauth2_proxy.arn
+    type = "redirect"
+    redirect {
+      status_code = "HTTP_301"
+      path        = "/#{path}/"
+    }
   }
 
   condition {
     path_pattern {
-      values = ["/alertmanager", "/alertmanager/*"]
+      values = ["/grafana", "/prometheus", "/alertmanager"]
     }
   }
 }
@@ -364,64 +368,34 @@ resource "null_resource" "register_targets" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "⏳ Esperando a que los pods estén listos..."
-      sleep 30
+      echo "⏳ Esperando a que ALB y listeners estén completamente configurados..."
+      sleep 120
       
-      # Obtener IPs de los pods de Frontend
-      FRONTEND_IPS=$(kubectl get pods -n retrogame -l app=frontend -o jsonpath='{.items[*].status.podIP}')
-      for IP in $FRONTEND_IPS; do
+      # Configurar AWS CLI
+      export AWS_PROFILE=retrogamecloud-terraform
+      export AWS_REGION=eu-west-1
+      
+      # Obtener IPs de Ingress NGINX Controller
+      INGRESS_IPS=$(kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.podIP}')
+      for IP in $INGRESS_IPS; do
         aws elbv2 register-targets \
-          --target-group-arn ${aws_lb_target_group.frontend.arn} \
+          --target-group-arn ${aws_lb_target_group.ingress_nginx.arn} \
           --targets Id=$IP,Port=80 \
-          --region ${var.aws_region} || true
+          --profile retrogamecloud-terraform \
+          --region eu-west-1 || true
       done
       
-      # Obtener IPs de OAuth2-Proxy
-      OAUTH2_IPS=$(kubectl get pods -n monitoring -l app=oauth2-proxy -o jsonpath='{.items[*].status.podIP}')
-      for IP in $OAUTH2_IPS; do
-        aws elbv2 register-targets \
-          --target-group-arn ${aws_lb_target_group.oauth2_proxy.arn} \
-          --targets Id=$IP,Port=4180 \
-          --region ${var.aws_region} || true
-      done
-      
-      # Obtener IPs de Grafana
-      GRAFANA_IPS=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=grafana -o jsonpath='{.items[*].status.podIP}')
-      for IP in $GRAFANA_IPS; do
-        aws elbv2 register-targets \
-          --target-group-arn ${aws_lb_target_group.grafana.arn} \
-          --targets Id=$IP,Port=80 \
-          --region ${var.aws_region} || true
-      done
-      
-      # Obtener IPs de Prometheus
-      PROMETHEUS_IPS=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[*].status.podIP}')
-      for IP in $PROMETHEUS_IPS; do
-        aws elbv2 register-targets \
-          --target-group-arn ${aws_lb_target_group.prometheus.arn} \
-          --targets Id=$IP,Port=9090 \
-          --region ${var.aws_region} || true
-      done
-      
-      # Obtener IPs de AlertManager
-      ALERTMANAGER_IPS=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=alertmanager -o jsonpath='{.items[*].status.podIP}')
-      for IP in $ALERTMANAGER_IPS; do
-        aws elbv2 register-targets \
-          --target-group-arn ${aws_lb_target_group.alertmanager.arn} \
-          --targets Id=$IP,Port=9093 \
-          --region ${var.aws_region} || true
-      done
-      
-      echo "✅ Targets registrados en ALB"
+      echo "✅ Targets de Ingress NGINX registrados en ALB"
     EOT
   }
 
   depends_on = [
-    aws_lb_target_group.frontend,
-    aws_lb_target_group.grafana,
-    aws_lb_target_group.prometheus,
-    aws_lb_target_group.alertmanager,
-    kubernetes_deployment.frontend,
-    helm_release.kube_prometheus_stack
+    aws_lb.main,
+    aws_lb_listener.http,
+    aws_lb_listener.https,
+    aws_lb_target_group.ingress_nginx,
+    aws_lb_listener_rule.monitoring_ingress,
+    helm_release.kube_prometheus_stack,
+    helm_release.ingress_nginx
   ]
 }
