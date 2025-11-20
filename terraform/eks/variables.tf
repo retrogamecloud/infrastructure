@@ -67,7 +67,7 @@ variable "node_instance_types" {
 variable "node_desired_size" {
   description = "Número deseado de nodos"
   type        = number
-  default     = 4
+  default     = 2
 }
 
 variable "node_min_size" {
@@ -79,7 +79,7 @@ variable "node_min_size" {
 variable "node_max_size" {
   description = "Número máximo de nodos"
   type        = number
-  default     = 6
+  default     = 4
 }
 
 variable "enable_cluster_autoscaler" {
