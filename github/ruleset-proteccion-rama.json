@@ -1,5 +1,6 @@
 {
   "name": "Protección rama - Main",
+  "description": "Protege la rama main requiriendo que pasen los tests antes de merge. Previene eliminación y force push.",
   "target": "branch",
   "enforcement": "active",
   "conditions": {
