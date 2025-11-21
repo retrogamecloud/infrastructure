@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kong-config
-  namespace: retrogameargo
+  namespace: retrogame
 data:
   kong.yml: |
     _format_version: "3.0"
