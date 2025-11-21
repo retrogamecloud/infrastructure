@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kong-proxy
-  namespace: retrogameargo
+  namespace: retrogame
   labels:
     app: kong
 spec:
@@ -23,7 +23,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kong-admin
-  namespace: retrogameargo
+  namespace: retrogame
   labels:
     app: kong
 spec:
