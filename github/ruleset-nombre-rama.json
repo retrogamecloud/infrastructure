@@ -19,6 +19,7 @@
     {
       "type": "branch_name_pattern",
       "parameters": {
+        "name": "Usar formato: tipo/descripción (ej: feature/user-auth, bugfix/fix-login, hotfix/security-patch)",
         "operator": "regex",
         "pattern": "^(feature|bugfix|hotfix|release|chore|docs|refactor|test|ci)/[a-z0-9-]+$",
         "negate": false
