@@ -16,16 +16,19 @@ resource "helm_release" "argocd" {
   ]
 }
 
-# ArgoCD Ingress
+# ArgoCD Ingress (behind OAuth2 Proxy)
 resource "kubernetes_ingress_v1" "argocd" {
   metadata {
     name      = "argocd-server"
     namespace = "argocd"
     annotations = {
-      "kubernetes.io/ingress.class"                    = "nginx"
-      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
-      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
+      "kubernetes.io/ingress.class"                       = "nginx"
+      "cert-manager.io/cluster-issuer"                    = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTP"
+      "nginx.ingress.kubernetes.io/ssl-redirect"          = "true"
+      "nginx.ingress.kubernetes.io/auth-url"              = "https://$host/oauth2/auth"
+      "nginx.ingress.kubernetes.io/auth-signin"           = "https://$host/oauth2/start?rd=$escaped_request_uri"
+      "nginx.ingress.kubernetes.io/auth-response-headers" = "X-Auth-Request-User,X-Auth-Request-Email"
     }
   }
 
@@ -54,7 +57,10 @@ resource "kubernetes_ingress_v1" "argocd" {
     }
   }
 
-  depends_on = [helm_release.argocd]
+  depends_on = [
+    helm_release.argocd,
+    kubernetes_deployment.oauth2_proxy
+  ]
 }
 
 # Output ArgoCD admin password command
