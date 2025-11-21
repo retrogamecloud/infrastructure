@@ -7,7 +7,7 @@ metadata:
     app: kong
     component: api-gateway
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: kong
