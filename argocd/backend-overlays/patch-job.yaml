@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: patch-deployment-sa
+  namespace: retrogame
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: patch-deployment-role
+  namespace: retrogame
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: patch-deployment-rolebinding
+  namespace: retrogame
+subjects:
+- kind: ServiceAccount
+  name: patch-deployment-sa
+  namespace: retrogame
+roleRef:
+  kind: Role
+  name: patch-deployment-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: patch-backend-env
+  namespace: retrogame
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      serviceAccountName: patch-deployment-sa
+      containers:
+      - name: kubectl
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          kubectl patch deployment backend-deployment -n retrogame --type='json' -p='[
+            {
+              "op": "replace",
+              "path": "/spec/template/spec/containers/0/env",
+              "value": [
+                {
+                  "name": "PORT",
+                  "value": "3000"
+                },
+                {
+                  "name": "NODE_ENV",
+                  "value": "production"
+                },
+                {
+                  "name": "DATABASE_URL",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "postgres-credentials",
+                      "key": "DATABASE_URL"
+                    }
+                  }
+                },
+                {
+                  "name": "JWT_SECRET",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "jwt-secret",
+                      "key": "JWT_SECRET"
+                    }
+                  }
+                }
+              ]
+            }
+          ]'
+      restartPolicy: Never
+  backoffLimit: 3

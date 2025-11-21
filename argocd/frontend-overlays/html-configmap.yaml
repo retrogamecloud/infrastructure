@@ -1,0 +1,379 @@
+apiVersion: v1
+data:
+  games.html: "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n
+    \   <meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\r\n
+    \   <meta http-equiv=\"Pragma\" content=\"no-cache\">\r\n    <meta http-equiv=\"Expires\"
+    content=\"0\">\r\n    <title>GameHub Retro - Selección de Juegos</title>\r\n    <link
+    rel=\"stylesheet\" href=\"retro.css\">\r\n    <link rel=\"stylesheet\" href=\"./jsdos/js-dos.css\">\r\n
+    \   <script src=\"./jsdos/js-dos.js\"></script>\r\n    <script src=\"score-tracker.js\"></script>\r\n
+    \   <link rel=\"icon\" type=\"image/svg+xml\" href=\"data:image/svg+xml,\r\n    <svg
+    xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>\r\n      <circle cx='32'
+    cy='32' r='24' fill='black' stroke='%2300ff88' stroke-width='4'>\r\n        <animate
+    attributeName='stroke-opacity' values='1;0.3;1' dur='2s' repeatCount='indefinite'/>\r\n
+    \     </circle>\r\n    </svg>\">\r\n</head>\r\n<body>\r\n    \r\n    <div class=\"grid\"></div>\r\n\r\n
+    \   <header>\r\n        <h1>\U0001F3AE GameHub Retro</h1>\r\n        <button class=\"logout\"
+    id=\"logoutBtn\">Salir</button>\r\n    </header>\r\n\r\n    <div class=\"game-select\">\r\n
+    \       <div class=\"game-card\">\r\n            <button class=\"game-btn\" onclick=\"loadGame('doom')\">▶️
+    Jugar DOOM</button>\r\n            <img src=\"/img/doom-thumb.jpg\" alt=\"DOOM\"
+    class=\"game-thumb\" onclick=\"loadGame('doom')\">\r\n        </div>\r\n        <div
+    class=\"game-card\">\r\n            <button class=\"game-btn\" onclick=\"loadGame('wolf')\">▶️
+    Jugar Wolfstein 3D</button>\r\n            <img src=\"/img/wolf-thumb.jpg\" alt=\"wolf\"
+    class=\"game-thumb\" onclick=\"loadGame('wolf')\">\r\n        </div>\r\n        <div
+    class=\"game-card\">\r\n            <button class=\"game-btn\" onclick=\"loadGame('dangerousdave2')\">▶️
+    Jugar Dangerous Dave 2</button>\r\n            <img src=\"/img/dangerous-thumb.jpg\"
+    alt=\"Dangerous\" class=\"game-thumb\" onclick=\"loadGame('dangerousdave2')\">\r\n
+    \       </div>\r\n        <div class=\"game-card\">\r\n            <button class=\"game-btn\"
+    onclick=\"loadGame('digger')\">▶️ Jugar Digger</button>\r\n            <img src=\"/img/digger-thumb.jpg\"
+    alt=\"digger\" class=\"game-thumb\" onclick=\"loadGame('digger')\">\r\n        </div>\r\n
+    \       <div class=\"game-card\">\r\n            <button class=\"game-btn\" onclick=\"loadGame('duke3d')\">▶️
+    Jugar Duke Nukem 3D</button>\r\n            <img src=\"/img/duke3d-thumb.jpg\"
+    alt=\"duke3d\" class=\"game-thumb\" onclick=\"loadGame('duke3d')\">\r\n        </div>\r\n
+    \       <div class=\"game-card\">\r\n            <button class=\"game-btn\" onclick=\"loadGame('heroesofmightandmagic2')\">▶️
+    Jugar Heroes of Might and Magic 2</button>\r\n            <img src=\"/img/heroes-thumb.jpg\"
+    alt=\"HEROES\" class=\"game-thumb\" onclick=\"loadGame('heroesofmightandmagic2')\">\r\n
+    \       </div>\r\n        <div class=\"game-card\">\r\n            <button class=\"game-btn\"
+    onclick=\"loadGame('lostvikings')\">▶️ Jugar Lost Vikings</button>\r\n            <img
+    src=\"/img/lost-thumb.jpg\" alt=\"lostvikings\" class=\"game-thumb\" onclick=\"loadGame('lostvikings')\">\r\n
+    \       </div>\r\n        <div class=\"game-card\">\r\n            <button class=\"game-btn\"
+    onclick=\"loadGame('mortalkombat')\">▶️ Jugar Mortal Kombat</button>\r\n            <img
+    src=\"/img/mortal-thumb.jpg\" alt=\"mortalkombat\" class=\"game-thumb\" onclick=\"loadGame('mortalkombat')\">\r\n
+    \       </div>\r\n        <div class=\"game-card\">\r\n            <button class=\"game-btn\"
+    onclick=\"loadGame('streetfighter2')\">▶️ Jugar Street Fighter 2</button>\r\n
+    \           <img src=\"/img/street-thumb.jpg\" alt=\"streetfighter2\" class=\"game-thumb\"
+    onclick=\"loadGame('streetfighter2')\">\r\n        </div>\r\n        <div class=\"game-card\">\r\n
+    \           <button class=\"game-btn\" onclick=\"loadGame('tetris')\">▶️ Jugar
+    Tetris</button>\r\n            <img src=\"/img/tetris-thumb.jpg\" alt=\"Tetris\"
+    class=\"game-thumb\" onclick=\"loadGame('tetris')\">\r\n        </div>\r\n    </div>\r\n\r\n
+    \   <div id=\"loader\"></div>\r\n    <div id=\"dosbox-container\">\r\n        <div
+    id=\"dosbox\"></div>\r\n    </div>\r\n\r\n    <section id=\"ranking\">\r\n        <h2>\U0001F3C6
+    Clasificación de Jugadores - <span id=\"current-game\">DOOM</span></h2>\r\n        <div
+    class=\"ranking-tabs\">\r\n            <button class=\"ranking-tab active\" onclick=\"switchRanking('doom')\">DOOM</button>\r\n
+    \           <button class=\"ranking-tab\" onclick=\"switchRanking('wolf')\">Wolfenstein
+    3D</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('dangerousdave2')\">Dangerous
+    Dave 2</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('digger')\">Digger</button>\r\n
+    \           <button class=\"ranking-tab\" onclick=\"switchRanking('duke3d')\">Duke
+    Nukem 3D</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('heroesofmightandmagic2')\">Heroes
+    of Might and Magic 2</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('lostvikings')\">Lost
+    Vikings</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('mortalkombat')\">Mortal
+    Kombat</button>\r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('streetfighter2')\">Street
+    Fighter 2</button>  \r\n            <button class=\"ranking-tab\" onclick=\"switchRanking('tetris')\">Tetris</button>\r\n
+    \       </div>\r\n        <table>\r\n            <thead>\r\n                <tr><th>Posición</th><th>Jugador</th><th>Puntuación</th><th>Fecha</th></tr>\r\n
+    \           </thead>\r\n            <tbody id=\"ranking-body\">\r\n                <tr><td
+    colspan=\"4\">Cargando ranking...</td></tr>\r\n            </tbody>\r\n        </table>\r\n
+    \   </section>\r\n\r\n    <section id=\"instructions\">\r\n        <h2>\U0001F579️
+    Controles</h2>\r\n        <ul>\r\n            <li><b>Movimiento:</b> Flechas o
+    WASD</li>\r\n            <li><b>Disparar:</b> CTRL</li>\r\n            <li><b>Usar
+    / Abrir puertas:</b> ESPACIO</li>\r\n            <li><b>Correr:</b> SHIFT (mantener)</li>\r\n
+    \           <li><b>Cambiar arma:</b> 1–7</li>\r\n            <li><b>Pantalla completa:</b>
+    F11 o botón del juego</li>\r\n            <li><b>Ratón:</b> clic dentro del juego
+    para capturarlo</li>\r\n        </ul>\r\n    </section>\r\n\r\n    <script>\r\n
+    \       // URLs de API - Todas a través de Kong Gateway\r\n        const API =
+    \"https://retrogamehub.games/api/auth\"; // auth-service a través de Kong\r\n
+    \       const SCORE_API = \"https://retrogamehub.games/api/scores/\"; // score-service
+    a través de Kong (¡con barra!)\r\n        const RANKING_API = \"https://retrogamehub.games/api/rankings\";
+    // ranking-service a través de Kong\r\n        \r\n        let accessToken = localStorage.getItem(\"accessToken\");\r\n
+    \       const refreshToken = localStorage.getItem(\"refreshToken\");\r\n        const
+    username = localStorage.getItem(\"username\");\r\n        const userId = localStorage.getItem(\"userId\");\r\n
+    \       const loader = document.getElementById(\"loader\");\r\n        let container
+    = document.getElementById(\"dosbox\"); // \U0001F195 Cambiado a let para poder
+    reasignar\r\n        const rankingBody = document.getElementById(\"ranking-body\");\r\n
+    \       let currentRankingGame = \"doom\";\r\n        let currentScoreSystem =
+    null;\r\n        let isRedirecting = false; // \U0001F195 Flag para evitar cargas
+    durante redirección\r\n        \r\n        // \U0001F50A Rastrear AudioContexts
+    para poder cerrarlos\r\n        const activeAudioContexts = [];\r\n        \r\n
+    \       // Interceptar creación de AudioContext\r\n        (function() {\r\n            const
+    OriginalAudioContext = window.AudioContext || window.webkitAudioContext;\r\n            if
+    (!OriginalAudioContext) return;\r\n            \r\n            const AudioContextProxy
+    = function(...args) {\r\n                const ctx = new OriginalAudioContext(...args);\r\n
+    \               activeAudioContexts.push(ctx);\r\n                console.log(`\U0001F50A
+    AudioContext creado. Total: ${activeAudioContexts.length}`);\r\n                return
+    ctx;\r\n            };\r\n            AudioContextProxy.prototype = OriginalAudioContext.prototype;\r\n
+    \           window.AudioContext = AudioContextProxy;\r\n            if (window.webkitAudioContext)
+    {\r\n                window.webkitAudioContext = AudioContextProxy;\r\n            }\r\n
+    \       })();\r\n\r\n        // \U0001F195 Función para verificar si el token
+    está expirado\r\n        function isTokenExpired(token) {\r\n            if (!token)
+    return true;\r\n            try {\r\n                const payload = JSON.parse(atob(token.split('.')[1]));\r\n
+    \               return payload.exp * 1000 < Date.now();\r\n            } catch
+    (e) {\r\n                return true;\r\n            }\r\n        }\r\n\r\n        //
+    \U0001F195 Función para renovar el token\r\n        async function refreshAccessToken()
+    {\r\n            if (!refreshToken) return false;\r\n            \r\n            try
+    {\r\n                const res = await fetch(`${API}/refresh`, {\r\n                    method:
+    \"POST\",\r\n                    headers: { \"Content-Type\": \"application/json\"
+    },\r\n                    body: JSON.stringify({ refreshToken })\r\n                });\r\n
+    \               \r\n                if (res.ok) {\r\n                    const
+    data = await res.json();\r\n                    accessToken = data.accessToken;\r\n
+    \                   localStorage.setItem(\"accessToken\", data.accessToken);\r\n
+    \                   console.log(\"✅ Token renovado exitosamente\");\r\n                    return
+    true;\r\n                }\r\n            } catch (err) {\r\n                console.error(\"❌
+    Error al renovar token:\", err);\r\n            }\r\n            return false;\r\n
+    \       }\r\n\r\n        const JUEGOS_TITULOS = {\r\n            \"doom\": \"DOOM\",\r\n
+    \           \"wolf\": \"Wolfenstein 3D\",\r\n            \"dangerousdave2\": \"Dangerous
+    Dave 2\",\r\n            \"digger\": \"Digger\",\r\n            \"duke3d\": \"Duke
+    Nukem 3D\",\r\n            \"heroesofmightandmagic2\": \"Heroes of Might and Magic
+    2\",\r\n            \"lostvikings\": \"Lost Vikings\",\r\n            \"mortalkombat\":
+    \"Mortal Kombat\",\r\n            \"streetfighter2\": \"Street Fighter 2\",\r\n
+    \           \"tetris\": \"Tetris\"\r\n        };\r\n\r\n        // Verificar si
+    está autenticado (opcional para jugar, pero necesario para guardar puntuaciones)\r\n
+    \       const isLoggedIn = !!accessToken;\r\n        if (!isLoggedIn) {\r\n            console.warn(\"⚠️
+    No estás autenticado. Puedes jugar pero no guardar puntuaciones.\");\r\n        }\r\n\r\n
+    \       // Cargar ranking inicial al abrir la página\r\n        loadRanking(\"doom\");\r\n\r\n
+    \       document.getElementById(\"logoutBtn\").onclick = () => {\r\n            localStorage.clear();\r\n
+    \           window.location.href = \"./index.html\";\r\n        };\r\n\r\n        async
+    function saveScore(game, score, retryCount = 0) {\r\n            // Prevenir bucle
+    infinito\r\n            if (retryCount > 2) {\r\n                console.error(\"❌
+    Demasiados reintentos, abortando\");\r\n                isRedirecting = true;\r\n
+    \               alert(\"\U0001F512 Error al guardar puntuación después de varios
+    intentos.\\n\\nPor favor, inicia sesión nuevamente.\\n\\nRedirigiendo al login...\");\r\n
+    \               localStorage.clear();\r\n                setTimeout(() => window.location.href
+    = \"./index.html\", 3000);\r\n                return;\r\n            }\r\n            \r\n
+    \           // Si no está autenticado, no intentar guardar\r\n            if (!accessToken)
+    {\r\n                console.warn(\"⚠️ Debes iniciar sesión para guardar tu puntuación\");\r\n
+    \               window.location.href = \"./index.html\";\r\n                return;\r\n
+    \           }\r\n\r\n            // \U0001F195 Verificar si el token expiró y
+    renovarlo (solo en el primer intento)\r\n            if (retryCount === 0 && isTokenExpired(accessToken))
+    {\r\n                console.log(\"⏰ Token expirado, intentando renovar...\");\r\n
+    \               const renewed = await refreshAccessToken();\r\n                \r\n
+    \               if (!renewed) {\r\n                    console.error(\"❌ No se
+    pudo renovar el token\");\r\n                    isRedirecting = true;\r\n                    alert(\"\U0001F512
+    Tu sesión ha expirado y no se pudo renovar.\\n\\nPor favor, inicia sesión nuevamente.\\n\\nRedirigiendo
+    al login...\");\r\n                    localStorage.clear();\r\n                    setTimeout(()
+    => window.location.href = \"./index.html\", 3000);\r\n                    return;\r\n
+    \               }\r\n                // Actualizar el token después de la renovación\r\n
+    \               accessToken = localStorage.getItem(\"accessToken\");\r\n            }\r\n\r\n
+    \           try {\r\n                console.log(`\U0001F4E4 Enviando puntuación:
+    game=${game}, score=${score}`);\r\n                console.log(`\U0001F511 Token
+    presente: ${accessToken ? 'Sí' : 'No'}`);\r\n                console.log(`\U0001F511
+    Token (primeros 20 chars): ${accessToken ? accessToken.substring(0, 20) + '...'
+    : 'N/A'}`);\r\n                \r\n                const res = await fetch(SCORE_API,
+    {\r\n                    method: \"POST\",\r\n                    headers: {\r\n
+    \                       \"Content-Type\":\"application/json\",\r\n                        \"Authorization\":
+    `Bearer ${accessToken}`\r\n                    },\r\n                    body:
+    JSON.stringify({game, score})\r\n                });\r\n                \r\n                console.log(`\U0001F4E5
+    Respuesta del servidor: ${res.status} ${res.statusText}`);\r\n                console.log(`\U0001F4E5
+    Respuesta del servidor: ${res.status} ${res.statusText}`);\r\n                \r\n
+    \               if (res.status === 403 || res.status === 401) {\r\n                    console.error(`❌
+    Token inválido o expirado (intento ${retryCount + 1}/3)`);\r\n                    console.error(`❌
+    Detalles de error: ${await res.text()}`);\r\n                    \r\n                    //
+    Intentar renovar una vez más\r\n                    const renewed = await refreshAccessToken();\r\n
+    \                   if (renewed) {\r\n                        // Actualizar accessToken
+    antes de reintentar\r\n                        accessToken = localStorage.getItem(\"accessToken\");\r\n
+    \                       console.log(\"\U0001F504 Reintentando con nuevo token...\");\r\n
+    \                       \r\n                        // Reintentar guardar con
+    nuevo token (incrementar contador)\r\n                        return saveScore(game,
+    score, retryCount + 1);\r\n                    }\r\n                    \r\n                    isRedirecting
+    = true;\r\n                    alert(\"\U0001F512 Tu sesión ha expirado.\\n\\nPor
+    favor, inicia sesión nuevamente.\\n\\nRedirigiendo al login...\");\r\n                    localStorage.clear();\r\n
+    \                   setTimeout(() => window.location.href = \"./index.html\",
+    3000);\r\n                    return;\r\n                }\r\n                \r\n
+    \               const data = await res.json();\r\n                console.log(\"✅
+    Puntuación guardada:\", data);\r\n                \r\n                // Actualizar
+    el ranking después de guardar\r\n                await loadRanking(game);\r\n
+    \           } catch (err) {\r\n                console.error(\"Error al guardar
+    puntuación:\", err);\r\n            }\r\n        }\r\n\r\n        async function
+    loadRanking(game) {\r\n            try {\r\n                currentRankingGame
+    = game;\r\n                const res = await fetch(`${RANKING_API}/games/${game}`);\r\n
+    \               const data = await res.json();\r\n                \r\n                const
+    title = JUEGOS_TITULOS[game] || game.toUpperCase();\r\n                document.getElementById(\"current-game\").textContent
+    = title;\r\n                \r\n                // Actualizar las pestañas activas\r\n
+    \               document.querySelectorAll(\".ranking-tab\").forEach(tab => {\r\n
+    \                   tab.classList.remove(\"active\");\r\n                });\r\n
+    \               // \U0001F7E2 CORRECCIÓN: Usar el valor exacto del juego en el
+    selector\r\n                document.querySelector(`[onclick=\"switchRanking('${game}')\"]`).classList.add(\"active\");\r\n
+    \               \r\n                // Actualizar la tabla\r\n                rankingBody.innerHTML
+    = \"\";\r\n                if (data.length === 0) {\r\n                    rankingBody.innerHTML
+    = '<tr><td colspan=\"4\">No hay puntuaciones todavía</td></tr>';\r\n                }
+    else {\r\n                    data.forEach((r, index) => {\r\n                        const
+    position = index + 1;\r\n                        const emoji = position === 1
+    ? \"\U0001F947\" : position === 2 ? \"\U0001F948\" : position === 3 ? \"\U0001F949\"
+    : position;\r\n                        const rowClass = r.username === username
+    ? 'class=\"my-score\"' : '';\r\n                        const date = new Date(r.created_at).toLocaleString('es-ES',
+    {\r\n                            day: '2-digit',\r\n                            month:
+    '2-digit',\r\n                            year: 'numeric',\r\n                            hour:
+    '2-digit',\r\n                            minute: '2-digit',\r\n                            timeZone:
+    'Europe/Madrid'\r\n                        });\r\n                        rankingBody.innerHTML
+    += `<tr ${rowClass}><td>${emoji}</td><td>${r.username}</td><td>${r.score}</td><td>${date}</td></tr>`;\r\n
+    \                   });\r\n                }\r\n            } catch (err) {\r\n
+    \               console.error(\"Error al cargar ranking:\", err);\r\n                rankingBody.innerHTML
+    = '<tr><td colspan=\"4\">Servicio de rankings no disponible</td></tr>';\r\n            }\r\n
+    \       }\r\n\r\n        function switchRanking(game) {\r\n            loadRanking(game);\r\n
+    \       }\r\n\r\n        async function loadGame(game) {\r\n            console.log(`\U0001F3AE
+    loadGame llamado con: ${game}`);\r\n            console.log(`\U0001F4CD container
+    actual:`, container);\r\n            \r\n            // \U0001F6D1 NO cargar juegos
+    si estamos redirigiendo al login\r\n            if (isRedirecting) {\r\n                console.warn(\"⚠️
+    Redirigiendo al login, no se cargará el juego\");\r\n                return;\r\n
+    \           }\r\n\r\n            // \U0001F9F9 Limpieza NUCLEAR - destruir TODO
+    para forzar limpieza de audio\r\n            if (window.ciInstance) {\r\n                try
+    {\r\n                    console.log(\"\U0001F525 Destruyendo instancia completa
+    de JS-DOS...\");\r\n                    \r\n                    // \U0001F507
+    Cerrar TODOS los AudioContext rastreados\r\n                    console.log(`\U0001F50D
+    Intentando cerrar ${activeAudioContexts.length} AudioContexts rastreados...`);\r\n
+    \                   for (let i = activeAudioContexts.length - 1; i >= 0; i--)
+    {\r\n                        const ctx = activeAudioContexts[i];\r\n                        try
+    {\r\n                            if (ctx && ctx.state !== 'closed') {\r\n                                console.log(`\U0001F507
+    Cerrando AudioContext #${i} (estado: ${ctx.state})`);\r\n                                await
+    ctx.close();\r\n                                console.log(`✅ AudioContext #${i}
+    cerrado`);\r\n                            }\r\n                            activeAudioContexts.splice(i,
+    1);\r\n                        } catch (e) {\r\n                            console.warn(`⚠️
+    Error cerrando AudioContext #${i}:`, e);\r\n                        }\r\n                    }\r\n
+    \                   \r\n                    if (activeAudioContexts.length ===
+    0) {\r\n                        console.log(\"✅ Todos los AudioContext cerrados\");\r\n
+    \                   } else {\r\n                        console.warn(`⚠️ Quedan
+    ${activeAudioContexts.length} AudioContext sin cerrar`);\r\n                    }\r\n
+    \                   \r\n                    await window.ciInstance.exit();\r\n
+    \               } catch (e) {\r\n                    console.warn(\"⚠️ Error al
+    hacer exit:\", e);\r\n                } finally {\r\n                    window.ciInstance
+    = null;\r\n                }\r\n            }\r\n            \r\n            //
+    \U0001F4A3 DESTRUIR COMPLETAMENTE el canvas y todos sus hijos\r\n            const
+    dosboxDiv = document.getElementById('dosbox');\r\n            if (dosboxDiv) {\r\n
+    \               // Destruir TODO lo que hay dentro (canvas, audio, etc)\r\n                while
+    (dosboxDiv.firstChild) {\r\n                    dosboxDiv.removeChild(dosboxDiv.firstChild);\r\n
+    \               }\r\n                // Limpiar atributos\r\n                dosboxDiv.innerHTML
+    = '';\r\n            }\r\n            \r\n            // Destruir elementos audio/video
+    en TODO el documento\r\n            document.querySelectorAll('audio, video, canvas').forEach(el
+    => {\r\n                try {\r\n                    if (el.pause) el.pause();\r\n
+    \                   if (el.parentNode) el.parentNode.removeChild(el);\r\n                }
+    catch (e) {}\r\n            });\r\n            \r\n            // Esperar más
+    tiempo para que se liberen recursos de audio\r\n            await new Promise(resolve
+    => setTimeout(resolve, 500));\r\n            \r\n            // \U0001F525 DESTRUCCIÓN
+    COMPLETA del contenedor para limpiar todo\r\n            const dosboxContainer
+    = document.getElementById(\"dosbox-container\");\r\n            const parent =
+    dosboxContainer.parentNode;\r\n            const nextSibling = dosboxContainer.nextSibling;\r\n
+    \           \r\n            // Eliminar completamente el contenedor del DOM\r\n
+    \           parent.removeChild(dosboxContainer);\r\n            \r\n            //
+    Esperar un momento para que el navegador limpie\r\n            await new Promise(resolve
+    => setTimeout(resolve, 100));\r\n            \r\n            // Recrear el contenedor
+    desde cero\r\n            const newContainer = document.createElement('div');\r\n
+    \           newContainer.id = 'dosbox-container';\r\n            newContainer.style.width
+    = '80%';\r\n            newContainer.style.height = '500px';\r\n            newContainer.style.margin
+    = '20px auto';\r\n            newContainer.style.border = '2px solid #00ff88';\r\n
+    \           newContainer.style.borderRadius = '10px';\r\n            newContainer.style.display
+    = 'block';\r\n            newContainer.style.boxShadow = '0 0 25px #00ff88';\r\n
+    \           newContainer.style.zIndex = '5';\r\n            newContainer.style.position
+    = 'relative';\r\n            newContainer.style.background = '#000';\r\n            \r\n
+    \           const newDosbox = document.createElement('div');\r\n            newDosbox.id
+    = 'dosbox';\r\n            newContainer.appendChild(newDosbox);\r\n            \r\n
+    \           parent.insertBefore(newContainer, nextSibling);\r\n            container
+    = newDosbox;\r\n            \r\n            // Limpiar rastreador de puntuación
+    anterior si existe\r\n            if (currentScoreSystem) {\r\n                try
+    {\r\n                    currentScoreSystem.destroy();\r\n                } catch
+    (e) {\r\n                    console.warn(\"⚠️ Error al destruir ScoreSystem:\",
+    e);\r\n                } finally {\r\n                    currentScoreSystem =
+    null;\r\n                }\r\n            }\r\n            \r\n            console.log(`\U0001F4E6
+    Container listo después de recrear desde cero:`, container);\r\n            \r\n
+    \           loader.textContent = `Cargando ${game.toUpperCase()}...`;\r\n            \r\n
+    \           // URLs del CDN - Para pruebas locales con docker-compose, usar puerto
+    8086\r\n            // En producción con Ingress, sería: https://cdn.gamehub.com\r\n
+    \           const CDN_URL = window.CDN_URL || '/juegos';\r\n            \r\n            const
+    JUEGOS_RUTAS = {\r\n                \"doom\": `${CDN_URL}/doom.jsdos`,\r\n                \"wolf\":
+    `${CDN_URL}/wolf.jsdos`,\r\n                \"dangerousdave2\": `${CDN_URL}/dangerousdave2.jsdos`,
+    \r\n                \"digger\": `${CDN_URL}/digger.jsdos`,\r\n                \"duke3d\":
+    `${CDN_URL}/duke3d.jsdos`,\r\n                \"heroesofmightandmagic2\": `${CDN_URL}/heroesofmightandmagic2.jsdos`,\r\n
+    \               \"lostvikings\": `${CDN_URL}/lostvikings.jsdos`,\r\n                \"mortalkombat\":
+    `${CDN_URL}/mortalkombat.jsdos`,\r\n                \"streetfighter2\": `${CDN_URL}/streetfighter2.jsdos`,\r\n
+    \               \"tetris\": `${CDN_URL}/tetris.jsdos` \r\n            };\r\n\r\n
+    \           const url = JUEGOS_RUTAS[game] || \"./juegos/default.jsdos\";\r\n\r\n
+    \           // Cargar el ranking del juego que se va a jugar\r\n            await
+    loadRanking(game);\r\n\r\n            try {\r\n                console.log(`\U0001F3AE
+    Cargando juego desde: ${url}`);\r\n                console.log(`\U0001F4E6 Container
+    antes de Dos():`, container);\r\n                \r\n                const ci
+    = await Dos(container, {url, pathPrefix:\"./jsdos/\", mouseLock:true});\r\n                window.ciInstance
+    = ci;\r\n                \r\n                console.log(`✅ Dos() ejecutado exitosamente`);\r\n
+    \               \r\n                // \U0001F195 Iniciar sistema híbrido de puntuación\r\n
+    \               currentScoreSystem = new HybridScoreSystem(game, ci);\r\n                console.log(`✅
+    Rastreo de puntuación iniciado para ${game.toUpperCase()}`);\r\n                \r\n
+    \               loader.textContent = \"\";\r\n                \r\n                console.log(`\U0001F4FA
+    Canvas listo para mostrar el juego`);\r\n                \r\n                //
+    \U0001F680 Simular clic en el botón play después de un breve delay\r\n                setTimeout(()
+    => {\r\n                    const playButton = container.querySelector('button,
+    .dos-play-button, [class*=\"play\"]');\r\n                    if (playButton)
+    {\r\n                        // Intentar múltiples métodos de clic\r\n                        if
+    (typeof playButton.click === 'function') {\r\n                            playButton.click();\r\n
+    \                       } else {\r\n                            // Simular eventos
+    de mouse manualmente\r\n                            const clickEvent = new MouseEvent('click',
+    {\r\n                                view: window,\r\n                                bubbles:
+    true,\r\n                                cancelable: true\r\n                            });\r\n
+    \                           playButton.dispatchEvent(clickEvent);\r\n                        }\r\n
+    \                       console.log(`✅ Juego arrancado automáticamente`);\r\n
+    \                   } else {\r\n                        console.log(`⚠️ No se
+    encontró botón de play para autoarranque`);\r\n                    }\r\n                },
+    500);\r\n\r\n                // \U0001F195 Guardar la función original de salida\r\n
+    \               const originalExit = ci.exit;\r\n                \r\n                ci.exit
+    = async () => {\r\n                    console.log(`\U0001F3C1 Juego terminado,
+    calculando puntuación...`);\r\n                    \r\n                    //
+    \U0001F195 Obtener puntuación (automática o manual según tiempo jugado)\r\n                    const
+    score = await currentScoreSystem.getFinalScore();\r\n                    console.log(`\U0001F4CA
+    Puntuación final: ${score}`);\r\n                    \r\n                    //
+    Guardar puntuación solo si está autenticado\r\n                    await saveScore(game,
+    score);\r\n                    \r\n                    // Limpiar sistema de puntuación\r\n
+    \                   if (currentScoreSystem) {\r\n                        currentScoreSystem.destroy();\r\n
+    \                       currentScoreSystem = null;\r\n                    }\r\n
+    \                   \r\n                    // Llamar a la función original de
+    salida de JS-DOS\r\n                    if (originalExit) {\r\n                        try
+    {\r\n                            await originalExit.call(ci);\r\n                        }
+    catch (e) {\r\n                            console.warn(\"⚠️ Error en exit original:\",
+    e);\r\n                        }\r\n                    }\r\n                    \r\n
+    \                   // \U0001F195 Limpiar la instancia\r\n                    window.ciInstance
+    = null;\r\n                    \r\n                    console.log(\"✅ Juego terminado
+    y limpiado correctamente\");\r\n                };\r\n                \r\n                console.log(\"✅
+    Juego cargado exitosamente\");\r\n            } catch (err) {\r\n                loader.textContent
+    = \"\";\r\n                console.error(\"❌ Error al cargar juego:\", err);\r\n
+    \               alert(`Error al cargar ${game}: ${err.message}`);\r\n            }\r\n
+    \       }\r\n    </script>\r\n</body>\r\n</html>"
+  index.html: "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n  <meta charset=\"UTF-8\">\r\n
+    \ <title>Retro Game Hub - Iniciar Sesión</title>\r\n  <link rel=\"stylesheet\"
+    href=\"retro.css\">\r\n  <link rel=\"icon\" type=\"image/svg+xml\" href=\"data:image/svg+xml,\r\n
+    \ <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>\r\n    <circle
+    cx='32' cy='32' r='24' fill='black' stroke='%2300ff88' stroke-width='4'>\r\n      <animate
+    attributeName='stroke-opacity' values='1;0.3;1' dur='2s' repeatCount='indefinite'/>\r\n
+    \   </circle>\r\n  </svg>\">\r\n</head>\r\n<body>\r\n  <div class=\"grid\"></div>\r\n\r\n
+    \ <div class=\"panel\">\r\n    <h1>\U0001F579️ RETRO GAME HUB</h1>\r\n\r\n    <div
+    id=\"login\">\r\n      <input id=\"username\" placeholder=\"Usuario\" />\r\n      <input
+    id=\"password\" type=\"password\" placeholder=\"Contraseña\" onkeypress=\"if(event.key==='Enter')
+    login()\" />\r\n      <button onclick=\"login()\">Entrar</button>\r\n      <p
+    onclick=\"toggleForm()\">¿No tienes cuenta? Regístrate</p>\r\n    </div>\r\n\r\n
+    \   <div id=\"register\" style=\"display:none;\">\r\n      <input id=\"newUsername\"
+    placeholder=\"Elige un usuario\" />\r\n      <input id=\"newPassword\" type=\"password\"
+    placeholder=\"Elige una contraseña\" onkeypress=\"if(event.key==='Enter') register()\"
+    />\r\n      <button onclick=\"register()\">Registrar</button>\r\n      <p onclick=\"toggleForm()\">¿Ya
+    tienes cuenta? Inicia sesión</p>\r\n    </div>\r\n  </div>\r\n\r\n  <script>\r\n
+    \   // URL del API Gateway (Kong)\r\n    const API = \"https://retrogamehub.games/api/auth\";\r\n\r\n
+    \   function toggleForm() {\r\n      document.getElementById(\"login\").style.display
+    =\r\n        document.getElementById(\"login\").style.display === \"none\" ? \"block\"
+    : \"none\";\r\n      document.getElementById(\"register\").style.display =\r\n
+    \       document.getElementById(\"register\").style.display === \"none\" ? \"block\"
+    : \"none\";\r\n    }\r\n\r\n    async function login() {\r\n      const username
+    = document.getElementById(\"username\").value;\r\n      const password = document.getElementById(\"password\").value;\r\n
+    \     \r\n      try {\r\n        const res = await fetch(`${API}/login`, {\r\n
+    \         method: \"POST\",\r\n          headers: {\"Content-Type\":\"application/json\"},\r\n
+    \         body: JSON.stringify({username, password})\r\n        });\r\n        \r\n
+    \       const data = await res.json();\r\n        \r\n        if (res.ok && data.accessToken)
+    {\r\n          localStorage.setItem(\"accessToken\", data.accessToken);\r\n          localStorage.setItem(\"username\",
+    data.user.username);\r\n          localStorage.setItem(\"userId\", data.user.id);\r\n
+    \         window.location.href = \"./games.html\";\r\n        } else {\r\n          alert(\"Error:
+    \" + (data.error || \"usuario o contraseña incorrectos\"));\r\n        }\r\n      }
+    catch (error) {\r\n        console.error(\"Login error:\", error);\r\n        alert(\"Error
+    de conexión. Por favor, intenta de nuevo.\");\r\n      }\r\n    }\r\n\r\n    async
+    function register() {\r\n      const username = document.getElementById(\"newUsername\").value;\r\n
+    \     const password = document.getElementById(\"newPassword\").value;\r\n      \r\n
+    \     // Validación en el cliente\r\n      if (!username || username.length <
+    3) {\r\n        alert(\"El nombre de usuario debe tener al menos 3 caracteres\");\r\n
+    \       return;\r\n      }\r\n      \r\n      if (!password || password.length
+    < 6) {\r\n        alert(\"La contraseña debe tener al menos 6 caracteres\");\r\n
+    \       return;\r\n      }\r\n      \r\n      try {\r\n        const res = await
+    fetch(`${API}/register`, {\r\n          method: \"POST\",\r\n          headers:
+    {\"Content-Type\":\"application/json\"},\r\n          body: JSON.stringify({username,
+    password})\r\n        });\r\n        \r\n        const data = await res.json();\r\n
+    \       \r\n        if (res.ok) {\r\n          alert(\"Cuenta creada correctamente.
+    ¡Ahora puedes iniciar sesión!\");\r\n          toggleForm();\r\n        } else
+    {\r\n          if (data.error && data.error.includes(\"duplicate key value\"))
+    {\r\n            alert(\"Error: El usuario ya existe. Por favor, elige otro nombre
+    de usuario.\");\r\n          } else if (data.error && data.details) {\r\n            alert(\"Error:
+    \" + data.error + \"\\n\" + data.details.join(\"\\n\"));\r\n          } else {\r\n
+    \           alert(\"Error: \" + (data.error || \"No se pudo crear la cuenta\"));\r\n
+    \         }\r\n        }\r\n      } catch (error) {\r\n        console.error(\"Register
+    error:\", error);\r\n        alert(\"Error de conexión. Por favor, intenta de
+    nuevo.\");\r\n      }\r\n    }\r\n  </script>\r\n</body>\r\n</html>\r\n"
+kind: ConfigMap
+metadata:
+  name: frontend-html
+  namespace: retrogame

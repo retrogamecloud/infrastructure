@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backend
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: retrogame
+    server: https://kubernetes.default.svc
+  project: default
+  revisionHistoryLimit: 10
+  sources:
+  - repoURL: https://github.com/retrogamecloud/kubernetes.git
+    targetRevision: main
+    path: .
+    directory:
+      recurse: false
+      include: "02-backend.yaml"
+      exclude: "{00-*,01-*,03-*,06-*,package*,README*,*.md}"
+  - repoURL: https://github.com/retrogamecloud/infrastructure.git
+    targetRevision: main
+    path: argocd/backend-overlays
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    name: backend-deployment
+    jsonPointers:
+    - /spec/template/spec/containers/0/env
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+      limit: 5
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground

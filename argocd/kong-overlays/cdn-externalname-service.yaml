@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdn-service
+  namespace: retrogame
+spec:
+  type: ExternalName
+  externalName: d2h75khar1tz6s.cloudfront.net
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 443
