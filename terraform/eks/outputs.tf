@@ -103,6 +103,10 @@ output "upload_images_command" {
   value       = "aws s3 sync ./infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ --region ${var.aws_region}"
 }
 
+# ============================================================================
+# Outputs de Route53 y SSL
+# ============================================================================
+
 output "route53_zone_id" {
   description = "ID de la zona Route53"
   value       = try(aws_route53_zone.main.zone_id, null)
@@ -118,6 +122,10 @@ output "ssl_certificate_arn" {
   value       = try(aws_acm_certificate.main.arn, null)
 }
 
+# ============================================================================
+# Outputs de ALB
+# ============================================================================
+
 output "alb_dns_name" {
   description = "DNS name del Application Load Balancer"
   value       = try(aws_lb.main.dns_name, null)
@@ -132,6 +140,10 @@ output "domain_url" {
   description = "URL del dominio principal"
   value       = "https://retrogamehub.games"
 }
+
+# ============================================================================
+# Outputs de Monitoring
+# ============================================================================
 
 output "grafana_url" {
   description = "URL de Grafana"

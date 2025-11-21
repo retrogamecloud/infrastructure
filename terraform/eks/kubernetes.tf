@@ -25,7 +25,9 @@ resource "kubernetes_secret" "jwt_secret" {
   depends_on = [module.eks]
 }
 
-# Backend Deployment
+# Backend Deployment - COMENTADO: Ahora gestionado por ArgoCD en namespace retrogameargo
+# Descomentar si se quiere volver a gestionar con Terraform
+/* 
 resource "kubernetes_deployment" "backend" {
   metadata {
     name      = "backend"
@@ -125,8 +127,10 @@ resource "kubernetes_deployment" "backend" {
     kubernetes_secret.jwt_secret
   ]
 }
+*/
 
-# Backend Service
+# Backend Service - COMENTADO: Ahora gestionado por ArgoCD
+/* 
 resource "kubernetes_service" "backend" {
   metadata {
     name      = "backend-service"
@@ -148,6 +152,7 @@ resource "kubernetes_service" "backend" {
 
   depends_on = [kubernetes_deployment.backend]
 }
+*/
 
 # ConfigMap para reemplazar URLs en frontend (se actualiza después con las URLs reales)
 resource "kubernetes_config_map" "frontend_replacer" {
@@ -187,7 +192,8 @@ resource "kubernetes_config_map" "frontend_replacer" {
   depends_on = [module.eks]
 }
 
-# Frontend Deployment
+# Frontend Deployment - COMENTADO: Ahora gestionado por ArgoCD
+/* 
 resource "kubernetes_deployment" "frontend" {
   metadata {
     name      = "frontend"
@@ -294,8 +300,10 @@ resource "kubernetes_deployment" "frontend" {
 
   depends_on = [module.eks]
 }
+*/
 
-# Frontend Service
+# Frontend Service - COMENTADO: Ahora gestionado por ArgoCD
+/* 
 resource "kubernetes_service" "frontend" {
   metadata {
     name      = "frontend-service"
@@ -317,6 +325,7 @@ resource "kubernetes_service" "frontend" {
 
   depends_on = [kubernetes_deployment.frontend]
 }
+*/
 
 # Kong ConfigMap
 resource "kubernetes_config_map" "kong" {
@@ -370,7 +379,8 @@ resource "kubernetes_config_map" "kong" {
   depends_on = [module.eks]
 }
 
-# Kong Deployment
+# Kong Deployment - COMENTADO: Ahora gestionado por ArgoCD
+/* 
 resource "kubernetes_deployment" "kong" {
   wait_for_rollout = false # Temporalmente desactivado para permitir escalado de nodos
 
@@ -460,8 +470,10 @@ resource "kubernetes_deployment" "kong" {
     aws_cloudfront_distribution.games_cdn
   ]
 }
+*/
 
-# Kong Service (LoadBalancer)
+# Kong Service (LoadBalancer) - COMENTADO: Ahora gestionado por ArgoCD
+/* 
 resource "kubernetes_service" "kong" {
   metadata {
     name      = "kong-service"
@@ -491,8 +503,11 @@ resource "kubernetes_service" "kong" {
 
   depends_on = [kubernetes_deployment.kong]
 }
+*/
 
-# Ingress para Backend (API directamente, sin Kong)
+# Ingress para Backend (API directamente, sin Kong) - COMENTADO: Los servicios son gestionados por ArgoCD
+# Los ingress se configuran en los manifiestos de ArgoCD
+/* 
 resource "kubernetes_ingress_v1" "backend" {
   metadata {
     name      = "backend-ingress"
@@ -532,6 +547,7 @@ resource "kubernetes_ingress_v1" "backend" {
     helm_release.ingress_nginx
   ]
 }
+*/
 
 # Ingress para Wiki (Mintlify) - proxy externo con soporte para assets
 resource "kubernetes_ingress_v1" "wiki" {
@@ -698,7 +714,8 @@ resource "kubernetes_service" "wiki_external" {
   }
 }
 
-# Ingress para Frontend (debe ir después de otros paths para que tengan prioridad)
+# Ingress para Frontend (debe ir después de otros paths para que tengan prioridad) - COMENTADO
+/* 
 resource "kubernetes_ingress_v1" "frontend" {
   metadata {
     name      = "frontend-ingress"
@@ -739,6 +756,7 @@ resource "kubernetes_ingress_v1" "frontend" {
     kubernetes_ingress_v1.wiki
   ]
 }
+*/
 
 # ConfigMap con el script SQL de inicialización
 resource "kubernetes_config_map" "db_init_script" {
@@ -901,20 +919,23 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
   ]
 }
 
-# Null resource para aplicar el rollout restart del frontend
+# Null resource para aplicar el rollout restart del frontend - COMENTADO: Frontend gestionado por ArgoCD
+/* 
 resource "null_resource" "restart_frontend" {
   triggers = {
     config_version = kubernetes_config_map_v1_data.frontend_urls.data["replace-urls.sh"]
-    always_run     = timestamp()
   }
 
   provisioner "local-exec" {
     command = replace(<<-EOT
-      echo "⏳ Esperando propagación de ConfigMap actualizado..."
-      sleep 10
+      echo "⏳ Esperando propagación de ConfigMap y registro de ALB targets..."
+      sleep 30
       
       echo "🔄 Reiniciando deployment frontend..."
       kubectl rollout restart deployment/frontend -n retrogame || echo "⚠️  Restart falló, continuando..."
+      
+      echo "⏳ Esperando a que el nuevo pod esté Ready..."
+      kubectl rollout status deployment/frontend -n retrogame --timeout=120s || echo "⚠️  Timeout esperando rollout"
       
       echo "✅ Proceso completado"
     EOT
@@ -923,7 +944,8 @@ resource "null_resource" "restart_frontend" {
 
   depends_on = [
     kubernetes_deployment.frontend,
-    kubernetes_config_map_v1_data.frontend_urls
+    kubernetes_config_map_v1_data.frontend_urls,
+    null_resource.register_targets
   ]
 }
-
+*/
