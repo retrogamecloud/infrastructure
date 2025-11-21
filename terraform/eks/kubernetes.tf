@@ -905,18 +905,16 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
 resource "null_resource" "restart_frontend" {
   triggers = {
     config_version = kubernetes_config_map_v1_data.frontend_urls.data["replace-urls.sh"]
+    always_run     = timestamp()
   }
 
   provisioner "local-exec" {
     command = replace(<<-EOT
-      echo "⏳ Esperando propagación de ConfigMap y registro de ALB targets..."
-      sleep 30
+      echo "⏳ Esperando propagación de ConfigMap actualizado..."
+      sleep 10
       
       echo "🔄 Reiniciando deployment frontend..."
       kubectl rollout restart deployment/frontend -n retrogame || echo "⚠️  Restart falló, continuando..."
-      
-      echo "⏳ Esperando a que el nuevo pod esté Ready..."
-      kubectl rollout status deployment/frontend -n retrogame --timeout=120s || echo "⚠️  Timeout esperando rollout"
       
       echo "✅ Proceso completado"
     EOT
@@ -925,8 +923,7 @@ resource "null_resource" "restart_frontend" {
 
   depends_on = [
     kubernetes_deployment.frontend,
-    kubernetes_config_map_v1_data.frontend_urls,
-    null_resource.register_targets
+    kubernetes_config_map_v1_data.frontend_urls
   ]
 }
 

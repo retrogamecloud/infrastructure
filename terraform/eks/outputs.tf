@@ -58,6 +58,26 @@ output "kong_load_balancer_hostname" {
   value       = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
 }
 
+output "kong_url" {
+  description = "URL completa del Load Balancer de Kong"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}", "pending")
+}
+
+output "grafana_url" {
+  description = "URL pública de Grafana (LoadBalancer propio)"
+  value       = "Obtener con: kubectl get svc kube-prometheus-stack-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
+}
+
+output "prometheus_url" {
+  description = "URL pública de Prometheus"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/prometheus/", "pending")
+}
+
+output "alertmanager_url" {
+  description = "URL pública de AlertManager"
+  value       = try("http://${kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname}/alertmanager/", "pending")
+}
+
 output "configure_kubectl" {
   description = "Comando para configurar kubectl"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
@@ -95,14 +115,15 @@ output "cdn_url" {
 
 output "upload_games_command" {
   description = "Comando para subir juegos al bucket S3"
-  value       = "aws s3 sync ./infraestructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ --region ${var.aws_region}"
+  value       = "aws s3 sync ./infrastructure/cdn/juegos/ s3://${aws_s3_bucket.games_cdn.id}/juegos/ --region ${var.aws_region}"
 }
 
 output "upload_images_command" {
   description = "Comando para subir imágenes al bucket S3"
-  value       = "aws s3 sync ./infraestructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ --region ${var.aws_region}"
+  value       = "aws s3 sync ./infrastructure/cdn/img/ s3://${aws_s3_bucket.games_cdn.id}/img/ --region ${var.aws_region}"
 }
 
+<<<<<<<< HEAD:terraform/eks/outputs.tf
 # ============================================================================
 # Outputs de Route53 y SSL
 # ============================================================================
@@ -195,3 +216,5 @@ output "prometheus_port_forward_command" {
   description = "Comando para acceder a Prometheus localmente"
   value       = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090"
 }
+========
+>>>>>>>> origin/main:terraform/eks/outputs2.tf.disabled

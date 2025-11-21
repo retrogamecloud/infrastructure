@@ -61,13 +61,13 @@ variable "public_subnets" {
 variable "node_instance_types" {
   description = "Tipos de instancia EC2 para los nodos"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.small"]
 }
 
 variable "node_desired_size" {
   description = "Número deseado de nodos"
   type        = number
-  default     = 2
+  default     = 4
 }
 
 variable "node_min_size" {
@@ -79,7 +79,7 @@ variable "node_min_size" {
 variable "node_max_size" {
   description = "Número máximo de nodos"
   type        = number
-  default     = 4
+  default     = 6
 }
 
 variable "enable_cluster_autoscaler" {
