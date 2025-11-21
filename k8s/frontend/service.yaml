@@ -5,6 +5,8 @@ metadata:
   namespace: retrogame
   labels:
     app: frontend
+  annotations:
+    argocd.argoproj.io/tracking-id: 'frontend:/Service:retrogame/frontend-service'
 spec:
   type: ClusterIP
   ports:
