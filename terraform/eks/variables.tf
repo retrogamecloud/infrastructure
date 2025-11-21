@@ -61,7 +61,7 @@ variable "public_subnets" {
 variable "node_instance_types" {
   description = "Tipos de instancia EC2 para los nodos"
   type        = list(string)
-  default     = ["t3.small"]
+  default     = ["t3.medium"]
 }
 
 variable "node_desired_size" {

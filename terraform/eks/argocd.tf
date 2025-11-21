@@ -12,8 +12,7 @@ resource "helm_release" "argocd" {
   ]
 
   depends_on = [
-    aws_eks_cluster.retrogame_cluster,
-    aws_eks_node_group.retrogame_nodes
+    module.eks
   ]
 }
 
@@ -23,30 +22,30 @@ resource "kubernetes_ingress_v1" "argocd" {
     name      = "argocd-server"
     namespace = "argocd"
     annotations = {
-      "kubernetes.io/ingress.class"                = "nginx"
-      "cert-manager.io/cluster-issuer"             = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/ssl-passthrough" = "true"
-      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
+      "kubernetes.io/ingress.class"                    = "nginx"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
+      "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
     }
   }
 
   spec {
     tls {
-      hosts       = ["argocd.retrogamehub.games"]
-      secret_name = "argocd-server-tls"
+      hosts       = ["retrogamehub.games"]
+      secret_name = "retrogamehub-tls"
     }
 
     rule {
-      host = "argocd.retrogamehub.games"
+      host = "retrogamehub.games"
       http {
         path {
-          path      = "/"
+          path      = "/argocd"
           path_type = "Prefix"
           backend {
             service {
               name = "argocd-server"
               port {
-                number = 443
+                number = 80
               }
             }
           }

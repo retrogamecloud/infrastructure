@@ -62,7 +62,7 @@ resource "helm_release" "ingress_nginx" {
         }
         
         # Replicas
-        replicaCount = 2
+        replicaCount = 1
         
         # Affinity para distribuir pods
         affinity = {
