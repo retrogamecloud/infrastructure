@@ -11,15 +11,8 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   revisionHistoryLimit: 10
-  sources:
-  - repoURL: https://github.com/retrogamecloud/kubernetes.git
-    targetRevision: main
-    path: .
-    directory:
-      recurse: false
-      include: "02-backend.yaml"
-      exclude: "{00-*,01-*,03-*,06-*,package*,README*,*.md}"
-  - repoURL: https://github.com/retrogamecloud/infrastructure.git
+  source:
+    repoURL: https://github.com/retrogamecloud/infrastructure.git
     targetRevision: main
     path: argocd/backend-overlays
   ignoreDifferences:
