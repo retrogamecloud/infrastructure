@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 data:
   service.slack: |
-    apiURL: https://hooks.slack.com/services/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
+    apiURL: https://hooks.slack.com/services/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
 
   template.app-deployed: |
     message: |
