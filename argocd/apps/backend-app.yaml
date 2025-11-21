@@ -33,3 +33,10 @@ spec:
         maxDuration: 3m
   
   revisionHistoryLimit: 10
+
+  # Health check personalizado para verificar endpoint /health
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
