@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  namespace: retrogameargo
+  namespace: retrogame
   labels:
     app: backend
     component: database-service
