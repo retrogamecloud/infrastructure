@@ -1,0 +1,58 @@
+server:
+  replicas: 1
+  
+  extraArgs:
+    - --insecure
+    - --basehref=/argocd
+    - --rootpath=/argocd
+  
+  ingress:
+    enabled: false  # We manage ingress via Terraform
+  
+  service:
+    type: ClusterIP
+
+controller:
+  replicas: 1
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1
+
+configs:
+  params:
+    server.insecure: true
+  
+  cm:
+    # Enable anonymous access to metrics
+    metrics.enabled: true
+    
+    # Timeout for repository operations
+    timeout.reconciliation: 180s
+    
+    # Resource tracking method
+    application.resourceTrackingMethod: annotation
+
+  repositories:
+    # These will be configured via ArgoCD UI or kubectl after installation
+    # Example for reference:
+    # - url: https://github.com/retrogamecloud/infrastructure.git
+    #   type: git
+    # - url: https://github.com/retrogamecloud/backend.git
+    #   type: git
+    # - url: https://github.com/retrogamecloud/frontend.git
+    #   type: git
+    # - url: https://github.com/retrogamecloud/kong.git
+    #   type: git
+
+# Redis for caching
+redis:
+  enabled: true
+  replicas: 1
+
+# Resource limits
+global:
+  image:
+    tag: v2.9.3

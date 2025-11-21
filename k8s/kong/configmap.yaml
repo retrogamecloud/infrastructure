@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+  namespace: default
+data:
+  kong.yml: |
+    _format_version: "3.0"
+    _transform: true
+
+    services:
+      - name: backend-service
+        url: http://backend-service:3000
+        routes:
+          - name: backend-route
+            paths:
+              - /api
+            strip_path: false
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - PATCH
+                - OPTIONS
+              headers:
+                - Accept
+                - Authorization
+                - Content-Type
+              exposed_headers:
+                - Authorization
+              credentials: true
+              max_age: 3600
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
+
+      - name: frontend-service
+        url: http://frontend-service:8080
+        routes:
+          - name: frontend-route
+            paths:
+              - /
+            strip_path: false
+      
+      - name: cdn-service
+        url: http://cdn-service:80
+        routes:
+          - name: cdn-route
+            paths:
+              - /cdn
+            strip_path: true
