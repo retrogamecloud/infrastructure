@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: retrogamecloud/backend:latest  # Will be updated by CI/CD
+        image: retrogamehub/backend:latest  # Will be updated by CI/CD
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
