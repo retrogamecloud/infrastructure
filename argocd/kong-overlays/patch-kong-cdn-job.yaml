@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: patch-kong-cdn-sa
+  namespace: retrogame
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: patch-kong-cdn-role
+  namespace: retrogame
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: patch-kong-cdn-rolebinding
+  namespace: retrogame
+subjects:
+- kind: ServiceAccount
+  name: patch-kong-cdn-sa
+  namespace: retrogame
+roleRef:
+  kind: Role
+  name: patch-kong-cdn-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: patch-kong-cdn
+  namespace: retrogame
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      serviceAccountName: patch-kong-cdn-sa
+      containers:
+      - name: patch-kong
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Actualizando configuración de Kong para CDN..."
+          
+          # Obtener configuración actual
+          kubectl get configmap kong-config -n retrogame -o jsonpath='{.data.kong\.yml}' > /tmp/kong-current.yml
+          
+          # 1. Cambiar URL del cdn-service de HTTP a HTTPS
+          sed -i 's|url: http://cdn-service:80|url: https://cdn-service:443|g' /tmp/kong-current.yml
+          
+          # 2. Agregar plugin request-transformer después de las rutas del cdn-service
+          cat > /tmp/add-plugin.awk << 'AWK'
+          BEGIN { in_cdn=0; routes_done=0; plugin_added=0 }
+          /- name: cdn-service/ { print; in_cdn=1; next }
+          in_cdn && /- name: cdn-img/ { routes_done=1 }
+          in_cdn && routes_done && /strip_path: false/ && !plugin_added { 
+              print
+              print "    plugins:"
+              print "      - name: request-transformer"
+              print "        config:"
+              print "          replace:"
+              print "            headers:"
+              print "              - Host:d2h75khar1tz6s.cloudfront.net"
+              plugin_added=1
+              in_cdn=0
+              routes_done=0
+              next 
+          }
+          /- name: frontend-service/ { in_cdn=0; routes_done=0 }
+          { print }
+          AWK
+          
+          awk -f /tmp/add-plugin.awk /tmp/kong-current.yml > /tmp/kong-patched.yml
+          
+          echo "Configuración parcheada:"
+          grep -A 20 "cdn-service" /tmp/kong-patched.yml | head -25
+          
+          # Aplicar el ConfigMap actualizado
+          kubectl create configmap kong-config --from-file=kong.yml=/tmp/kong-patched.yml -n retrogame --dry-run=client -o yaml | \
+            kubectl replace -f -
+          
+          echo "✓ ConfigMap actualizado"
+          
+          # Reiniciar Kong para aplicar cambios
+          kubectl rollout restart deployment kong-deployment -n retrogame
+          
+          echo "✓ Kong reiniciado"
+      restartPolicy: Never
+  backoffLimit: 3
