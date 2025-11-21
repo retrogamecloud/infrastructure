@@ -16,6 +16,8 @@ spec:
       labels:
         app: backend
         component: database-service
+      annotations:
+        gitops-test: "deployed-via-argocd"
     spec:
       containers:
       - name: backend
