@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdn
+  namespace: default
+  labels:
+    app: cdn
+    component: games-cdn
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cdn
+  template:
+    metadata:
+      labels:
+        app: cdn
+        component: games-cdn
+    spec:
+      containers:
+      - name: cdn
+        image: retrogamecloud/cdn:latest  # Será actualizado por CI/CD
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: cdn-nginx-config

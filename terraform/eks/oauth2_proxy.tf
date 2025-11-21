@@ -116,7 +116,7 @@ resource "kubernetes_deployment" "oauth2_proxy" {
   }
 
   spec {
-    replicas = 2
+    replicas = 1
 
     selector {
       match_labels = {

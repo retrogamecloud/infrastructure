@@ -1,96 +1,26 @@
-# ============================================================================
-# Terraform .gitignore
-# ============================================================================
-
-# State files (contienen información sensible y estado de infraestructura)
-terraform.tfstate
-terraform.tfstate.backup
-*.tfstate
-*.tfstate.*
-.terraform.tfstate.lock.info
-
-# Directory de módulos y plugins descargados
+# Terraform
 .terraform/
 .terraform.lock.hcl
-
-# Plan files (pueden contener información sensible)
 *.tfplan
 *.tfplan.json
 
-# Variables con valores sensibles
-terraform.tfvars
-*.auto.tfvars
-*.auto.tfvars.json
-!terraform.tfvars.example
-secrets.auto.tfvars
+# Estado - IMPORTANTE: considera hacer backup o versionar estos archivos
+# ya que contienen la configuración del backend de todos tus proyectos
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.tfstate.lock.info
 
-# Archivos de override
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
-# Crash log files
-crash.log
-crash.*.log
-
-# CLI configuration files
-.terraformrc
-terraform.rc
-
-# ============================================================================
-# Archivos temporales y de IDEs
-# ============================================================================
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Linux
-*~
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# VS Code
-.vscode/
-*.code-workspace
-
-# JetBrains IDEs (IntelliJ, PyCharm, etc.)
-.idea/
-*.iml
-*.iws
-
-# Vim
-*.swp
-*.swo
-
-# Emacs
-*~
-\#*\#
-.\#*
-
-# ============================================================================
-# Archivos sensibles
-# ============================================================================
-
-# Certificados y llaves privadas (NO SUBIR NUNCA)
+# Sensitive files
 *.pem
 *.key
-*.crt
-*.cert
-*.p12
-*.pfx
 
-# ============================================================================
-# Archivos de logs y respaldos
-# ============================================================================
+# OS files
+.DS_Store
+Thumbs.db
 
-*.log
-*.bak
-*.tmp
-*.temp
-terraform.tfvars
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
