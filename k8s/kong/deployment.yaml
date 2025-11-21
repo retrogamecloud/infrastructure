@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kong
-  namespace: default
+  namespace: retrogameargo
   labels:
     app: kong
     component: api-gateway
