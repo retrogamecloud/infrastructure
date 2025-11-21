@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    token: $slack-token
+
+  template.app-deployed: |
+    message: |
+      ✅ *Aplicación Desplegada*
+      {{if eq .serviceType "slack"}}:rocket:{{end}} Aplicación *{{.app.metadata.name}}* ha sido desplegada exitosamente.
+      
+      *Detalles:*
+      • Repositorio: {{.app.spec.source.repoURL}}
+      • Revisión: {{.app.status.sync.revision}}
+      • Estado: {{.app.status.health.status}}
+    slack:
+      attachments: |
+        [{
+          "color": "good",
+          "fields": [
+            {
+              "title": "Aplicación",
+              "value": "{{.app.metadata.name}}",
+              "short": true
+            },
+            {
+              "title": "Namespace",
+              "value": "{{.app.spec.destination.namespace}}",
+              "short": true
+            },
+            {
+              "title": "Sync Status",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            },
+            {
+              "title": "Health Status",
+              "value": "{{.app.status.health.status}}",
+              "short": true
+            }
+          ]
+        }]
+
+  template.app-sync-failed: |
+    message: |
+      ❌ *Sync Fallido*
+      {{if eq .serviceType "slack"}}:x:{{end}} La aplicación *{{.app.metadata.name}}* falló al sincronizar.
+      
+      *Error:*
+      {{.app.status.operationState.message}}
+      
+      *Detalles:*
+      • Repositorio: {{.app.spec.source.repoURL}}
+      • Revisión: {{.app.status.sync.revision}}
+    slack:
+      attachments: |
+        [{
+          "color": "danger",
+          "fields": [
+            {
+              "title": "Aplicación",
+              "value": "{{.app.metadata.name}}",
+              "short": true
+            },
+            {
+              "title": "Namespace",
+              "value": "{{.app.spec.destination.namespace}}",
+              "short": true
+            },
+            {
+              "title": "Fase",
+              "value": "{{.app.status.operationState.phase}}",
+              "short": true
+            }
+          ]
+        }]
+
+  template.app-health-degraded: |
+    message: |
+      ⚠️ *Aplicación Degradada*
+      {{if eq .serviceType "slack"}}:warning:{{end}} La aplicación *{{.app.metadata.name}}* está en estado Degraded.
+      
+      *Detalles:*
+      • Estado de Salud: {{.app.status.health.status}}
+      • Mensaje: {{.app.status.health.message}}
+      • Revisión Actual: {{.app.status.sync.revision}}
+    slack:
+      attachments: |
+        [{
+          "color": "warning",
+          "fields": [
+            {
+              "title": "Aplicación",
+              "value": "{{.app.metadata.name}}",
+              "short": true
+            },
+            {
+              "title": "Namespace",
+              "value": "{{.app.spec.destination.namespace}}",
+              "short": true
+            },
+            {
+              "title": "Health Status",
+              "value": "{{.app.status.health.status}}",
+              "short": true
+            },
+            {
+              "title": "Sync Status",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            }
+          ]
+        }]
+
+  trigger.on-deployed: |
+    - description: Application is synced and healthy. Triggered once per commit.
+      send:
+      - app-deployed
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+
+  trigger.on-sync-failed: |
+    - description: Application syncing has failed
+      send:
+      - app-sync-failed
+      when: app.status.operationState.phase in ['Error', 'Failed']
+
+  trigger.on-health-degraded: |
+    - description: Application has degraded
+      send:
+      - app-health-degraded
+      when: app.status.health.status == 'Degraded'
+
+  subscriptions: |
+    - recipients:
+      - slack:argocdretrogame
+      triggers:
+      - on-deployed
+      - on-sync-failed
+      - on-health-degraded
