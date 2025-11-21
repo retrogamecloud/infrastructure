@@ -5,115 +5,54 @@ metadata:
   namespace: argocd
 data:
   service.slack: |
-    token: $slack-token
+    apiURL: https://hooks.slack.com/services/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
 
   template.app-deployed: |
     message: |
-      ✅ *Aplicación Desplegada*
-      {{if eq .serviceType "slack"}}:rocket:{{end}} Aplicación *{{.app.metadata.name}}* ha sido desplegada exitosamente.
-      
-      *Detalles:*
-      • Repositorio: {{.app.spec.source.repoURL}}
-      • Revisión: {{.app.status.sync.revision}}
-      • Estado: {{.app.status.health.status}}
-    slack:
-      attachments: |
-        [{
+      {
+        "text": "✅ *Aplicación Desplegada*",
+        "attachments": [{
           "color": "good",
           "fields": [
-            {
-              "title": "Aplicación",
-              "value": "{{.app.metadata.name}}",
-              "short": true
-            },
-            {
-              "title": "Namespace",
-              "value": "{{.app.spec.destination.namespace}}",
-              "short": true
-            },
-            {
-              "title": "Sync Status",
-              "value": "{{.app.status.sync.status}}",
-              "short": true
-            },
-            {
-              "title": "Health Status",
-              "value": "{{.app.status.health.status}}",
-              "short": true
-            }
+            {"title": "Aplicación", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Sync Status", "value": "{{.app.status.sync.status}}", "short": true},
+            {"title": "Health Status", "value": "{{.app.status.health.status}}", "short": true},
+            {"title": "Revisión", "value": "{{.app.status.sync.revision}}", "short": false}
           ]
         }]
+      }
 
   template.app-sync-failed: |
     message: |
-      ❌ *Sync Fallido*
-      {{if eq .serviceType "slack"}}:x:{{end}} La aplicación *{{.app.metadata.name}}* falló al sincronizar.
-      
-      *Error:*
-      {{.app.status.operationState.message}}
-      
-      *Detalles:*
-      • Repositorio: {{.app.spec.source.repoURL}}
-      • Revisión: {{.app.status.sync.revision}}
-    slack:
-      attachments: |
-        [{
+      {
+        "text": "❌ *Sync Fallido*",
+        "attachments": [{
           "color": "danger",
           "fields": [
-            {
-              "title": "Aplicación",
-              "value": "{{.app.metadata.name}}",
-              "short": true
-            },
-            {
-              "title": "Namespace",
-              "value": "{{.app.spec.destination.namespace}}",
-              "short": true
-            },
-            {
-              "title": "Fase",
-              "value": "{{.app.status.operationState.phase}}",
-              "short": true
-            }
+            {"title": "Aplicación", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Fase", "value": "{{.app.status.operationState.phase}}", "short": true},
+            {"title": "Error", "value": "{{.app.status.operationState.message}}", "short": false}
           ]
         }]
+      }
 
   template.app-health-degraded: |
     message: |
-      ⚠️ *Aplicación Degradada*
-      {{if eq .serviceType "slack"}}:warning:{{end}} La aplicación *{{.app.metadata.name}}* está en estado Degraded.
-      
-      *Detalles:*
-      • Estado de Salud: {{.app.status.health.status}}
-      • Mensaje: {{.app.status.health.message}}
-      • Revisión Actual: {{.app.status.sync.revision}}
-    slack:
-      attachments: |
-        [{
+      {
+        "text": "⚠️ *Aplicación Degradada*",
+        "attachments": [{
           "color": "warning",
           "fields": [
-            {
-              "title": "Aplicación",
-              "value": "{{.app.metadata.name}}",
-              "short": true
-            },
-            {
-              "title": "Namespace",
-              "value": "{{.app.spec.destination.namespace}}",
-              "short": true
-            },
-            {
-              "title": "Health Status",
-              "value": "{{.app.status.health.status}}",
-              "short": true
-            },
-            {
-              "title": "Sync Status",
-              "value": "{{.app.status.sync.status}}",
-              "short": true
-            }
+            {"title": "Aplicación", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Health Status", "value": "{{.app.status.health.status}}", "short": true},
+            {"title": "Sync Status", "value": "{{.app.status.sync.status}}", "short": true},
+            {"title": "Mensaje", "value": "{{.app.status.health.message}}", "short": false}
           ]
         }]
+      }
 
   trigger.on-deployed: |
     - description: Application is synced and healthy. Triggered once per commit.
