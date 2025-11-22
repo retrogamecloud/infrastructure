@@ -20,7 +20,7 @@ spec:
       # Init container 1: Copiar archivos de la imagen al volumen compartido
       initContainers:
       - name: copy-files
-        image: retrogamehub/frontend:latest
+        image: retrogamehub/frontend:sha-911b8e8
         command: ["sh", "-c", "cp -r /app/* /shared/ && cp -r /app/.[^.]* /shared/ 2>/dev/null || true && ls -la /shared"]
         volumeMounts:
         - name: app-files
@@ -38,7 +38,7 @@ spec:
       
       containers:
       - name: frontend
-        image: retrogamehub/frontend:latest  # Will be updated by CI/CD
+        image: retrogamehub/frontend:sha-911b8e8
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
