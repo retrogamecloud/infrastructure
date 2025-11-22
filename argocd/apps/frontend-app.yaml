@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://github.com/retrogamecloud/infrastructure.git
     targetRevision: main
-    path: k8s/frontend
+    path: argocd/k8s/frontend
   
   destination:
     server: https://kubernetes.default.svc
