@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: retrogamehub/backend:sha-a88b342  # Will be updated by CI/CD
+        image: retrogamehub/backend:sha-f07c8a9  # Will be updated by CI/CD
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
