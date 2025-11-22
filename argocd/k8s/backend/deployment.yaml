@@ -32,33 +32,16 @@ spec:
           value: "production"
         - name: PORT
           value: "3000"
-        - name: DB_HOST
+        - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: backend-secrets
-              key: db-host
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: backend-secrets
-              key: db-name
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: backend-secrets
-              key: db-user
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: backend-secrets
-              key: db-password
+              name: postgres-credentials
+              key: DATABASE_URL
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: backend-secrets
-              key: jwt-secret
+              name: jwt-secret
+              key: JWT_SECRET
         - name: REDIS_HOST
           value: "redis-service"
         - name: REDIS_PORT
