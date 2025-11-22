@@ -9,9 +9,9 @@ spec:
   project: default
   
   source:
-    repoURL: https://github.com/retrogamecloud/infrastructure.git
+    repoURL: https://github.com/retrogamecloud/kubernetes.git
     targetRevision: main
-    path: argocd/k8s/kong
+    path: argocd/kong
   
   destination:
     server: https://kubernetes.default.svc
