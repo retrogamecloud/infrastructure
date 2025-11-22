@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: kong
-        image: retrogamehub/kong:latest  # Will be updated by CI/CD
+        image: retrogamehub/kong:sha-15388ef
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
