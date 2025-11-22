@@ -48,11 +48,3 @@ data:
             paths:
               - /
             strip_path: false
-      
-      - name: cdn-service
-        url: http://cdn-service:80
-        routes:
-          - name: cdn-route
-            paths:
-              - /cdn
-            strip_path: true
