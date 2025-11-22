@@ -1,10 +1,11 @@
+# --- 1. Despliegue del Backend (API) ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-deployment
   namespace: retrogame
 spec:
-  replicas: 2
+  replicas: 2 # Corremos 2 copias para alta disponibilidad
   selector:
     matchLabels:
       app: backend
@@ -15,7 +16,9 @@ spec:
     spec:
       containers:
         - name: backend
+          # Imagen del backend desde DockerHub - v1.0.33 (sha-973da1e)
           image: retrogamehub/backend:sha-973da1e
+          # La imagen se descarga solo si no existe localmente (mejor práctica)
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -25,31 +28,29 @@ spec:
             - name: NODE_ENV
               value: "production"
             - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: DATABASE_URL
+              # El Service 'postgres-db' (del archivo 01) resuelve a la IP de la BD
+              value: "postgresql://gamecloud:gamecloud@postgres-db:5432/retrogamecloud"
             - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: jwt-secret
-                  key: JWT_SECRET
+              value: "supersecret-jwt-key-change-in-production-2024"
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health # Asumiendo que tienes una ruta raíz. Cambia si es /health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 5
+
 ---
+# --- 2. Servicio Interno para el Backend ---
 apiVersion: v1
 kind: Service
 metadata:
+  # Este nombre DEBE COINCIDIR con el 'url' en kong.yml
   name: gamehub-database-service
   namespace: retrogame
 spec:
   selector:
-    app: backend
+    app: backend # Apunta a los pods con la etiqueta 'app: backend'
   ports:
     - protocol: TCP
-      port: 3000
-      targetPort: 3000
+      port: 3000       # El puerto que Kong busca
+      targetPort: 3000 # El puerto del contenedor
