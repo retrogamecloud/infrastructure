@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   # GitHub OAuth Configuration
+  # IMPORTANTE: Reutiliza el mismo GitHub OAuth App que oauth2-proxy
+  # Client ID: Ov23lil4DINdiuLj2XnS (mismo que oauth2-proxy en monitoring namespace)
+  # Client Secret: Compartido desde el secret oauth2-proxy
   url: https://retrogamehub.games/argocd
   dex.config: |
     connectors:
@@ -15,7 +18,7 @@ data:
       id: github
       name: GitHub
       config:
-        clientID: $GITHUB_CLIENT_ID  # Se reemplazará con el valor real
+        clientID: Ov23lil4DINdiuLj2XnS
         clientSecret: $dex.github.clientSecret  # Referencia al secret
         orgs:
         - name: retrogamecloud

@@ -1,90 +1,55 @@
 # Configuración de GitHub OAuth para ArgoCD
 
-## Pasos para configurar GitHub OAuth
+## ✅ Configuración simplificada - Reutilizando OAuth2 Proxy existente
 
-### 1. Crear GitHub OAuth App
+Este proyecto ya tiene configurado **OAuth2 Proxy** en el namespace `monitoring` con autenticación GitHub para la organización `retrogamecloud`. ArgoCD puede **reutilizar el mismo GitHub OAuth App**, simplificando la configuración.
 
-1. Ve a tu organización en GitHub: https://github.com/organizations/retrogamecloud/settings/applications
-2. Click en **"OAuth Apps"** → **"New OAuth App"**
-3. Configura:
-   - **Application name**: `ArgoCD - RetroGameCloud`
-   - **Homepage URL**: `https://retrogamehub.games`
-   - **Authorization callback URL**: `https://retrogamehub.games/argocd/api/dex/callback`
-4. Click **"Register application"**
-5. Copia el **Client ID**
-6. Genera un **Client Secret** y cópialo
+### Credenciales compartidas
 
-### 2. Configurar ArgoCD
+- **Client ID**: `Ov23lil4DINdiuLj2XnS` (ya configurado)
+- **Client Secret**: `0e14645efdb0317bd3c83c9ace9a76f198b53052` (copiado desde oauth2-proxy)
+- **Organización**: `retrogamecloud`
+- **Callback URL ArgoCD**: `https://retrogamehub.games/argocd/api/dex/callback`
 
-#### Opción A: Aplicar ConfigMap y Secret directamente
+## Pasos para aplicar (simplificados)
+
+### 1. Añadir callback URL en GitHub OAuth App existente
+
+1. Ve a: https://github.com/settings/developers (o settings de la org si el OAuth App está allí)
+2. Click en el OAuth App que usa oauth2-proxy (Client ID: `Ov23lil4DINdiuLj2XnS`)
+3. En **"Authorization callback URLs"**, añade:
+   ```
+   https://retrogamehub.games/argocd/api/dex/callback
+   ```
+4. Click **"Update application"**
+
+### 2. Aplicar configuraciones en el cluster
 
 ```bash
-# 1. Editar argocd-cm-github.yaml y reemplazar $GITHUB_CLIENT_ID
-sed -i 's/$GITHUB_CLIENT_ID/TU_CLIENT_ID_AQUI/g' infrastructure/argocd/github-oauth/argocd-cm-github.yaml
-
-# 2. Editar argocd-secret-github.yaml y reemplazar el client secret
-sed -i 's/GITHUB_OAUTH_CLIENT_SECRET_AQUI/TU_CLIENT_SECRET_AQUI/g' infrastructure/argocd/github-oauth/argocd-secret-github.yaml
-
-# 3. Aplicar configuraciones
+# Los archivos YA tienen las credenciales correctas reutilizadas
 kubectl apply -f infrastructure/argocd/github-oauth/argocd-cm-github.yaml
 kubectl apply -f infrastructure/argocd/github-oauth/argocd-secret-github.yaml
 
-# 4. Reiniciar ArgoCD server y dex para aplicar cambios
-kubectl rollout restart deployment/argocd-server -n argocd
-kubectl rollout restart deployment/argocd-dex-server -n argocd
-```
-
-#### Opción B: Usar kubectl patch (recomendado para producción)
-
-```bash
-# Crear secret con GitHub OAuth
-kubectl create secret generic argocd-github-oauth \
-  -n argocd \
-  --from-literal=clientId='TU_CLIENT_ID_AQUI' \
-  --from-literal=clientSecret='TU_CLIENT_SECRET_AQUI' \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# Actualizar argocd-secret
-CLIENT_SECRET=$(echo -n 'TU_CLIENT_SECRET_AQUI' | base64)
-kubectl patch secret argocd-secret -n argocd --type merge -p "{\"data\":{\"dex.github.clientSecret\":\"$CLIENT_SECRET\"}}"
-
-# Actualizar argocd-cm con GitHub config
-kubectl patch configmap argocd-cm -n argocd --type merge -p '
-{
-  "data": {
-    "url": "https://retrogamehub.games/argocd",
-    "dex.config": "connectors:\n- type: github\n  id: github\n  name: GitHub\n  config:\n    clientID: TU_CLIENT_ID_AQUI\n    clientSecret: $dex.github.clientSecret\n    orgs:\n    - name: retrogamecloud\n",
-    "policy.default": "role:readonly",
-    "policy.csv": "g, retrogamecloud:*, role:admin\n"
-  }
-}'
-
-# Reiniciar ArgoCD
+# Reiniciar ArgoCD para aplicar cambios
 kubectl rollout restart deployment/argocd-server deployment/argocd-dex-server -n argocd
 ```
 
-### 3. Verificar configuración
+### 3. Verificar y probar
 
 ```bash
-# Ver logs de dex
+# Esperar a que los pods estén running
+kubectl get pods -n argocd -w
+
+# Ver logs si hay problemas
 kubectl logs -n argocd deployment/argocd-dex-server -f
-
-# Ver logs de server
 kubectl logs -n argocd deployment/argocd-server -f
-
-# Verificar ConfigMap
-kubectl get configmap argocd-cm -n argocd -o yaml
-
-# Verificar Secret
-kubectl get secret argocd-secret -n argocd -o jsonpath='{.data.dex\.github\.clientSecret}' | base64 -d
 ```
 
-### 4. Probar autenticación
-
+**Probar autenticación:**
 1. Ve a: https://retrogamehub.games/argocd
-2. Click en **"LOG IN VIA GITHUB"**
-3. Autoriza la aplicación OAuth
-4. Deberías ser redirigido a ArgoCD con acceso admin (si eres miembro de retrogamecloud)
+2. Deberías ver botón **"LOG IN VIA GITHUB"**
+3. Click → Autoriza (ya autorizado si usaste oauth2-proxy antes)
+4. Acceso admin automático (miembro de retrogamecloud)
 
 ### 5. Gestionar acceso
 
