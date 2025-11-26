@@ -15,32 +15,32 @@ resource "helm_release" "ingress_nginx" {
     yamlencode({
       controller = {
         service = {
-          type = "ClusterIP"  # ClusterIP porque el ALB ya maneja el external access
+          type = "ClusterIP" # ClusterIP porque el ALB ya maneja el external access
           annotations = {
-            "service.beta.kubernetes.io/aws-load-balancer-type"            = "external"
-            "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internet-facing"
+            "service.beta.kubernetes.io/aws-load-balancer-type"             = "external"
+            "service.beta.kubernetes.io/aws-load-balancer-scheme"           = "internet-facing"
             "service.beta.kubernetes.io/aws-load-balancer-backend-protocol" = "http"
           }
         }
-        
+
         config = {
           # Configuración para trabajar detrás de ALB
-          "use-forwarded-headers" = "true"
+          "use-forwarded-headers"      = "true"
           "compute-full-forwarded-for" = "true"
-          "use-proxy-protocol" = "false"
-          
+          "use-proxy-protocol"         = "false"
+
           # Configuración de proxy
-          "proxy-body-size" = "50m"
+          "proxy-body-size"   = "50m"
           "proxy-buffer-size" = "8k"
-          
+
           # SSL y HTTPS
-          "ssl-redirect" = "false"  # ALB ya maneja SSL
+          "ssl-redirect"       = "false" # ALB ya maneja SSL
           "force-ssl-redirect" = "false"
-          
+
           # Habilitar snippets para redirects de trailing slash
           "allow-snippet-annotations" = "true"
         }
-        
+
         # Recursos
         resources = {
           requests = {
@@ -52,7 +52,7 @@ resource "helm_release" "ingress_nginx" {
             memory = "512Mi"
           }
         }
-        
+
         # Métricas
         metrics = {
           enabled = true
@@ -60,14 +60,14 @@ resource "helm_release" "ingress_nginx" {
             enabled = true
           }
         }
-        
+
         # Replicas
         replicaCount = 1
-        
+
         # Host network para que el ALB pueda alcanzar el ingress directamente
         hostNetwork = true
-        dnsPolicy = "ClusterFirstWithHostNet"
-        
+        dnsPolicy   = "ClusterFirstWithHostNet"
+
         # Affinity para distribuir pods
         affinity = {
           podAntiAffinity = {
@@ -112,7 +112,7 @@ resource "kubernetes_service" "ingress_nginx_alb" {
 
   spec {
     type = "ClusterIP"
-    
+
     selector = {
       "app.kubernetes.io/name"      = "ingress-nginx"
       "app.kubernetes.io/instance"  = "ingress-nginx"
