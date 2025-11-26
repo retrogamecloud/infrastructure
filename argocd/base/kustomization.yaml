@@ -9,6 +9,7 @@ resources:
   - argocd-repo-infrastructure.yaml
   - argocd-notifications-cm.yaml
   - argocd-notifications-secret.yaml
+  - argocd-ingress.yaml
 
 patches:
   # Strategic merge patch to add GitHub OAuth without losing existing config

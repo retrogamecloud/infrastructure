@@ -26,6 +26,9 @@ configs:
     server.insecure: true
   
   cm:
+    # ArgoCD URL
+    url: https://retrogamehub.games/argocd
+    
     # Enable anonymous access to metrics
     metrics.enabled: true
     
@@ -34,6 +37,33 @@ configs:
     
     # Resource tracking method
     application.resourceTrackingMethod: annotation
+    
+    # GitHub OAuth via Dex
+    dex.config: |
+      connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: Ov23li1po0fBSpoAPweT
+          clientSecret: $dex.github.clientSecret
+          orgs:
+          - name: retrogamecloud
+  
+  # RBAC Configuration
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, jpalenz77, role:admin
+      g, naesman1, role:admin
+      g, evaristogz, role:admin
+      g, retrogamecloud:*, role:admin
+    scopes: '[groups]'
+  
+  # Secret for GitHub OAuth
+  secret:
+    extra:
+      dex.github.clientSecret: eee8350a40817bf1758c6dc287acfc5c6840af4d
 
   repositories:
     # These will be configured via ArgoCD UI or kubectl after installation
@@ -55,4 +85,4 @@ redis:
 # Resource limits
 global:
   image:
-    tag: v2.9.3
+    tag: v3.2.0
