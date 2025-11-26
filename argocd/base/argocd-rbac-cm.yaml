@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  policy.default: role:readonly
+  policy.csv: |
+    g, jpalenz77, role:admin
+    g, naesman1, role:admin
+    g, evaristogz, role:admin
+    g, retrogamecloud:*, role:admin
+  scopes: '[groups]'
