@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # GitHub OAuth Configuration
+  url: https://retrogamehub.games/argocd
+  dex.config: |
+    connectors:
+    - type: github
+      id: github
+      name: GitHub
+      config:
+        clientID: $GITHUB_CLIENT_ID  # Se reemplazará con el valor real
+        clientSecret: $dex.github.clientSecret  # Referencia al secret
+        orgs:
+        - name: retrogamecloud
+          # Solo permitir miembros de la org retrogamecloud
+        # Opcional: restringir a teams específicos
+        # teams:
+        # - retrogamecloud/admins
+        # - retrogamecloud/developers
+        
+        # Mapeo de claims
+        loadAllGroups: false
+        teamNameField: slug
+        useLoginAsID: false
+
+  # Política de RBAC por defecto
+  policy.default: role:readonly
+  
+  # Políticas de RBAC para la organización
+  policy.csv: |
+    # Política: miembros de retrogamecloud tienen acceso admin
+    g, retrogamecloud:*, role:admin
+    
+    # Política opcional: acceso granular por teams
+    # g, retrogamecloud:admins, role:admin
+    # g, retrogamecloud:developers, role:developer
+    
+    # Rol developer personalizado (ejemplo)
+    # p, role:developer, applications, *, */*, allow
+    # p, role:developer, repositories, get, *, allow
+    # p, role:developer, repositories, sync, *, allow
+
+  # Habilitar anonymous access solo para health checks
+  accounts.anonymous.enabled: "false"
+  
+  # Timeout para reconciliación
+  timeout.reconciliation: 180s
+  
+  # Resource tracking
+  application.resourceTrackingMethod: annotation
+  
+  # Metrics
+  metrics.enabled: "true"
