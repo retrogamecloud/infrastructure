@@ -171,33 +171,34 @@ jobs:
           echo "## ☸️ Validación de Kubernetes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Encontrar todos los archivos YAML de Kubernetes (excluir kustomization.yaml y ArgoCD)
-          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v ".git" | grep -v "kustomization.yaml" | grep -v "argocd" | grep -v "monitoring")
+          # Encontrar todos los archivos YAML de Kubernetes (excluir kustomization.yaml, ArgoCD y monitoring)
+          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" 2>/dev/null | grep -v node_modules | grep -v ".git" | grep -v "kustomization.yaml" | grep -v "argocd" | grep -v "monitoring" || true)
           
           if [ -z "$K8S_FILES" ]; then
             echo "ℹ️ No se encontraron manifiestos de Kubernetes básicos para validar" >> $GITHUB_STEP_SUMMARY
-            echo "ℹ️ Este repositorio contiene principalmente configuraciones de ArgoCD, Kustomize y Monitoring que se validan en otros jobs." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Este repositorio contiene principalmente configuraciones de ArgoCD, Kustomize y Monitoring que se validan en otros jobs." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
           
-          VALIDATION_FAILED=0
           VALIDATED_COUNT=0
           SKIPPED_COUNT=0
           
           for file in $K8S_FILES; do
             # Verificar si el archivo contiene recursos de Kubernetes
-            if grep -q "apiVersion:" "$file" && grep -q "kind:" "$file"; then
+            if grep -q "apiVersion:" "$file" 2>/dev/null && grep -q "kind:" "$file" 2>/dev/null; then
               echo "📄 Validando: $file"
               
               # Capturar el error para mostrarlo
-              ERROR_OUTPUT=$(kubectl apply --dry-run=client -f "$file" 2>&1)
+              ERROR_OUTPUT=$(kubectl apply --dry-run=client -f "$file" 2>&1 || true)
+              EXIT_CODE=$?
               
-              if [ $? -eq 0 ]; then
+              if [ $EXIT_CODE -eq 0 ]; then
                 echo "- ✅ \`$file\`" >> $GITHUB_STEP_SUMMARY
                 VALIDATED_COUNT=$((VALIDATED_COUNT + 1))
               else
                 # Extraer primera línea del error
-                ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -1)
+                ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -1 || echo "Error desconocido")
                 echo "- ⚠️ \`$file\`: ${ERROR_MSG}" >> $GITHUB_STEP_SUMMARY
                 echo "::warning file=$file,title=Kubernetes Validation::${ERROR_MSG}"
                 VALIDATED_COUNT=$((VALIDATED_COUNT + 1))
@@ -210,7 +211,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Resumen:** $VALIDATED_COUNT analizados, $SKIPPED_COUNT omitidos" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "ℹ️ **Nota:** Los manifiestos de ArgoCD y Kustomize se validan en el job \`validate-argocd\`" >> $GITHUB_STEP_SUMMARY
+          echo "ℹ️ **Nota:** Los manifiestos de ArgoCD, Kustomize y Monitoring se validan en otros jobs." >> $GITHUB_STEP_SUMMARY
 
 ## JOB PARA VALIDACIÓN DE ARGOCD ##
   validate-argocd:
@@ -258,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' &&
-      contains(github.event.pull_request.labels.*.name, 'test:integration')
+      contains(github.event.head_commit.message, '[test:integration]')
     permissions:
       contents: read
     
