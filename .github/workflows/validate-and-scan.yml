@@ -355,9 +355,9 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=retrogamecloud_infrastructure
+            -Dsonar.projectKey=retrogamecloud_${{ github.event.repository.name }}
             -Dsonar.organization=retrogamecloud
-            -Dsonar.sources=terraform,kubernetes,argocd
+            -Dsonar.sources=terraform,argocd,monitoring
             -Dsonar.exclusions=**/*.tfstate,**/*.tfstate.backup,**/node_modules/**,**/.terraform/**
 
       - name: Verificar resultado de SonarCloud
@@ -605,22 +605,6 @@ jobs:
                       {
                         "type": "mrkdwn",
                         "text": "*Rama:*\n${{ github.ref_name }}"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Workflow:*\n${{ github.workflow }}"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Evento:*\n${{ github.event_name }}"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Commit:*\n<${{ github.event.head_commit.url }}|${{ github.sha }}>"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Autor:*\n${{ github.actor }}"
                       }
                     ]
                   },
