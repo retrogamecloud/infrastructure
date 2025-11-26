@@ -259,7 +259,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' &&
-      contains(github.event.head_commit.message, '[test:integration]')
+      (contains(github.event.pull_request.title, '[test:integration]') ||
+       contains(github.event.pull_request.body, '[test:integration]'))
     permissions:
       contents: read
     
