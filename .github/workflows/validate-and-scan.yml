@@ -1,0 +1,563 @@
+name: Validación y escaneo de ficheros de infraestructura
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ENABLE_SNYK: true
+  ENABLE_SLACK_NOTIFICATIONS: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+## JOB PARA LINTING DE ARCHIVOS DE INFRAESTRUCTURA ##
+  lint-infrastructure:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar tests de validación
+        id: tests
+        continue-on-error: true
+        run: |
+          if npm run | grep -q "test"; then
+            if npm test; then
+              echo "tests_failed=false" >> $GITHUB_OUTPUT
+            else
+              echo "tests_failed=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⏭️ No hay tests configurados"
+            echo "tests_failed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generar resumen de linting
+        if: always()
+        run: |
+          echo "## 🔍 Resultados de Validación" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.tests.outputs.tests_failed }}" = "true" ]; then
+            echo "- ⚠️ **Tests**: Se encontraron problemas de validación" >> $GITHUB_STEP_SUMMARY
+            echo "::warning file=tests,title=Problemas de Validación::Se encontraron errores. Ejecuta 'npm test' para ver los detalles."
+          else
+            echo "- ✅ **Tests**: Validación correcta" >> $GITHUB_STEP_SUMMARY
+          fi
+
+## JOB PARA VALIDACIÓN DE TERRAFORM ##
+  validate-terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Validar configuraciones de Terraform
+        run: |
+          echo "## 🏗️ Validación de Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Encontrar todos los directorios con archivos .tf
+          TERRAFORM_DIRS=$(find terraform -name "*.tf" -exec dirname {} \; | sort -u)
+          
+          if [ -z "$TERRAFORM_DIRS" ]; then
+            echo "⚠️ No se encontraron configuraciones de Terraform" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          VALIDATION_FAILED=0
+          
+          for dir in $TERRAFORM_DIRS; do
+            echo "📁 Validando: $dir"
+            echo "### Directorio: \`$dir\`" >> $GITHUB_STEP_SUMMARY
+            
+            cd "$GITHUB_WORKSPACE/$dir"
+            
+            # Terraform fmt check
+            if terraform fmt -check -recursive; then
+              echo "- ✅ Formato correcto" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ Problemas de formato" >> $GITHUB_STEP_SUMMARY
+              echo "::warning file=$dir,title=Terraform Format::Ejecuta 'terraform fmt' en $dir"
+              VALIDATION_FAILED=1
+            fi
+            
+            # Terraform init
+            if terraform init -backend=false > /dev/null 2>&1; then
+              echo "- ✅ Inicialización exitosa" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ❌ Fallo en inicialización" >> $GITHUB_STEP_SUMMARY
+              VALIDATION_FAILED=1
+            fi
+            
+            # Terraform validate
+            if terraform validate; then
+              echo "- ✅ Validación exitosa" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ❌ Fallo en validación" >> $GITHUB_STEP_SUMMARY
+              VALIDATION_FAILED=1
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cd "$GITHUB_WORKSPACE"
+          done
+          
+          if [ $VALIDATION_FAILED -ne 0 ]; then
+            echo "::error title=Validación de Terraform::Se encontraron problemas en las configuraciones de Terraform"
+            exit 1
+          fi
+
+## JOB PARA VALIDACIÓN DE MANIFIESTOS DE KUBERNETES ##
+  validate-kubernetes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Validar manifiestos de Kubernetes
+        run: |
+          echo "## ☸️ Validación de Kubernetes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Encontrar todos los archivos YAML de Kubernetes
+          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v ".git")
+          
+          if [ -z "$K8S_FILES" ]; then
+            echo "⚠️ No se encontraron manifiestos de Kubernetes" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          VALIDATION_FAILED=0
+          VALIDATED_COUNT=0
+          SKIPPED_COUNT=0
+          
+          for file in $K8S_FILES; do
+            # Verificar si el archivo contiene recursos de Kubernetes
+            if grep -q "apiVersion:" "$file" && grep -q "kind:" "$file"; then
+              echo "📄 Validando: $file"
+              
+              if kubectl apply --dry-run=client -f "$file" > /dev/null 2>&1; then
+                echo "- ✅ \`$file\`" >> $GITHUB_STEP_SUMMARY
+                VALIDATED_COUNT=$((VALIDATED_COUNT + 1))
+              else
+                echo "- ❌ \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "::error file=$file,title=Kubernetes Validation::Manifiesto inválido"
+                VALIDATION_FAILED=1
+              fi
+            else
+              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Resumen:** $VALIDATED_COUNT validados, $SKIPPED_COUNT omitidos" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $VALIDATION_FAILED -ne 0 ]; then
+            echo "::error title=Validación de Kubernetes::Se encontraron problemas en los manifiestos"
+            exit 1
+          fi
+
+## JOB PARA VALIDACIÓN DE ARGOCD ##
+  validate-argocd:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+
+      - name: Validar configuraciones de ArgoCD
+        run: |
+          echo "## 🔄 Validación de ArgoCD" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Encontrar archivos de ArgoCD
+          ARGOCD_FILES=$(find . -path "*/argocd/*" -name "*.yaml" -o -path "*/argocd/*" -name "*.yml" | grep -v node_modules)
+          
+          if [ -z "$ARGOCD_FILES" ]; then
+            echo "⚠️ No se encontraron configuraciones de ArgoCD" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          VALIDATION_FAILED=0
+          
+          for file in $ARGOCD_FILES; do
+            echo "📄 Validando: $file"
+            
+            # Verificar que tenga estructura básica de ArgoCD
+            if grep -q "apiVersion:" "$file" && (grep -q "kind: Application" "$file" || grep -q "kind: AppProject" "$file"); then
+              echo "- ✅ \`$file\` (ArgoCD resource)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ℹ️ \`$file\` (Kubernetes resource)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          if [ $VALIDATION_FAILED -ne 0 ]; then
+            echo "::warning title=Validación de ArgoCD::Se encontraron advertencias en las configuraciones"
+          fi
+
+## JOB PARA ESCANEO DE SEGURIDAD CON SONARCLOUD ##
+  sonarcloud-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        continue-on-error: true
+        id: sonar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=retrogamecloud_infrastructure
+            -Dsonar.organization=retrogamecloud
+            -Dsonar.sources=terraform,kubernetes,argocd
+            -Dsonar.exclusions=**/*.tfstate,**/*.tfstate.backup,**/node_modules/**,**/.terraform/**
+
+      - name: Verificar resultado de SonarCloud
+        if: always()
+        run: |
+          echo "## 🔍 SonarCloud Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "::warning title=SonarCloud Deshabilitado::SONAR_TOKEN no configurado."
+            echo "⚠️ SonarCloud no configurado - configura SONAR_TOKEN para habilitar." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.sonar.outcome }}" = "failure" ]; then
+            echo "::error title=SonarCloud Falló::El análisis encontró problemas."
+            echo "❌ El análisis de SonarCloud falló. Revisa los logs." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          elif [ "${{ steps.sonar.outcome }}" = "success" ]; then
+            echo "✅ Análisis de SonarCloud completado exitosamente." >> $GITHUB_STEP_SUMMARY
+          fi
+
+## JOB PARA ESCANEO DE SEGURIDAD CON SNYK ##
+  snyk-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    continue-on-error: true
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+
+      - name: Ejecutar Snyk para escanear vulnerabilidades en IaC
+        id: snyk-iac
+        uses: snyk/actions/iac@master
+        if: github.event.repository.private == false && env.ENABLE_SNYK == 'true'
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk-iac.sarif --json-file-output=snyk-iac.json
+
+      - name: Mostrar resultados de Snyk IaC
+        if: github.event.repository.private == false && env.ENABLE_SNYK == 'true'
+        run: |
+          echo "## 🔒 Snyk IaC Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
+            echo "⚠️ SNYK_TOKEN no configurado - configura el secreto para habilitar escaneo." >> $GITHUB_STEP_SUMMARY
+          elif [ -f "snyk-iac.json" ]; then
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            head -100 snyk-iac.json >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No se generó archivo de resultados" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Verificar si se generó el archivo SARIF
+        id: check-sarif
+        if: github.event.repository.private == false && env.ENABLE_SNYK == 'true'
+        run: |
+          if [ -f "snyk-iac.sarif" ]; then
+            echo "sarif-exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Archivo SARIF generado"
+          else
+            echo "sarif-exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No se generó archivo SARIF"
+          fi
+
+      - name: Subir resultados de Snyk a GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: github.event.repository.private == false && env.ENABLE_SNYK == 'true' && steps.check-sarif.outputs.sarif-exists == 'true'
+        with:
+          sarif_file: 'snyk-iac.sarif'
+
+      - name: Omitir Snyk porque el repositorio es privado o Snyk está deshabilitado
+        if: github.event.repository.private == true || env.ENABLE_SNYK == 'false'
+        run: |
+          echo "## 🔒 Snyk IaC Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event.repository.private }}" = "true" ]; then
+            echo "ℹ️ Snyk omitido: el repositorio no es público." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Snyk omitido: deshabilitado mediante ENABLE_SNYK=false." >> $GITHUB_STEP_SUMMARY
+          fi
+
+## JOB PARA GENERAR CHANGELOG AUTOMÁTICO ##
+  generate-changelog:
+    needs: [validate-terraform, validate-kubernetes, sonarcloud-scan]
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      (needs.validate-terraform.result == 'success' || needs.validate-terraform.result == 'skipped') &&
+      (needs.validate-kubernetes.result == 'success' || needs.validate-kubernetes.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generar changelog
+        id: changelog
+        run: |
+          # Obtener el tag anterior (si existe)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "📝 Primera versión, generando changelog completo..."
+            COMMIT_RANGE="HEAD"
+          else
+            echo "📝 Generando changelog desde ${PREVIOUS_TAG}..."
+            COMMIT_RANGE="${PREVIOUS_TAG}..HEAD"
+          fi
+          
+          # Crear o actualizar CHANGELOG.md
+          CHANGELOG_FILE="CHANGELOG.md"
+          TEMP_FILE="CHANGELOG.tmp"
+          
+          # Generar nueva entrada
+          echo "# Changelog - Infraestructura" > "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          echo "Todas las versiones notables de este proyecto se documentan aquí." >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          echo "## [$(date +'%Y-%m-%d')]" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          
+          # Categorizar commits por tipo (Conventional Commits)
+          FEATURES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- feat" || echo "")
+          FIXES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- fix" || echo "")
+          CHORES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- chore" || echo "")
+          DOCS=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- docs" || echo "")
+          OTHER=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -viE "^- (feat|fix|chore|docs)" || echo "")
+          
+          # Añadir secciones al changelog
+          if [ -n "$FEATURES" ]; then
+            echo "### ✨ Nuevas Funcionalidades" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "$FEATURES" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            echo "### 🐛 Correcciones" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "$FIXES" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+          fi
+          
+          if [ -n "$CHORES" ]; then
+            echo "### 🔧 Mantenimiento" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "$CHORES" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+          fi
+          
+          if [ -n "$DOCS" ]; then
+            echo "### 📚 Documentación" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "$DOCS" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+          fi
+          
+          if [ -n "$OTHER" ]; then
+            echo "### 🔄 Otros Cambios" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "$OTHER" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+          fi
+          
+          # Si existe changelog anterior, añadirlo
+          if [ -f "$CHANGELOG_FILE" ]; then
+            tail -n +4 "$CHANGELOG_FILE" >> "$TEMP_FILE" 2>/dev/null || true
+          fi
+          
+          # Reemplazar changelog
+          mv "$TEMP_FILE" "$CHANGELOG_FILE"
+          
+          echo "✅ Changelog generado"
+          
+          # Mostrar resumen
+          echo "## 📝 Changelog Generado" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`markdown" >> $GITHUB_STEP_SUMMARY
+          head -50 "$CHANGELOG_FILE" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit y push del changelog
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          TARGET_BRANCH="${{ github.ref_name }}"
+          
+          if git diff --quiet CHANGELOG.md; then
+            echo "ℹ️ No hay cambios en CHANGELOG.md"
+          else
+            git add CHANGELOG.md
+            git commit -m "docs: Actualizar CHANGELOG [skip ci]"
+            git push origin "${TARGET_BRANCH}"
+            echo "✅ CHANGELOG.md actualizado y publicado en ${TARGET_BRANCH}"
+          fi
+
+## JOB PARA NOTIFICAR FALLOS EN SLACK ##
+  notify-slack:
+    needs: [lint-infrastructure, validate-terraform, validate-kubernetes, validate-argocd, sonarcloud-scan, snyk-scan]
+    if: >-
+      always() &&
+      (
+        needs.validate-terraform.result == 'failure' ||
+        needs.validate-kubernetes.result == 'failure' ||
+        needs.sonarcloud-scan.result == 'failure'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notificar fallos en Slack
+        run: |
+          if [ "${{ env.ENABLE_SLACK_NOTIFICATIONS }}" = "true" ]; then
+            echo "📤 Enviando notificación a Slack..."
+            curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+              -H 'Content-Type: application/json' \
+              -d '{
+                "text": "❌ Workflow de infraestructura fallido en ${{ github.repository }}",
+                "blocks": [
+                  {
+                    "type": "header",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "❌ Validación de Infraestructura Fallida"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Repositorio:*\n${{ github.repository }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Rama:*\n${{ github.ref_name }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Workflow:*\n${{ github.workflow }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Evento:*\n${{ github.event_name }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Commit:*\n<${{ github.event.head_commit.url }}|${{ github.sha }}>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Autor:*\n${{ github.actor }}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Jobs fallidos:*\n${{ needs.validate-terraform.result == 'failure' && '• Validación Terraform\n' || '' }}${{ needs.validate-kubernetes.result == 'failure' && '• Validación Kubernetes\n' || '' }}${{ needs.sonarcloud-scan.result == 'failure' && '• Escaneo SonarCloud\n' || '' }}"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Ver Workflow"
+                        },
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      }
+                    ]
+                  }
+                ]
+              }'
+            echo "✅ Notificación enviada a Slack"
+          else
+            echo "ℹ️ Notificaciones de Slack deshabilitadas"
+          fi
