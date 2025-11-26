@@ -50,7 +50,7 @@ module "eks" {
   cluster_security_group_tags = {
     Name = "${var.cluster_name}-cluster-sg"
   }
-  
+
   # Evitar security groups adicionales en los nodos
   node_security_group_tags = {
     Name = "${var.cluster_name}-node-sg-additional"
