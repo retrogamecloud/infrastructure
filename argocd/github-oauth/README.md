@@ -1,5 +1,10 @@
 # Configuración de GitHub OAuth para ArgoCD
 
+⚠️ **NOTA**: Esta es la configuración legacy para aplicación manual.  
+**Para gestión persistente con GitOps**, usa: `kubernetes/argocd-config/`
+
+---
+
 ## ✅ Configuración simplificada - Reutilizando OAuth2 Proxy existente
 
 Este proyecto ya tiene configurado **OAuth2 Proxy** en el namespace `monitoring` con autenticación GitHub para la organización `retrogamecloud`. ArgoCD puede **reutilizar el mismo GitHub OAuth App**, simplificando la configuración.
@@ -10,6 +15,22 @@ Este proyecto ya tiene configurado **OAuth2 Proxy** en el namespace `monitoring`
 - **Client Secret**: `0e14645efdb0317bd3c83c9ace9a76f198b53052` (copiado desde oauth2-proxy)
 - **Organización**: `retrogamecloud`
 - **Callback URL ArgoCD**: `https://retrogamehub.games/argocd/api/dex/callback`
+
+## 🚀 Configuración Persistente con GitOps (Recomendado)
+
+Para que la configuración sea persistente y gestionada por ArgoCD:
+
+```bash
+# Ver documentación completa
+cd ../../../kubernetes/argocd-config
+cat README.md
+
+# Aplicar con ArgoCD Application
+kubectl apply -f argocd-config-app.yaml
+
+# O con Kustomize directamente
+kubectl apply -k overlays/production
+```
 
 ## Pasos para aplicar (simplificados)
 

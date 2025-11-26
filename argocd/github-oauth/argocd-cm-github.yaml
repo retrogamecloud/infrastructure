@@ -1,16 +1,21 @@
+# Este archivo debe aplicarse con kubectl patch, NO con kubectl apply
+# Usa el script apply-github-oauth.sh o ejecuta manualmente el patch
+
+# GitHub OAuth Configuration para ArgoCD
+# IMPORTANTE: Reutiliza el mismo GitHub OAuth App que oauth2-proxy
+# Client ID: Ov23lil4DINdiuLj2XnS (mismo que oauth2-proxy en monitoring namespace)
+# Client Secret: Compartido desde el secret oauth2-proxy
+
+# Para aplicar esta configuración, ejecuta:
+# kubectl patch configmap argocd-cm -n argocd --type merge --patch-file argocd-cm-github.yaml
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: argocd-cm
   namespace: argocd
-  labels:
-    app.kubernetes.io/name: argocd-cm
-    app.kubernetes.io/part-of: argocd
 data:
-  # GitHub OAuth Configuration
-  # IMPORTANTE: Reutiliza el mismo GitHub OAuth App que oauth2-proxy
-  # Client ID: Ov23lil4DINdiuLj2XnS (mismo que oauth2-proxy en monitoring namespace)
-  # Client Secret: Compartido desde el secret oauth2-proxy
+  # GitHub OAuth Configuration via Dex
   url: https://retrogamehub.games/argocd
   dex.config: |
     connectors:
@@ -19,45 +24,16 @@ data:
       name: GitHub
       config:
         clientID: Ov23lil4DINdiuLj2XnS
-        clientSecret: $dex.github.clientSecret  # Referencia al secret
+        clientSecret: $dex.github.clientSecret
         orgs:
         - name: retrogamecloud
-          # Solo permitir miembros de la org retrogamecloud
-        # Opcional: restringir a teams específicos
-        # teams:
-        # - retrogamecloud/admins
-        # - retrogamecloud/developers
-        
-        # Mapeo de claims
         loadAllGroups: false
         teamNameField: slug
         useLoginAsID: false
 
-  # Política de RBAC por defecto
+  # Política de RBAC por defecto para usuarios no autenticados
   policy.default: role:readonly
   
   # Políticas de RBAC para la organización
   policy.csv: |
-    # Política: miembros de retrogamecloud tienen acceso admin
     g, retrogamecloud:*, role:admin
-    
-    # Política opcional: acceso granular por teams
-    # g, retrogamecloud:admins, role:admin
-    # g, retrogamecloud:developers, role:developer
-    
-    # Rol developer personalizado (ejemplo)
-    # p, role:developer, applications, *, */*, allow
-    # p, role:developer, repositories, get, *, allow
-    # p, role:developer, repositories, sync, *, allow
-
-  # Habilitar anonymous access solo para health checks
-  accounts.anonymous.enabled: "false"
-  
-  # Timeout para reconciliación
-  timeout.reconciliation: 180s
-  
-  # Resource tracking
-  application.resourceTrackingMethod: annotation
-  
-  # Metrics
-  metrics.enabled: "true"
