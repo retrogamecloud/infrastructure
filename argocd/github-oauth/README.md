@@ -1,15 +1,42 @@
 # Configuración de GitHub OAuth para ArgoCD
 
-## ✅ Configuración simplificada - Reutilizando OAuth2 Proxy existente
+⚠️ **DEPRECADO**: Esta configuración ha sido migrada a `kubernetes/argocd-config/` para gestión GitOps persistente.
 
-Este proyecto ya tiene configurado **OAuth2 Proxy** en el namespace `monitoring` con autenticación GitHub para la organización `retrogamecloud`. ArgoCD puede **reutilizar el mismo GitHub OAuth App**, simplificando la configuración.
+---
 
-### Credenciales compartidas
+## 🔄 Migración Completada
 
-- **Client ID**: `Ov23lil4DINdiuLj2XnS` (ya configurado)
-- **Client Secret**: `0e14645efdb0317bd3c83c9ace9a76f198b53052` (copiado desde oauth2-proxy)
+La configuración de GitHub OAuth para ArgoCD ahora se gestiona completamente con GitOps usando Kustomize.
+
+### 📁 Nueva ubicación
+
+**Repositorio**: `retrogamecloud/kubernetes`  
+**Path**: `argocd-config/`
+
+```bash
+# Ver documentación actualizada
+cd ../../../kubernetes/argocd-config
+cat README.md
+```
+
+## 🚀 Aplicación
+
+### Con ArgoCD Application (Recomendado)
+```bash
+kubectl apply -f kubernetes/argocd-config/argocd-config-app.yaml
+```
+
+### Con Kustomize directo
+```bash
+kubectl apply -k kubernetes/argocd-config/overlays/production
+```
+
+## ℹ️ Credenciales
+
+- **Client ID**: `Ov23lil4DINdiuLj2XnS` (reutilizado de oauth2-proxy)
+- **Client Secret**: Gestionado en `argocd-config/base/argocd-secret.yaml`
 - **Organización**: `retrogamecloud`
-- **Callback URL ArgoCD**: `https://retrogamehub.games/argocd/api/dex/callback`
+- **Callback URL**: `https://retrogamehub.games/argocd/api/dex/callback`
 
 ## Pasos para aplicar (simplificados)
 
