@@ -913,7 +913,7 @@ resource "kubernetes_config_map_v1_data" "frontend_urls" {
   force = true
 
   depends_on = [
-    kubernetes_service.kong,
+    # kubernetes_service.kong,  # Kong not deployed yet
     aws_cloudfront_distribution.games_cdn,
     kubernetes_config_map.frontend_replacer
   ]

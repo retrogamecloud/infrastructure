@@ -53,10 +53,11 @@ output "rds_database_name" {
   value       = aws_db_instance.postgres.db_name
 }
 
-output "kong_load_balancer_hostname" {
-  description = "Hostname del Load Balancer de Kong"
-  value       = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
-}
+# Kong service not deployed yet
+# output "kong_load_balancer_hostname" {
+#   description = "Hostname del Load Balancer de Kong"
+#   value       = try(kubernetes_service.kong.status[0].load_balancer[0].ingress[0].hostname, "pending")
+# }
 
 output "configure_kubectl" {
   description = "Comando para configurar kubectl"
