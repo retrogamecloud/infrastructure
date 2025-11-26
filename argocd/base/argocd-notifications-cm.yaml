@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    token: $slack-token
+  
+  subscriptions: |
+    - recipients:
+      - slack:argocdretrogame
+      triggers:
+      - on-deployed
+      - on-sync-failed
+      - on-health-degraded
+  
+  template.app-deployed: |
+    message: |
+      ✅ *Aplicación Desplegada con Éxito*
+      
+      Aplicación: {{.app.metadata.name}}
+      Namespace: {{.app.spec.destination.namespace}}
+      Estado: {{.app.status.sync.status}} / {{.app.status.health.status}}
+      Revisión: {{.app.status.sync.revision}}
+  
+  template.app-health-degraded: |
+    message: |
+      ⚠️ *Alerta: Aplicación Degradada*
+      
+      Aplicación: {{.app.metadata.name}}
+      Namespace: {{.app.spec.destination.namespace}}
+      Estado de Salud: {{.app.status.health.status}}
+      Estado de Sync: {{.app.status.sync.status}}
+  
+  template.app-sync-failed: |
+    message: |
+      ❌ *Error: Sincronización Fallida*
+      
+      Aplicación: {{.app.metadata.name}}
+      Namespace: {{.app.spec.destination.namespace}}
+      Fase: {{.app.status.operationState.phase}}
+      Error: {{.app.status.operationState.message}}
+  
+  trigger.on-deployed: |
+    - description: Application is synced and healthy. Triggered once per commit.
+      send:
+      - app-deployed
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+  
+  trigger.on-health-degraded: |
+    - description: Application has degraded
+      send:
+      - app-health-degraded
+      when: app.status.health.status == 'Degraded'
+  
+  trigger.on-sync-failed: |
+    - description: Application syncing has failed
+      send:
+      - app-sync-failed
+      when: app.status.operationState.phase in ['Error', 'Failed']
