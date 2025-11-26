@@ -64,6 +64,10 @@ resource "helm_release" "ingress_nginx" {
         # Replicas
         replicaCount = 1
         
+        # Host network para que el ALB pueda alcanzar el ingress directamente
+        hostNetwork = true
+        dnsPolicy = "ClusterFirstWithHostNet"
+        
         # Affinity para distribuir pods
         affinity = {
           podAntiAffinity = {
