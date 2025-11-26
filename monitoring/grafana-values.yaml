@@ -1,0 +1,148 @@
+# Valores de configuración para kube-prometheus-stack
+# Específicamente para habilitar GitHub OAuth en Grafana
+
+grafana:
+  enabled: true
+  
+  # Configuración de autenticación GitHub OAuth
+  envFromSecret: grafana-github-oauth
+  
+  # Usar admin credentials desde Secret
+  admin:
+    existingSecret: grafana-github-oauth
+    userKey: admin-user
+    passwordKey: admin-password
+  
+  grafana.ini:
+    server:
+      root_url: https://retrogamehub.games/grafana
+      serve_from_sub_path: true
+    
+    security:
+      allow_embedding: true
+      cookie_samesite: lax
+      cookie_secure: false
+    
+    # Configuración de GitHub OAuth
+    auth.github:
+      enabled: true
+      allow_sign_up: true
+      scopes: user:email,read:org
+      auth_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+      api_url: https://api.github.com/user
+      allowed_organizations: retrogamecloud
+      allow_assign_grafana_admin: true
+      # Todos los usuarios autenticados de retrogamecloud son Admin
+      role_attribute_path: "contains(login, 'jpalenz77') && 'Admin' || contains(login, 'naesman1') && 'Admin' || contains(login, 'evaristogz') && 'Admin' || 'Viewer'"
+    
+    # Configuración de autenticación
+    auth:
+      disable_login_form: false
+    
+    # Usuarios admin por defecto (además de GitHub OAuth)
+    users:
+      auto_assign_org: true
+      auto_assign_org_role: Viewer
+      
+  # Recursos
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  
+  # Persistencia deshabilitada
+  persistence:
+    enabled: false
+  
+  # Dashboard por defecto ya configurado
+  defaultDashboardsEnabled: true
+  
+  # Configurar sidecar para cargar dashboards desde ConfigMaps
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      folder: /tmp/dashboards
+      defaultFolderName: "RetroGame Platform"
+      searchNamespace: monitoring
+  
+  service:
+    type: ClusterIP
+    port: 80
+    annotations:
+      alb.ingress.kubernetes.io/healthcheck-path: /grafana/api/health
+
+# Configuración de Prometheus (mantener existente)
+prometheus:
+  prometheusSpec:
+    externalUrl: https://retrogamehub.games/prometheus
+    routePrefix: /prometheus
+    retention: 3d
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp2
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 9090
+
+# Alertmanager
+alertmanager:
+  alertmanagerSpec:
+    externalUrl: https://retrogamehub.games/alertmanager
+    routePrefix: /alertmanager
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+
+# Componentes adicionales
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+kubeStateMetrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+nodeExporter:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
