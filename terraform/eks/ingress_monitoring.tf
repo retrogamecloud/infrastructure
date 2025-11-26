@@ -10,10 +10,10 @@ resource "kubernetes_ingress_v1" "grafana" {
     name      = "grafana-ingress"
     namespace = "monitoring"
     annotations = {
-      "nginx.ingress.kubernetes.io/auth-url"                = "http://oauth2-proxy.monitoring.svc.cluster.local:4180/oauth2/auth"
-      "nginx.ingress.kubernetes.io/auth-signin"             = "https://retrogamehub.games/oauth2/start?rd=$escaped_request_uri"
-      "nginx.ingress.kubernetes.io/auth-response-headers"   = "X-Auth-Request-User,X-Auth-Request-Email,Authorization"
-      "nginx.ingress.kubernetes.io/proxy-buffer-size"       = "8k"
+      "nginx.ingress.kubernetes.io/auth-url"              = "http://oauth2-proxy.monitoring.svc.cluster.local:4180/oauth2/auth"
+      "nginx.ingress.kubernetes.io/auth-signin"           = "https://retrogamehub.games/oauth2/start?rd=$escaped_request_uri"
+      "nginx.ingress.kubernetes.io/auth-response-headers" = "X-Auth-Request-User,X-Auth-Request-Email,Authorization"
+      "nginx.ingress.kubernetes.io/proxy-buffer-size"     = "8k"
     }
   }
 
