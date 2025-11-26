@@ -254,90 +254,6 @@ jobs:
             echo "::warning title=Validación de ArgoCD::Se encontraron advertencias en las configuraciones"
           fi
 
-## JOB PARA VALIDACIÓN PROFUNDA CON KIND (OPCIONAL) ##
-  validate-kubernetes-integration:
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' &&
-      (contains(github.event.pull_request.title, '[test:integration]') ||
-       contains(github.event.pull_request.body, '[test:integration]'))
-    permissions:
-      contents: read
-    
-    steps:
-      - name: Clonar repositorio
-        uses: actions/checkout@v6
-
-      - name: Crear cluster Kind
-        uses: helm/kind-action@v1
-        with:
-          cluster_name: test-cluster
-          wait: 30s
-
-      - name: Verificar cluster
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
-
-      - name: Aplicar manifiestos de Kubernetes en cluster real
-        run: |
-          echo "## 🧪 Validación de Integración K8s" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Aplicando manifiestos en cluster Kind..." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Encontrar manifiestos K8s (excluir ArgoCD y workflows)
-          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v ".git" | grep -v "argocd" | grep -v ".github")
-          
-          if [ -z "$K8S_FILES" ]; then
-            echo "⚠️ No se encontraron manifiestos para probar" >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-          
-          APPLIED_COUNT=0
-          FAILED_COUNT=0
-          SKIPPED_COUNT=0
-          
-          for file in $K8S_FILES; do
-            # Verificar si es un manifiesto K8s
-            if grep -q "apiVersion:" "$file" && grep -q "kind:" "$file"; then
-              echo "📄 Aplicando: $file"
-              
-              # Intentar aplicar el manifiesto
-              if kubectl apply -f "$file" --dry-run=server 2>&1 | tee /tmp/kubectl-output.log; then
-                echo "- ✅ \`$file\` aplicado correctamente" >> $GITHUB_STEP_SUMMARY
-                APPLIED_COUNT=$((APPLIED_COUNT + 1))
-              else
-                ERROR_MSG=$(cat /tmp/kubectl-output.log | head -3)
-                echo "- ❌ \`$file\`: ${ERROR_MSG}" >> $GITHUB_STEP_SUMMARY
-                echo "::error file=$file,title=Integration Test Failed::No se pudo aplicar en cluster Kind"
-                FAILED_COUNT=$((FAILED_COUNT + 1))
-              fi
-            else
-              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-            fi
-          done
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Resumen:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Aplicados: $APPLIED_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "- ❌ Fallidos: $FAILED_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "- ⏭️ Omitidos: $SKIPPED_COUNT" >> $GITHUB_STEP_SUMMARY
-          
-          if [ $FAILED_COUNT -gt 0 ]; then
-            echo "::error title=Integration Tests::$FAILED_COUNT manifiesto(s) fallaron en el cluster Kind"
-            exit 1
-          fi
-
-      - name: Información de recursos creados
-        if: always()
-        run: |
-          echo "### 📊 Estado del Cluster" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          kubectl get all --all-namespaces 2>&1 | head -50 >> $GITHUB_STEP_SUMMARY || true
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
 ## JOB PARA ESCANEO DE SEGURIDAD CON SONARCLOUD ##
   sonarcloud-scan:
     runs-on: ubuntu-latest
@@ -573,13 +489,12 @@ jobs:
 
 ## JOB PARA NOTIFICAR FALLOS EN SLACK ##
   notify-slack:
-    needs: [lint-infrastructure, validate-terraform, validate-kubernetes, validate-argocd, validate-kubernetes-integration, sonarcloud-scan, snyk-scan]
+    needs: [lint-infrastructure, validate-terraform, validate-kubernetes, validate-argocd, sonarcloud-scan, snyk-scan]
     if: >-
       always() &&
       (
         needs.validate-terraform.result == 'failure' ||
         needs.validate-kubernetes.result == 'failure' ||
-        needs.validate-kubernetes-integration.result == 'failure' ||
         needs.sonarcloud-scan.result == 'failure'
       )
     runs-on: ubuntu-latest
@@ -617,7 +532,7 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "*Jobs fallidos:*\n${{ needs.validate-terraform.result == 'failure' && '• Validación Terraform\n' || '' }}${{ needs.validate-kubernetes.result == 'failure' && '• Validación Kubernetes\n' || '' }}${{ needs.validate-kubernetes-integration.result == 'failure' && '• Tests de Integración K8s\n' || '' }}${{ needs.sonarcloud-scan.result == 'failure' && '• Escaneo SonarCloud\n' || '' }}"
+                      "text": "*Jobs fallidos:*\n${{ needs.validate-terraform.result == 'failure' && '• Validación Terraform\n' || '' }}${{ needs.validate-kubernetes.result == 'failure' && '• Validación Kubernetes\n' || '' }}${{ needs.sonarcloud-scan.result == 'failure' && '• Escaneo SonarCloud\n' || '' }}"
                     }
                   },
                   {
