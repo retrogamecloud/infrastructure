@@ -555,13 +555,13 @@ resource "kubernetes_ingress_v1" "wiki" {
     name      = "wiki-ingress"
     namespace = kubernetes_namespace.retrogame.metadata[0].name
     annotations = {
-      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
-      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
-      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
-      "nginx.ingress.kubernetes.io/use-regex"           = "true"
-      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
-      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
-      "nginx.ingress.kubernetes.io/rewrite-target"      = "/$2"
+      "nginx.ingress.kubernetes.io/ssl-redirect"          = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"        = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"             = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"      = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols"   = "TLSv1.2 TLSv1.3"
+      "nginx.ingress.kubernetes.io/rewrite-target"        = "/$2"
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         sub_filter_once off;
         sub_filter_types text/html;

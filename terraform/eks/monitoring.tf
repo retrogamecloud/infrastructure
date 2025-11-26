@@ -20,7 +20,7 @@ resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "monitoring"
     labels = {
-      name = "monitoring"
+      name      = "monitoring"
       component = "observability"
     }
   }
@@ -46,7 +46,7 @@ data "kubernetes_secret" "alertmanager_slack" {
     name      = kubernetes_secret.alertmanager_slack.metadata[0].name
     namespace = kubernetes_namespace.monitoring.metadata[0].name
   }
-  
+
   depends_on = [kubernetes_secret.alertmanager_slack]
 }
 
@@ -83,10 +83,10 @@ resource "helm_release" "kube_prometheus_stack" {
           # Configuración para funcionar bajo subpath /prometheus vía ALB
           externalUrl = "https://retrogamehub.games/prometheus"
           routePrefix = "/prometheus"
-          
+
           # Retención de métricas (reducida para ahorrar espacio)
           retention = "3d"
-          
+
           # Recursos ajustados para t3.micro nodes
           resources = {
             requests = {
@@ -104,7 +104,7 @@ resource "helm_release" "kube_prometheus_stack" {
             volumeClaimTemplate = {
               spec = {
                 storageClassName = "gp2"
-                accessModes = ["ReadWriteOnce"]
+                accessModes      = ["ReadWriteOnce"]
                 resources = {
                   requests = {
                     storage = "10Gi"
@@ -138,7 +138,7 @@ resource "helm_release" "kube_prometheus_stack" {
         # Configuración para trabajar con ALB y path /grafana
         "grafana.ini" = {
           server = {
-            root_url = "https://retrogamehub.games/grafana"
+            root_url            = "https://retrogamehub.games/grafana"
             serve_from_sub_path = true
           }
           security = {
@@ -196,21 +196,21 @@ resource "helm_release" "kube_prometheus_stack" {
             retrogame-app = {
               json = file("${path.module}/values/retrogame-dashboard.json")
             }
-            
+
             # Dashboard de Kubernetes Cluster Overview
             kubernetes-cluster = {
               gnetId     = 7249
               revision   = 1
               datasource = "Prometheus"
             }
-            
+
             # Dashboard de Node Exporter
             node-exporter = {
               gnetId     = 1860
               revision   = 31
               datasource = "Prometheus"
             }
-            
+
             # Dashboard de Pods
             kubernetes-pods = {
               gnetId     = 6417
@@ -244,10 +244,10 @@ resource "helm_release" "kube_prometheus_stack" {
         # Datasources adicionales (opcional)
         additionalDataSources = [
           {
-            name   = "Loki"
-            type   = "loki"
-            url    = "http://loki:3100"
-            access = "proxy"
+            name      = "Loki"
+            type      = "loki"
+            url       = "http://loki:3100"
+            access    = "proxy"
             isDefault = false
             jsonData = {
               maxLines = 1000
@@ -274,7 +274,7 @@ resource "helm_release" "kube_prometheus_stack" {
           # Configuración para funcionar bajo subpath /alertmanager vía ALB
           externalUrl = "https://retrogamehub.games/alertmanager"
           routePrefix = "/alertmanager"
-          
+
           # Recursos ajustados
           resources = {
             requests = {
@@ -292,7 +292,7 @@ resource "helm_release" "kube_prometheus_stack" {
             volumeClaimTemplate = {
               spec = {
                 storageClassName = "gp2"
-                accessModes = ["ReadWriteOnce"]
+                accessModes      = ["ReadWriteOnce"]
                 resources = {
                   requests = {
                     storage = "2Gi"
@@ -316,9 +316,9 @@ resource "helm_release" "kube_prometheus_stack" {
         config = {
           global = {
             resolve_timeout = "5m"
-            slack_api_url = data.kubernetes_secret.alertmanager_slack.data["webhook_url"]
+            slack_api_url   = data.kubernetes_secret.alertmanager_slack.data["webhook_url"]
           }
-          
+
           # Plantillas de mensajes
           templates = [
             "/etc/alertmanager/config/*.tmpl"
@@ -326,12 +326,12 @@ resource "helm_release" "kube_prometheus_stack" {
 
           # Rutas de enrutamiento de alertas
           route = {
-            receiver = "default"
-            group_by = ["alertname", "cluster", "namespace", "pod"]
-            group_wait = "10s"
-            group_interval = "5m"
+            receiver        = "default"
+            group_by        = ["alertname", "cluster", "namespace", "pod"]
+            group_wait      = "10s"
+            group_interval  = "5m"
             repeat_interval = "4h"
-            
+
             # Rutas específicas por severidad
             routes = [
               {
@@ -339,7 +339,7 @@ resource "helm_release" "kube_prometheus_stack" {
                 match = {
                   severity = "critical"
                 }
-                group_wait = "10s"
+                group_wait      = "10s"
                 repeat_interval = "1h"
               },
               {
@@ -347,7 +347,7 @@ resource "helm_release" "kube_prometheus_stack" {
                 match = {
                   severity = "warning"
                 }
-                group_wait = "30s"
+                group_wait      = "30s"
                 repeat_interval = "4h"
               },
               {
@@ -355,7 +355,7 @@ resource "helm_release" "kube_prometheus_stack" {
                 match_re = {
                   namespace = "retrogame"
                 }
-                group_wait = "10s"
+                group_wait      = "10s"
                 repeat_interval = "2h"
               }
             ]
@@ -380,11 +380,11 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "default"
               slack_configs = [
                 {
-                  channel = "#notificacionesrgh"
-                  title = "🔔 [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}"
-                  text = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Severity:* {{ .Labels.severity }}\n*Namespace:* {{ .Labels.namespace }}\n{{ end }}"
+                  channel       = "#notificacionesrgh"
+                  title         = "🔔 [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Severity:* {{ .Labels.severity }}\n*Namespace:* {{ .Labels.namespace }}\n{{ end }}"
                   send_resolved = true
-                  color = "{{ if eq .Status \"firing\" }}danger{{ else }}good{{ end }}"
+                  color         = "{{ if eq .Status \"firing\" }}danger{{ else }}good{{ end }}"
                 }
               ]
             },
@@ -392,11 +392,11 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "critical-alerts"
               slack_configs = [
                 {
-                  channel = "#notificacionesrgh"
-                  title = "🚨 [CRITICAL] {{ .GroupLabels.alertname }}"
-                  text = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n{{ end }}"
+                  channel       = "#notificacionesrgh"
+                  title         = "🚨 [CRITICAL] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n{{ end }}"
                   send_resolved = true
-                  color = "danger"
+                  color         = "danger"
                 }
               ]
             },
@@ -404,11 +404,11 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "warning-alerts"
               slack_configs = [
                 {
-                  channel = "#notificacionesrgh"
-                  title = "⚠️ [WARNING] {{ .GroupLabels.alertname }}"
-                  text = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
+                  channel       = "#notificacionesrgh"
+                  title         = "⚠️ [WARNING] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
                   send_resolved = true
-                  color = "warning"
+                  color         = "warning"
                 }
               ]
             },
@@ -416,11 +416,11 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "app-alerts"
               slack_configs = [
                 {
-                  channel = "#notificacionesrgh"
-                  title = "🎮 [RETROGAME] {{ .GroupLabels.alertname }}"
-                  text = "{{ range .Alerts }}*Service:* {{ .Labels.service }}\n*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
+                  channel       = "#notificacionesrgh"
+                  title         = "🎮 [RETROGAME] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Service:* {{ .Labels.service }}\n*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
                   send_resolved = true
-                  color = "{{ if eq .Status \"firing\" }}#FF6B6B{{ else }}#51CF66{{ end }}"
+                  color         = "{{ if eq .Status \"firing\" }}#FF6B6B{{ else }}#51CF66{{ end }}"
                 }
               ]
             }
@@ -433,7 +433,7 @@ resource "helm_release" "kube_prometheus_stack" {
       # ============================================================================
       nodeExporter = {
         enabled = true
-        
+
         resources = {
           requests = {
             cpu    = "50m"
@@ -486,29 +486,29 @@ resource "helm_release" "kube_prometheus_stack" {
       defaultRules = {
         create = true
         rules = {
-          alertmanager            = true
-          etcd                    = false  # No aplica para EKS managed
-          configReloaders         = true
-          general                 = true
-          k8s                     = true
-          kubeApiserverAvailability = true
-          kubeApiserverSlos       = false  # Reducir ruido
-          kubelet                 = true
-          kubeProxy               = false  # No aplica
-          kubePrometheusGeneral   = true
+          alertmanager                = true
+          etcd                        = false # No aplica para EKS managed
+          configReloaders             = true
+          general                     = true
+          k8s                         = true
+          kubeApiserverAvailability   = true
+          kubeApiserverSlos           = false # Reducir ruido
+          kubelet                     = true
+          kubeProxy                   = false # No aplica
+          kubePrometheusGeneral       = true
           kubePrometheusNodeRecording = true
-          kubernetesApps          = true
-          kubernetesResources     = true
-          kubernetesStorage       = true
-          kubernetesSystem        = true
-          kubeScheduler           = false  # No accesible en EKS managed
-          kubeStateMetrics        = true
-          network                 = true
-          node                    = true
-          nodeExporterAlerting    = true
-          nodeExporterRecording   = true
-          prometheus              = true
-          prometheusOperator      = true
+          kubernetesApps              = true
+          kubernetesResources         = true
+          kubernetesStorage           = true
+          kubernetesSystem            = true
+          kubeScheduler               = false # No accesible en EKS managed
+          kubeStateMetrics            = true
+          network                     = true
+          node                        = true
+          nodeExporterAlerting        = true
+          nodeExporterRecording       = true
+          prometheus                  = true
+          prometheusOperator          = true
         }
       }
 
@@ -519,310 +519,310 @@ resource "helm_release" "kube_prometheus_stack" {
         retrogame-alerts = {
           groups = [
             {
-              name = "retrogame-application-alerts"
+              name     = "retrogame-application-alerts"
               interval = "30s"
               rules = [
                 {
                   alert = "RetrogamePodDown"
-                  expr = "kube_pod_status_phase{namespace=\"retrogame\", phase!=\"Running\"} == 1"
-                  for = "2m"
+                  expr  = "kube_pod_status_phase{namespace=\"retrogame\", phase!=\"Running\"} == 1"
+                  for   = "2m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "Retrogame pod {{ $labels.pod }} is down"
+                    summary     = "Retrogame pod {{ $labels.pod }} is down"
                     description = "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been down for more than 2 minutes."
                   }
                 },
                 {
                   alert = "BackendPodNotRunning"
-                  expr = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"backend.*\", phase=\"Running\"}) == 0"
-                  for = "1m"
+                  expr  = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"backend.*\", phase=\"Running\"}) == 0"
+                  for   = "1m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
-                    service = "backend"
+                    service   = "backend"
                   }
                   annotations = {
-                    summary = "Backend pods not running"
+                    summary     = "Backend pods not running"
                     description = "No backend pods are running in namespace retrogame."
                   }
                 },
                 {
                   alert = "FrontendPodNotRunning"
-                  expr = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"frontend.*\", phase=\"Running\"}) == 0"
-                  for = "1m"
+                  expr  = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"frontend.*\", phase=\"Running\"}) == 0"
+                  for   = "1m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
-                    service = "frontend"
+                    service   = "frontend"
                   }
                   annotations = {
-                    summary = "Frontend pods not running"
+                    summary     = "Frontend pods not running"
                     description = "No frontend pods are running in namespace retrogame."
                   }
                 },
                 {
                   alert = "KongPodNotRunning"
-                  expr = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"kong.*\", phase=\"Running\"}) == 0"
-                  for = "1m"
+                  expr  = "sum(kube_pod_status_phase{namespace=\"retrogame\", pod=~\"kong.*\", phase=\"Running\"}) == 0"
+                  for   = "1m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
-                    service = "kong"
+                    service   = "kong"
                   }
                   annotations = {
-                    summary = "Kong API Gateway not running"
+                    summary     = "Kong API Gateway not running"
                     description = "No Kong pods are running in namespace retrogame."
                   }
                 },
                 {
                   alert = "BackendHighCPUUsage"
-                  expr = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"backend.*\", container!=\"\"}[5m])) by (pod) > 0.8"
-                  for = "5m"
+                  expr  = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"backend.*\", container!=\"\"}[5m])) by (pod) > 0.8"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "backend"
+                    service   = "backend"
                   }
                   annotations = {
-                    summary = "Backend high CPU usage"
+                    summary     = "Backend high CPU usage"
                     description = "Backend pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} CPU."
                   }
                 },
                 {
                   alert = "FrontendHighCPUUsage"
-                  expr = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"frontend.*\", container!=\"\"}[5m])) by (pod) > 0.8"
-                  for = "5m"
+                  expr  = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"frontend.*\", container!=\"\"}[5m])) by (pod) > 0.8"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "frontend"
+                    service   = "frontend"
                   }
                   annotations = {
-                    summary = "Frontend high CPU usage"
+                    summary     = "Frontend high CPU usage"
                     description = "Frontend pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} CPU."
                   }
                 },
                 {
                   alert = "KongHighCPUUsage"
-                  expr = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"kong.*\", container!=\"\"}[5m])) by (pod) > 0.8"
-                  for = "5m"
+                  expr  = "sum(rate(container_cpu_usage_seconds_total{namespace=\"retrogame\", pod=~\"kong.*\", container!=\"\"}[5m])) by (pod) > 0.8"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "kong"
+                    service   = "kong"
                   }
                   annotations = {
-                    summary = "Kong high CPU usage"
+                    summary     = "Kong high CPU usage"
                     description = "Kong pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} CPU."
                   }
                 },
                 {
                   alert = "BackendHighMemoryUsage"
-                  expr = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"backend.*\", container!=\"\"}) by (pod) > 400000000"
-                  for = "5m"
+                  expr  = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"backend.*\", container!=\"\"}) by (pod) > 400000000"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "backend"
+                    service   = "backend"
                   }
                   annotations = {
-                    summary = "Backend high memory usage"
+                    summary     = "Backend high memory usage"
                     description = "Backend pod {{ $labels.pod }} is using {{ $value | humanize }}B of memory."
                   }
                 },
                 {
                   alert = "FrontendHighMemoryUsage"
-                  expr = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"frontend.*\", container!=\"\"}) by (pod) > 256000000"
-                  for = "5m"
+                  expr  = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"frontend.*\", container!=\"\"}) by (pod) > 256000000"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "frontend"
+                    service   = "frontend"
                   }
                   annotations = {
-                    summary = "Frontend high memory usage"
+                    summary     = "Frontend high memory usage"
                     description = "Frontend pod {{ $labels.pod }} is using {{ $value | humanize }}B of memory."
                   }
                 },
                 {
                   alert = "KongHighMemoryUsage"
-                  expr = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"kong.*\", container!=\"\"}) by (pod) > 512000000"
-                  for = "5m"
+                  expr  = "sum(container_memory_usage_bytes{namespace=\"retrogame\", pod=~\"kong.*\", container!=\"\"}) by (pod) > 512000000"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
-                    service = "kong"
+                    service   = "kong"
                   }
                   annotations = {
-                    summary = "Kong high memory usage"
+                    summary     = "Kong high memory usage"
                     description = "Kong pod {{ $labels.pod }} is using {{ $value | humanize }}B of memory."
                   }
                 },
                 {
                   alert = "RetrogamePodRestartingTooMuch"
-                  expr = "increase(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}[1h]) > 3"
-                  for = "5m"
+                  expr  = "increase(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}[1h]) > 3"
+                  for   = "5m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "Pod {{ $labels.pod }} is restarting frequently"
+                    summary     = "Pod {{ $labels.pod }} is restarting frequently"
                     description = "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last hour."
                   }
                 },
                 {
                   alert = "RetrogameTotalRestartsHigh"
-                  expr = "sum(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}) > 10"
-                  for = "10m"
+                  expr  = "sum(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}) > 10"
+                  for   = "10m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "High total pod restarts in retrogame namespace"
+                    summary     = "High total pod restarts in retrogame namespace"
                     description = "Total pod restarts in retrogame namespace is {{ $value }}, indicating instability."
                   }
                 },
                 {
                   alert = "RetrogameHighNetworkReceive"
-                  expr = "sum(rate(container_network_receive_bytes_total{namespace=\"retrogame\"}[5m])) by (pod) > 100000000"
-                  for = "10m"
+                  expr  = "sum(rate(container_network_receive_bytes_total{namespace=\"retrogame\"}[5m])) by (pod) > 100000000"
+                  for   = "10m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "High network receive traffic on {{ $labels.pod }}"
+                    summary     = "High network receive traffic on {{ $labels.pod }}"
                     description = "Pod {{ $labels.pod }} is receiving {{ $value | humanize }}B/s of network traffic."
                   }
                 },
                 {
                   alert = "RetrogameHighNetworkTransmit"
-                  expr = "sum(rate(container_network_transmit_bytes_total{namespace=\"retrogame\"}[5m])) by (pod) > 100000000"
-                  for = "10m"
+                  expr  = "sum(rate(container_network_transmit_bytes_total{namespace=\"retrogame\"}[5m])) by (pod) > 100000000"
+                  for   = "10m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "High network transmit traffic on {{ $labels.pod }}"
+                    summary     = "High network transmit traffic on {{ $labels.pod }}"
                     description = "Pod {{ $labels.pod }} is transmitting {{ $value | humanize }}B/s of network traffic."
                   }
                 },
                 {
                   alert = "RetrogameDeploymentReplicasMismatch"
-                  expr = "kube_deployment_spec_replicas{namespace=\"retrogame\"} != kube_deployment_status_replicas_available{namespace=\"retrogame\"}"
-                  for = "5m"
+                  expr  = "kube_deployment_spec_replicas{namespace=\"retrogame\"} != kube_deployment_status_replicas_available{namespace=\"retrogame\"}"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "Deployment {{ $labels.deployment }} has mismatched replicas"
+                    summary     = "Deployment {{ $labels.deployment }} has mismatched replicas"
                     description = "Deployment {{ $labels.deployment }} has {{ $value }} unavailable replicas."
                   }
                 },
                 {
                   alert = "RetrogameServiceDown"
-                  expr = "up{namespace=\"retrogame\"} == 0"
-                  for = "2m"
+                  expr  = "up{namespace=\"retrogame\"} == 0"
+                  for   = "2m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "Retrogame service {{ $labels.job }} is down"
+                    summary     = "Retrogame service {{ $labels.job }} is down"
                     description = "Service {{ $labels.job }} in namespace {{ $labels.namespace }} has been down for more than 2 minutes."
                   }
                 },
                 {
                   alert = "RetrogamePodCrashLooping"
-                  expr = "rate(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}[15m]) > 0.1"
-                  for = "5m"
+                  expr  = "rate(kube_pod_container_status_restarts_total{namespace=\"retrogame\"}[15m]) > 0.1"
+                  for   = "5m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "Pod {{ $labels.pod }} is crash looping"
+                    summary     = "Pod {{ $labels.pod }} is crash looping"
                     description = "Pod {{ $labels.pod }} is restarting frequently ({{ $value }} restarts/min) indicating a crash loop."
                   }
                 }
               ]
             },
             {
-              name = "retrogame-performance-alerts"
+              name     = "retrogame-performance-alerts"
               interval = "30s"
               rules = [
                 {
                   alert = "HighRequestLatency"
-                  expr = "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{namespace=\"retrogame\"}[5m])) > 1"
-                  for = "5m"
+                  expr  = "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{namespace=\"retrogame\"}[5m])) > 1"
+                  for   = "5m"
                   labels = {
-                    severity = "warning"
+                    severity  = "warning"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "High request latency on {{ $labels.service }}"
+                    summary     = "High request latency on {{ $labels.service }}"
                     description = "95th percentile latency is {{ $value }}s on service {{ $labels.service }}."
                   }
                 },
                 {
                   alert = "HighErrorRate"
-                  expr = "rate(http_requests_total{namespace=\"retrogame\", status=~\"5..\"}[5m]) / rate(http_requests_total{namespace=\"retrogame\"}[5m]) > 0.05"
-                  for = "5m"
+                  expr  = "rate(http_requests_total{namespace=\"retrogame\", status=~\"5..\"}[5m]) / rate(http_requests_total{namespace=\"retrogame\"}[5m]) > 0.05"
+                  for   = "5m"
                   labels = {
-                    severity = "critical"
+                    severity  = "critical"
                     namespace = "retrogame"
                   }
                   annotations = {
-                    summary = "High error rate on {{ $labels.service }}"
+                    summary     = "High error rate on {{ $labels.service }}"
                     description = "Error rate is {{ $value | humanizePercentage }} on service {{ $labels.service }}."
                   }
                 }
               ]
             },
             {
-              name = "retrogame-database-alerts"
+              name     = "retrogame-database-alerts"
               interval = "60s"
               rules = [
                 {
                   alert = "PostgreSQLDown"
-                  expr = "pg_up == 0"
-                  for = "2m"
+                  expr  = "pg_up == 0"
+                  for   = "2m"
                   labels = {
                     severity = "critical"
                   }
                   annotations = {
-                    summary = "PostgreSQL database is down"
+                    summary     = "PostgreSQL database is down"
                     description = "PostgreSQL instance {{ $labels.instance }} is down."
                   }
                 },
                 {
                   alert = "PostgreSQLTooManyConnections"
-                  expr = "sum(pg_stat_activity_count) > 80"
-                  for = "5m"
+                  expr  = "sum(pg_stat_activity_count) > 80"
+                  for   = "5m"
                   labels = {
                     severity = "warning"
                   }
                   annotations = {
-                    summary = "PostgreSQL has too many connections"
+                    summary     = "PostgreSQL has too many connections"
                     description = "PostgreSQL has {{ $value }} active connections."
                   }
                 },
                 {
                   alert = "PostgreSQLSlowQueries"
-                  expr = "rate(pg_stat_statements_mean_exec_time[5m]) > 1000"
-                  for = "5m"
+                  expr  = "rate(pg_stat_statements_mean_exec_time[5m]) > 1000"
+                  for   = "5m"
                   labels = {
                     severity = "warning"
                   }
                   annotations = {
-                    summary = "PostgreSQL slow queries detected"
+                    summary     = "PostgreSQL slow queries detected"
                     description = "Average query execution time is {{ $value }}ms."
                   }
                 }
@@ -843,7 +843,7 @@ resource "helm_release" "kube_prometheus_stack" {
   # No fallar si el chart ya existe (idempotente)
   create_namespace = false
   wait             = true
-  timeout          = 600  # 10 minutos para instalación completa
+  timeout          = 600 # 10 minutos para instalación completa
 }
 
 # ============================================================================
