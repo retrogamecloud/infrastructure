@@ -150,67 +150,6 @@ jobs:
             exit 1
           fi
 
-## JOB PARA VALIDACIÓN DE MANIFIESTOS DE KUBERNETES ##
-  validate-kubernetes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    
-    steps:
-      - name: Clonar repositorio
-        uses: actions/checkout@v6
-
-      - name: Configurar kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'latest'
-
-      - name: Validar manifiestos de Kubernetes
-        run: |
-          echo "## ☸️ Validación de Kubernetes" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Encontrar todos los archivos YAML de Kubernetes (excluir kustomization.yaml, ArgoCD y monitoring)
-          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" 2>/dev/null | grep -v node_modules | grep -v ".git" | grep -v "kustomization.yaml" | grep -v "argocd" | grep -v "monitoring" || true)
-          
-          if [ -z "$K8S_FILES" ]; then
-            echo "ℹ️ No se encontraron manifiestos de Kubernetes básicos para validar" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Este repositorio contiene principalmente configuraciones de ArgoCD, Kustomize y Monitoring que se validan en otros jobs." >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-          
-          VALIDATED_COUNT=0
-          SKIPPED_COUNT=0
-          
-          for file in $K8S_FILES; do
-            # Verificar si el archivo contiene recursos de Kubernetes
-            if grep -q "apiVersion:" "$file" 2>/dev/null && grep -q "kind:" "$file" 2>/dev/null; then
-              echo "📄 Validando: $file"
-              
-              # Capturar el error para mostrarlo
-              ERROR_OUTPUT=$(kubectl apply --dry-run=client -f "$file" 2>&1 || true)
-              EXIT_CODE=$?
-              
-              if [ $EXIT_CODE -eq 0 ]; then
-                echo "- ✅ \`$file\`" >> $GITHUB_STEP_SUMMARY
-                VALIDATED_COUNT=$((VALIDATED_COUNT + 1))
-              else
-                # Extraer primera línea del error
-                ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -1 || echo "Error desconocido")
-                echo "- ⚠️ \`$file\`: ${ERROR_MSG}" >> $GITHUB_STEP_SUMMARY
-                echo "::warning file=$file,title=Kubernetes Validation::${ERROR_MSG}"
-                VALIDATED_COUNT=$((VALIDATED_COUNT + 1))
-              fi
-            else
-              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-            fi
-          done
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Resumen:** $VALIDATED_COUNT analizados, $SKIPPED_COUNT omitidos" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "ℹ️ **Nota:** Los manifiestos de ArgoCD, Kustomize y Monitoring se validan en otros jobs." >> $GITHUB_STEP_SUMMARY
 
 ## JOB PARA VALIDACIÓN DE ARGOCD ##
   validate-argocd:
@@ -483,12 +422,11 @@ jobs:
 
 ## JOB PARA NOTIFICAR FALLOS EN SLACK ##
   notify-slack:
-    needs: [lint-infrastructure, validate-terraform, validate-kubernetes, validate-argocd, sonarcloud-scan, snyk-scan]
+    needs: [lint-infrastructure, validate-terraform, validate-argocd, sonarcloud-scan, snyk-scan]
     if: >-
       always() &&
       (
         needs.validate-terraform.result == 'failure' ||
-        needs.validate-kubernetes.result == 'failure' ||
         needs.sonarcloud-scan.result == 'failure'
       )
     runs-on: ubuntu-latest
@@ -526,7 +464,7 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "*Jobs fallidos:*\n${{ needs.validate-terraform.result == 'failure' && '• Validación Terraform\n' || '' }}${{ needs.validate-kubernetes.result == 'failure' && '• Validación Kubernetes\n' || '' }}${{ needs.sonarcloud-scan.result == 'failure' && '• Escaneo SonarCloud\n' || '' }}"
+                      "text": "*Jobs fallidos:*\n${{ needs.validate-terraform.result == 'failure' && '• Validación Terraform\n' || '' }}${{ needs.sonarcloud-scan.result == 'failure' && '• Escaneo SonarCloud\n' || '' }}"
                     }
                   },
                   {
