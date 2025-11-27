@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - main
+    # Dejamos .gitignore ignorado pero permitimos que cambios en CHANGELOG.md disparen el workflow
     paths-ignore:
-      - '**.md'
       - '.gitignore'
   pull_request:
     branches:
       - main
     paths-ignore:
-      - '**.md'
       - '.gitignore'
   workflow_dispatch:
 
@@ -368,12 +367,8 @@ jobs:
 
 ## JOB PARA GENERAR CHANGELOG AUTOMÁTICO ##
   generate-changelog:
-    needs: [validate-terraform, validate-kubernetes, sonarcloud-scan]
-    if: |
-      always() &&
-      github.event_name != 'pull_request' &&
-      (needs.validate-terraform.result == 'success' || needs.validate-terraform.result == 'skipped') &&
-      (needs.validate-kubernetes.result == 'success' || needs.validate-kubernetes.result == 'skipped')
+    needs: [validate-terraform, sonarcloud-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.validate-terraform.result == 'success' || needs.validate-terraform.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -388,104 +383,103 @@ jobs:
       - name: Generar changelog
         id: changelog
         run: |
-          # Obtener el tag anterior (si existe)
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          
-          if [ -z "$PREVIOUS_TAG" ]; then
-            echo "📝 Primera versión, generando changelog completo..."
-            COMMIT_RANGE="HEAD"
-          else
-            echo "📝 Generando changelog desde ${PREVIOUS_TAG}..."
-            COMMIT_RANGE="${PREVIOUS_TAG}..HEAD"
-          fi
-          
-          # Crear o actualizar CHANGELOG.md
           CHANGELOG_FILE="CHANGELOG.md"
           TEMP_FILE="CHANGELOG.tmp"
-          
-          # Generar nueva entrada
-          echo "# Changelog - Infraestructura" > "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "Todas las versiones notables de este proyecto se documentan aquí." >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "## [$(date +'%Y-%m-%d')]" >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          
-          # Categorizar commits por tipo (Conventional Commits)
-          FEATURES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- feat" || echo "")
-          FIXES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- fix" || echo "")
-          CHORES=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- chore" || echo "")
-          DOCS=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -i "^- docs" || echo "")
-          OTHER=$(git log ${COMMIT_RANGE} --pretty=format:"- %s (%h)" --no-merges | grep -viE "^- (feat|fix|chore|docs)" || echo "")
-          
-          # Añadir secciones al changelog
-          if [ -n "$FEATURES" ]; then
-            echo "### ✨ Nuevas Funcionalidades" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
-            echo "$FEATURES" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
+
+          PRE_EXISTING=false
+          LAST_DATE=""
+          if [ -f "$CHANGELOG_FILE" ]; then
+            PRE_EXISTING=true
+            LAST_DATE=$(grep -m1 '^## \[' "$CHANGELOG_FILE" | sed -E 's/## \[([0-9-]+)\].*/\1/' || echo "")
           fi
-          
-          if [ -n "$FIXES" ]; then
-            echo "### 🐛 Correcciones" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
-            echo "$FIXES" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
+
+          # Si existe y no hay commits nuevos desde la última fecha, salir sin cambios
+          if [ "$PRE_EXISTING" = true ] && [ -n "$LAST_DATE" ]; then
+            NEW_COMMITS=$(git log --since "$LAST_DATE 00:00" --pretty=format:'%H' --no-merges)
+            if [ -z "$NEW_COMMITS" ]; then
+              echo "ℹ️ No hay commits nuevos desde $LAST_DATE, se omite actualización" >> $GITHUB_STEP_SUMMARY
+              exit 0
+            fi
           fi
-          
-          if [ -n "$CHORES" ]; then
-            echo "### 🔧 Mantenimiento" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
-            echo "$CHORES" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
+
+          # Rango de commits (usa tag previo si existe)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREVIOUS_TAG" ]; then
+            COMMIT_RANGE="${PREVIOUS_TAG}..HEAD"
+            echo "📝 Generando desde tag ${PREVIOUS_TAG}" >> $GITHUB_STEP_SUMMARY
+          else
+            # Si hay fecha previa usar commits desde entonces, sino todo HEAD
+            if [ -n "$LAST_DATE" ]; then
+              COMMIT_RANGE="--since=$LAST_DATE 00:00"
+              echo "📝 Generando desde fecha $LAST_DATE" >> $GITHUB_STEP_SUMMARY
+            else
+              COMMIT_RANGE="HEAD"
+              echo "📝 Primera generación completa" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
-          
-          if [ -n "$DOCS" ]; then
-            echo "### 📚 Documentación" >> "$TEMP_FILE"
+
+          # Crear cabecera temporal
+            echo "# Changelog - Infraestructura" > "$TEMP_FILE"
             echo "" >> "$TEMP_FILE"
-            echo "$DOCS" >> "$TEMP_FILE"
+            echo "Todas las versiones notables de este proyecto se documentan aquí." >> "$TEMP_FILE"
             echo "" >> "$TEMP_FILE"
-          fi
-          
-          if [ -n "$OTHER" ]; then
-            echo "### 🔄 Otros Cambios" >> "$TEMP_FILE"
+            echo "## [$(date +'%Y-%m-%d')]" >> "$TEMP_FILE"
             echo "" >> "$TEMP_FILE"
-            echo "$OTHER" >> "$TEMP_FILE"
-            echo "" >> "$TEMP_FILE"
-          fi
-          
-          # Si existe changelog anterior, añadirlo
+
+          # Obtener commits del rango
+          GIT_FORMAT="- %s (%h)"
+          FEATURES=$(git log $COMMIT_RANGE --pretty=format:"$GIT_FORMAT" --no-merges | grep -i "^- feat" || true)
+          FIXES=$(git log $COMMIT_RANGE --pretty=format:"$GIT_FORMAT" --no-merges | grep -i "^- fix" || true)
+          CHORES=$(git log $COMMIT_RANGE --pretty=format:"$GIT_FORMAT" --no-merges | grep -i "^- chore" || true)
+          DOCS=$(git log $COMMIT_RANGE --pretty=format:"$GIT_FORMAT" --no-merges | grep -i "^- docs" || true)
+          OTHER=$(git log $COMMIT_RANGE --pretty=format:"$GIT_FORMAT" --no-merges | grep -viE "^- (feat|fix|chore|docs)" || true)
+
+          add_section () {
+            TITLE="$1"; CONTENT="$2"; ICON="$3"
+            if [ -n "$CONTENT" ]; then
+              echo "### $ICON $TITLE" >> "$TEMP_FILE"
+              echo "" >> "$TEMP_FILE"
+              echo "$CONTENT" >> "$TEMP_FILE"
+              echo "" >> "$TEMP_FILE"
+            fi
+          }
+
+          add_section "Nuevas Funcionalidades" "$FEATURES" "✨"
+          add_section "Correcciones" "$FIXES" "🐛"
+          add_section "Mantenimiento" "$CHORES" "🔧"
+          add_section "Documentación" "$DOCS" "📚"
+          add_section "Otros Cambios" "$OTHER" "🔄"
+
+          # Anexar contenido previo (omitimos cabecera antigua)
           if [ -f "$CHANGELOG_FILE" ]; then
             tail -n +4 "$CHANGELOG_FILE" >> "$TEMP_FILE" 2>/dev/null || true
           fi
-          
-          # Reemplazar changelog
+
           mv "$TEMP_FILE" "$CHANGELOG_FILE"
-          
-          echo "✅ Changelog generado"
-          
-          # Mostrar resumen
-          echo "## 📝 Changelog Generado" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Changelog generado" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Changelog (vista parcial)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`markdown" >> $GITHUB_STEP_SUMMARY
-          head -50 "$CHANGELOG_FILE" >> $GITHUB_STEP_SUMMARY
+          head -50 "$CHANGELOG_FILE" >> $GITHUB_STEP_SUMMARY || true
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+          # Preparar para commit
+          git add "$CHANGELOG_FILE"
+          if git diff --cached --quiet; then
+            echo "ℹ️ No hay cambios nuevos en CHANGELOG.md" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "changes=true" >> $GITHUB_OUTPUT
+
       - name: Commit y push del changelog
+        if: steps.changelog.outputs.changes == 'true'
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          
           TARGET_BRANCH="${{ github.ref_name }}"
-          
-          if git diff --quiet CHANGELOG.md; then
-            echo "ℹ️ No hay cambios en CHANGELOG.md"
-          else
-            git add CHANGELOG.md
-            git commit -m "docs: Actualizar CHANGELOG [skip ci]"
-            git push origin "${TARGET_BRANCH}"
-            echo "✅ CHANGELOG.md actualizado y publicado en ${TARGET_BRANCH}"
-          fi
+          git commit -m "docs: actualizar CHANGELOG"
+          git push origin "$TARGET_BRANCH"
+          echo "✅ CHANGELOG.md actualizado y publicado en ${TARGET_BRANCH}"
 
 ## JOB PARA NOTIFICAR FALLOS EN SLACK ##
   notify-slack:
