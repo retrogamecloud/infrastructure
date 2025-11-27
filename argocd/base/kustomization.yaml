@@ -5,8 +5,9 @@ namespace: argocd
 
 resources:
   - argocd-secret.yaml
-  - argocd-repo.yaml
-  - argocd-repo-infrastructure.yaml
+  # Temporalmente deshabilitado - gestionado manualmente con token nuevo
+  # - argocd-repo.yaml
+  # - argocd-repo-infrastructure.yaml
   - argocd-notifications-cm.yaml
   - argocd-notifications-secret.yaml
   - argocd-ingress.yaml
