@@ -70,7 +70,13 @@ resource "helm_release" "kube_prometheus_stack" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  version    = "55.5.0"
+  version    = "79.7.1"  # Fijada explícitamente - NO cambiar
+
+  # Para actualizar de 55.5.0 a 79.7.1, NO reusar valores antiguos
+  reset_values    = false
+  reuse_values    = false  # Cambiado a false para permitir upgrade
+  force_update    = false
+  recreate_pods   = false
 
   # Valores personalizados para optimizar recursos en t3.micro nodes
   values = [

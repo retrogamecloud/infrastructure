@@ -161,3 +161,15 @@ variable "github_oauth_client_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token para ArgoCD repository access"
+  type        = string
+  sensitive   = true
+}
+
+variable "slack_bot_token" {
+  description = "Slack Bot Token para notificaciones de ArgoCD (xoxb-...)"
+  type        = string
+  sensitive   = true
+}
