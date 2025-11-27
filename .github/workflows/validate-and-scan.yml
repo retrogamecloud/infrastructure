@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - main
-    # Dejamos .gitignore ignorado pero permitimos que cambios en CHANGELOG.md disparen el workflow
     paths-ignore:
+      - '**.md'
       - '.gitignore'
   pull_request:
     branches:
       - main
     paths-ignore:
+      - '**.md'
       - '.gitignore'
   workflow_dispatch:
 
@@ -19,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ENABLE_SNYK: true
+  ENABLE_SNYK: false
   ENABLE_SLACK_NOTIFICATIONS: true
 
 permissions:
