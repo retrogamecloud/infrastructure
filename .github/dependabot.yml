@@ -1,0 +1,19 @@
+version: 2
+updates:
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily" # Se cambiará a weekly más adelante
+    open-pull-requests-limit: 5
+    assignees:
+      - "evaristogz"
+      - "naesman1"
+      - "jpalenz77"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-all:
+        patterns:
+          - "*"
