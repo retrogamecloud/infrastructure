@@ -274,6 +274,43 @@ jobs:
             echo "⚠️ No se generó archivo de resultados" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Evaluar severidades de Snyk
+        if: github.event.repository.private == false && env.ENABLE_SNYK == 'true'
+        run: |
+          if [ ! -f "snyk-iac.json" ]; then
+            echo "⚠️ No existe snyk-iac.json, no se puede evaluar severidades"
+            exit 0
+          fi
+          # Contar severidades usando jq (instalado en runner). Fallback a grep si faltara.
+          if command -v jq >/dev/null 2>&1; then
+            CRITICAL=$(jq '[.. | objects | select(has("issue")) | .issue.severity | select(.=="critical")] | length' snyk-iac.json 2>/dev/null || echo 0)
+            HIGH=$(jq '[.. | objects | select(has("issue")) | .issue.severity | select(.=="high")] | length' snyk-iac.json 2>/dev/null || echo 0)
+            MEDIUM=$(jq '[.. | objects | select(has("issue")) | .issue.severity | select(.=="medium")] | length' snyk-iac.json 2>/dev/null || echo 0)
+            LOW=$(jq '[.. | objects | select(has("issue")) | .issue.severity | select(.=="low")] | length' snyk-iac.json 2>/dev/null || echo 0)
+          else
+            CRITICAL=$(grep -i '"severity": *"critical"' snyk-iac.json | wc -l || echo 0)
+            HIGH=$(grep -i '"severity": *"high"' snyk-iac.json | wc -l || echo 0)
+            MEDIUM=$(grep -i '"severity": *"medium"' snyk-iac.json | wc -l || echo 0)
+            LOW=$(grep -i '"severity": *"low"' snyk-iac.json | wc -l || echo 0)
+          fi
+          echo "🔢 Severidades: critical=$CRITICAL high=$HIGH medium=$MEDIUM low=$LOW" >> $GITHUB_STEP_SUMMARY
+          # Anotaciones
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error title=Snyk Critical Issues::Se encontraron $CRITICAL vulnerabilidades críticas en IaC"
+            echo "❌ $CRITICAL vulnerabilidad(es) crítica(s)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "$HIGH" -gt 1 ]; then
+            echo "::warning title=Snyk High Issues::Se encontraron $HIGH vulnerabilidades de severidad alta en IaC"
+            echo "⚠️ $HIGH vulnerabilidades altas" >> $GITHUB_STEP_SUMMARY
+          fi
+          # Guardar valores para otros jobs si hiciera falta
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          # Fallar si hay al menos una crítica
+          if [ "$CRITICAL" -gt 0 ]; then
+            exit 1
+          fi
+
       - name: Verificar si se generó el archivo SARIF
         id: check-sarif
         if: github.event.repository.private == false && env.ENABLE_SNYK == 'true'
