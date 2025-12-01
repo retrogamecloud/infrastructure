@@ -1,6 +1,123 @@
-# 🔒 Rulesets de GitHub - RetroGameCloud
+# 🔧 GitHub Configuration Management - RetroGameCloud
 
-Este directorio contiene las configuraciones de protección y nomenclatura estándar para todos los repositorios del proyecto RetroGameCloud.
+Este directorio contiene configuraciones reutilizables para gestionar repositorios de GitHub mediante el CLI `gh`.
+
+## 📁 Contenido
+
+### Rulesets
+- `ruleset-nombre-rama.json` - Nomenclatura estándar para ramas
+- `ruleset-proteccion-rama.json` - Protección para rama main
+- `ruleset-proteccion-tag.json` - Protección para tags
+
+### Labels
+- `labels.json` - Definición de labels estándar
+
+---
+
+## 🏷️ Gestión de Labels
+
+### Estructura del archivo `labels.json`
+
+```json
+[
+  {
+    "name": "nombre-label",
+    "description": "Descripción del label",
+    "color": "HEX_COLOR"
+  }
+]
+```
+
+### Aplicar labels con GitHub CLI
+
+#### Requisitos previos
+
+1. **Instalar GitHub CLI**:
+   ```bash
+   # Windows (winget)
+   winget install GitHub.cli
+   
+   # Linux
+   sudo apt install gh
+   
+   # macOS
+   brew install gh
+   ```
+
+2. **Autenticarse**:
+   ```bash
+   gh auth login
+   ```
+
+3. **Instalar jq** (procesador JSON):
+   ```bash
+   # Windows (winget)
+   winget install jqlang.jq
+   
+   # Linux
+   sudo apt install jq
+   
+   # macOS
+   brew install jq
+   ```
+
+#### Aplicar a todos los repositorios
+
+```bash
+cd infrastructure/github
+
+for repo in backend docs frontend infrastructure kong kubernetes; do
+  echo "📦 Procesando repositorio: retrogamecloud/$repo"
+  
+  cat labels.json | jq -c '.[]' | while IFS= read -r label; do
+    NAME=$(echo "$label" | jq -r '.name')
+    DESCRIPTION=$(echo "$label" | jq -r '.description')
+    COLOR=$(echo "$label" | jq -r '.color')
+    
+    # Verificar si el label ya existe
+    if gh label list --repo "retrogamecloud/$repo" --limit 1000 | grep -q "^${NAME}"; then
+      # Actualizar label existente
+      gh label edit "$NAME" --repo "retrogamecloud/$repo" \
+        --description "$DESCRIPTION" --color "$COLOR" 2>/dev/null \
+        && echo "  ✅ Actualizado: $NAME" || echo "  ❌ Error: $NAME"
+    else
+      # Crear label nuevo
+      gh label create "$NAME" --repo "retrogamecloud/$repo" \
+        --description "$DESCRIPTION" --color "$COLOR" 2>/dev/null \
+        && echo "  ✅ Creado: $NAME" || echo "  ❌ Error: $NAME"
+    fi
+  done
+  
+  echo ""
+done
+
+echo "✅ Proceso completado"
+```
+
+### Labels disponibles
+
+- `auto` - Creado automáticamente por un workflow
+- `rollback` - Cambios de rollback
+- `urgent` - Acción prioritaria
+- `images` - Cambios en imágenes de Docker
+
+### Personalización de labels
+
+Para añadir o modificar labels:
+
+1. Edita `labels.json`
+2. Ejecuta el script con `--dry-run` para verificar
+3. Aplica los cambios sin dry-run
+
+```bash
+# Verificar cambios
+./apply-labels.sh retrogamecloud/backend --dry-run
+
+# Aplicar
+./apply-labels.sh retrogamecloud/backend
+```
+
+---
 
 ## 📋 Rulesets Disponibles
 
@@ -9,21 +126,9 @@ Este directorio contiene las configuraciones de protección y nomenclatura está
 **Propósito:** Obliga a usar prefijos estándar para nombres de ramas.
 
 **Formato requerido:** `tipo/descripción`
+### Personalización de labels
 
-**Tipos permitidos:**
-- `feature/` - Nuevas funcionalidades
-- `bugfix/` - Corrección de bugs
-- `hotfix/` - Correcciones urgentes en producción
-- `release/` - Preparación de releases
-- `chore/` - Tareas de mantenimiento
-- `docs/` - Documentación
-- `refactor/` - Refactorización de código
-- `test/` - Tests
-- `ci/` - Cambios en CI/CD
-
-**Ramas excluidas (protegidas):** `main`, `master`, `develop`, `staging`, `production`
-
-**✅ Ejemplos válidos:**
+Para añadir o modificar labels, edita `labels.json` y vuelve a ejecutar el comando for anterior. Ejemplos válidos:**
 ```bash
 git checkout -b feature/user-authentication
 git checkout -b bugfix/fix-login-error
