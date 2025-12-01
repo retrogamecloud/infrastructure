@@ -1,0 +1,22 @@
+[
+  {
+    "name": "auto",
+    "description": "Creado automáticamente por un workflow",
+    "color": "0E8A16"
+  },
+  {
+    "name": "rollback",
+    "description": "Cambios de rollback",
+    "color": "E99695"
+  },
+  {
+    "name": "urgent",
+    "description": "Acción prioritaria",
+    "color": "B60205"
+  },
+  {
+    "name": "images",
+    "description": "Cambios en imágenes de Docker",
+    "color": "0052CC"
+  }
+]
