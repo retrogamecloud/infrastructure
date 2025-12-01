@@ -452,8 +452,3 @@ git push origin feature/correct-name
 | infrastructure | ✅ Activo | ✅ Activo | ✅ Activo |
 | kong | ✅ Activo | ✅ Activo | ✅ Activo |
 | kubernetes | ✅ Activo | ✅ Activo | ✅ Activo |
-
----
-
-**Última actualización:** 21 de noviembre de 2025  
-**Mantenedor:** @retrogamecloud
