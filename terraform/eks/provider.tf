@@ -31,9 +31,9 @@ terraform {
     bucket         = "retrogamecloud-terraform-state-450545962171"
     key            = "eks/terraform.tfstate"
     region         = "eu-west-1"
-    dynamodb_table = "terraform-lock"
     encrypt        = true
-    profile        = "terraform"
+    profile        = "retrogamecloud-terraform"
+    use_lockfile   = true
   }
 }
 
