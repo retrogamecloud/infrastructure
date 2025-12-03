@@ -2,666 +2,1044 @@
 
 Este directorio contiene la infraestructura como código (IaC) para desplegar RetroGameCloud en AWS usando Amazon EKS (Elastic Kubernetes Service).
 
-## 🎮 ¿Qué es RetroGameCloud?
+## Descripción
 
-RetroGameCloud es una plataforma cloud para jugar juegos retro de DOS directamente en el navegador. Utiliza el emulador js-dos para ejecutar juegos clásicos sin instalación, con rankings globales y gestión de usuarios.
+Solución completa de infraestructura en Kubernetes con:
+- **EKS Cluster** (Kubernetes 1.34) con EC2 Node Groups (t3.small, 4 nodos)
+- **ALB + NGINX Ingress** para routing de tráfico
+- **ArgoCD** para GitOps deployment automático
+- **Monitoring Stack** (Prometheus + Grafana + AlertManager) con GitHub OAuth
+- **RDS PostgreSQL 15** para persistencia de datos
+- **S3 + CloudFront** para CDN de assets estáticos
 
-## 🏗️ Arquitectura AWS
+La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima calidad y mantenibilidad.
 
-### Componentes Principales
+## Tabla de contenidos
+
+- [Descripción](#descripción)
+- [Arquitectura](#arquitectura)
+- [Estructura de archivos](#estructura-de-archivos)
+- [Archivos .tf Principales](#archivos-tf-principales)
+- [Prerequisitos](#prerequisitos)
+- [Guía de despliegue](#guía-de-despliegue)
+- [Configuración](#configuración)
+- [Escalabilidad y Operaciones](#escalabilidad-y-operaciones)
+- [Monitoreo y Troubleshooting](#monitoreo-y-troubleshooting)
+- [Mantenimiento](#mantenimiento)
+- [Destruir Infraestructura](#destruir-infraestructura)
+- [Seguridad](#seguridad)
+
+## Arquitectura
+
+### Componentes principales
 
 ```
-Internet
-    ↓
-CloudFront CDN (Assets estáticos: juegos .jsdos, imágenes, emulador js-dos)
-    ↓
-Kong Load Balancer (NLB) → Kong API Gateway (Kubernetes)
-    ↓
-┌─────────────────── EKS Cluster (Kubernetes 1.34) ───────────────────┐
-│                                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
-│  │   Frontend   │  │   Backend    │  │     Kong     │             │
-│  │   (Node.js)  │  │  (Node.js)   │  │  (Gateway)   │             │
-│  │   Port 8081  │  │  Port 3000   │  │  Port 8000   │             │
-│  └──────────────┘  └──────────────┘  └──────────────┘             │
-│         ↓                  ↓                   ↓                    │
-│  3x EC2 Nodes (t3.micro) en Subnets Privadas                       │
-└──────────────────────────────────────────────────────────────────────┘
-                           ↓
-                   NAT Gateway (Internet)
-                           ↓
-                  RDS PostgreSQL 15 (db.t3.micro)
+┌─────────────────────────────────────────────────────────────────┐
+│                         Internet                                │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              Application Load Balancer (ALB)                     │
+│  HTTP:80 → HTTPS:443 (ACM Certificate)                          │
+│  Path-based routing:                                            │
+│  / → Frontend (público)                                         │
+│  /oauth2/* → OAuth2-Proxy (GitHub auth)                         │
+│  /grafana/* → Grafana (protegido)                               │
+│  /prometheus/* → Prometheus (protegido)                         │
+│  /argocd* → ArgoCD (protegido)                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│               NGINX Ingress Controller (ClusterIP)              │
+│  Gestiona ingress rules internas                                │
+│  TLS termination (Let's Encrypt)                                │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────── EKS Cluster (Kubernetes 1.34) ──────────────────┐
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Namespaces:                                              │  │
+│  │                                                          │  │
+│  │ retrogame              | kube-system | monitoring | argocd
+│  │ ├─ Frontend            | ├─ CoreDNS  | ├─ Prometheus    | ├─ ArgoCD
+│  │ ├─ Backend             | └─ VPC-CNI  | ├─ Grafana       | └─ Repo Server
+│  │ └─ Job DB-Init         |             | ├─ AlertManager  |
+│  │                        |             | └─ oauth2-proxy  |
+│  └──────────────────────────────────────────────────────────┘
+│                                                                  │
+│  EC2 Node Group: 4 nodos t3.small (2 vCPU, 2GB RAM cada uno)   │
+│  ├─ Subnets privadas (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)   │
+│  ├─ Auto Scaling: min=2, desired=4, max=6                       │
+│  ├─ Cluster Autoscaler habilitado                               │
+│  └─ Metrics Server para HPA                                     │
+│                                                                  │
+│  Add-ons de EKS:                                                │
+│  ├─ CoreDNS (servicio DNS interno)                              │
+│  ├─ kube-proxy (networking)                                     │
+│  └─ VPC-CNI (IP management)                                     │
+│                                                                  │
+│  Helm Releases:                                                 │
+│  ├─ NGINX Ingress Controller                                    │
+│  ├─ Kube Prometheus Stack (Prometheus + Grafana + AlertManager) │
+│  ├─ Cluster Autoscaler                                          │
+│  ├─ AWS Load Balancer Controller                                │
+│  ├─ oauth2-proxy (GitHub authentication)                        │
+│  └─ ArgoCD (GitOps)                                             │
+└──────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────┐
+│                    AWS Services Externos                         │
+│                                                                  │
+│  ├─ RDS PostgreSQL 15 (db.t3.micro)                            │
+│  │  ├─ Storage: 20GB gp3 encriptado                            │
+│  │  ├─ Backup: 1-7 días según entorno                          │
+│  │  └─ Multi-AZ: No (dev) / Sí (prod)                          │
+│  │                                                              │
+│  ├─ S3 Buckets                                                 │
+│  │  ├─ Games CDN: juegos .jsdos + imágenes + emulador          │
+│  │  └─ CDN Logs: logs de acceso                                │
+│  │                                                              │
+│  ├─ CloudFront Distribution (CDN)                              │
+│  │  ├─ Origin: S3 bucket                                       │
+│  │  └─ Distribution: Cache global                              │
+│  │                                                              │
+│  ├─ VPC (10.0.0.0/16)                                          │
+│  │  ├─ 3 Subnets públicas (10.0.101-103.0/24)                 │
+│  │  ├─ 3 Subnets privadas (10.0.1-3.0/24)                     │
+│  │  ├─ NAT Gateway (1 en subnet pública)                       │
+│  │  └─ Internet Gateway                                        │
+│  │                                                              │
+│  └─ Security Groups                                            │
+│     ├─ ALB: 80/443 desde internet                              │
+│     ├─ Nodes: tráfico interno + egress                         │
+│     └─ RDS: 5432 desde VPC CIDR                                │
+└──────────────────────────────────────────────────────────────────┘
 
-VPC: 10.0.0.0/16
-├── 3 Subnets Públicas (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)
-└── 3 Subnets Privadas (10.0.101.0/24, 10.0.102.0/24, 10.0.103.0/24)
+S3 + CloudFront
+     ↓
+/juegos/doom.jsdos
+/img/doom.png
+/jsdos/js-dos.js
 ```
 
-### ¿Por qué EC2 Node Groups (no Fargate)?
+## Estructura de archivos
 
-Después de probar ambas opciones, elegimos **EC2 Node Groups** porque:
-
-✅ **Más estable** - No hay timeouts de 15 minutos en deploys
-✅ **Más económico** - $150-180/mes vs $229/mes con Fargate
-✅ **Mejor control** - Podemos ajustar instance types según necesidad
-✅ **Init containers funcionan** - Sin problemas de timing
-✅ **Predictible** - Recursos siempre disponibles
-
-❌ Fargate tenía problemas:
-- Timeouts frecuentes en deploys largos
-- Más caro para workloads constantes
-- Problemas con init containers y URL replacement
-
-## 📦 Componentes del Proyecto
-
-### 1. **Infraestructura AWS** (archivos Terraform)
-
-#### `provider.tf`
-Configura los providers necesarios:
-- **AWS Provider**: Interactúa con servicios de AWS (EKS, VPC, RDS, S3, etc.)
-- **Kubernetes Provider**: Gestiona recursos dentro del cluster EKS
-- **Helm Provider**: Instala charts de Helm (futuro: Prometheus, Grafana)
-- **Null Provider**: Ejecuta scripts locales (upload de assets, restart de pods)
-
-#### `variables.tf`
-Define variables configurables del proyecto:
-- `aws_region`: Región de AWS (default: eu-west-1 - Irlanda)
-- `cluster_name`: Nombre del cluster EKS (default: retrogame)
-- `cluster_version`: Versión de Kubernetes (default: 1.34)
-- `db_password`: Contraseña de PostgreSQL (sensitive)
-- `jwt_secret`: Secret para tokens JWT (sensitive)
-- `node_instance_type`: Tipo de instancias EC2 (default: t3.micro)
-
-#### `eks.tf` - ⭐ EKS Cluster y Networking
-**Crea:**
-- **VPC** (10.0.0.0/16) con 6 subnets (3 públicas + 3 privadas) en 3 AZs
-- **Internet Gateway** para acceso público
-- **NAT Gateway** para que pods en subnets privadas accedan a internet
-- **EKS Cluster** (Kubernetes 1.34)
-- **Node Group** con 3 nodos t3.micro en subnets privadas
-- **Security Groups** para controlar tráfico
-
-**¿Por qué 3 nodos?**
-- Alta disponibilidad (1 por Availability Zone)
-- Si 1 nodo falla, los otros 2 continúan
-- Suficiente para dev/testing
-
-**¿Qué es un Node Group?**
-- Grupo de máquinas EC2 que ejecutan tus pods de Kubernetes
-- Kubernetes scheduler decide en qué nodo va cada pod
-- Se pueden escalar automáticamente (actualmente fijo en 3)
-
-#### `rds.tf` - 🗄️ Base de Datos PostgreSQL
-**Crea:**
-- **RDS PostgreSQL 15** (instancia db.t3.micro)
-- **Subnet Group** para alta disponibilidad en 3 AZs
-- **Security Group** que solo permite conexiones desde VPC
-- **Credenciales** almacenadas en Kubernetes Secret
-
-**¿Por qué RDS y no PostgreSQL en Kubernetes?**
-- AWS gestiona backups automáticos (7 días de retención)
-- Actualizaciones de seguridad automáticas
-- Snapshots para disaster recovery
-- Mejor rendimiento y estabilidad
-- No se pierde data si se destruye el cluster
-
-#### `s3-cdn.tf` - 📡 CDN para Assets Estáticos
-**Crea:**
-- **S3 Bucket** para juegos .jsdos, imágenes, emulador js-dos
-- **CloudFront Distribution** (CDN global de AWS)
-- **Null Resource** que sube automáticamente 79 archivos estáticos
-
-**¿Qué es CloudFront?**
-- Red de distribución de contenido (CDN) global
-- Copia tus archivos a servidores en todo el mundo
-- Los usuarios descargan desde el servidor más cercano
-- Más rápido y más barato que servir desde tu backend
-
-**Archivos que se sirven:**
-- Juegos: `doom.jsdos`, `duke3d.jsdos`, `wolf.jsdos`, etc. (10 juegos)
-- Imágenes: Portadas de juegos, logos
-- Emulador: js-dos completo (wdosbox.js, wlibzip.js, etc.)
-
-#### `kubernetes.tf` - ☸️ Aplicaciones en Kubernetes
-**Crea:**
-- **Namespace**: `retrogame` (aísla recursos del cluster)
-- **Secrets**: Credenciales de DB y JWT
-- **ConfigMaps**: Configuración de servicios y scripts
-- **Deployments**: Backend, Frontend, Kong
-- **Services**: Exponen pods internamente o externamente
-- **Job**: Inicialización automática de base de datos
-- **Null Resources**: Automatizaciones post-deploy
-
-#### `outputs.tf` - 📤 Información Post-Deploy
-Muestra información útil después del deploy:
-- URL del Load Balancer (punto de entrada a la app)
-- Endpoint de RDS
-- URL de CloudFront (CDN)
-- Comandos útiles
-
----
-
-### 2. **Aplicaciones en Kubernetes**
-
-#### **Backend Service** (auth-service, game-catalog-service, ranking-service, score-service, user-service)
-- **Lenguaje**: Node.js + Express
-- **Puerto**: 3000
-- **Réplicas**: 1 (puede escalar a más)
-- **Recursos**: 100m CPU, 256MB RAM (requests) / 200m CPU, 512MB RAM (limits)
-- **Qué hace**: 
-  - API REST para autenticación (JWT)
-  - CRUD de juegos
-  - Gestión de scores y rankings
-  - Gestión de usuarios
-  - Conecta a PostgreSQL en RDS
-
-#### **Frontend Service**
-- **Lenguaje**: Node.js (sirve HTML estático)
-- **Puerto**: 8081
-- **Réplicas**: 1
-- **Recursos**: 50m CPU, 128MB RAM (requests) / 100m CPU, 256MB RAM (limits)
-- **Qué hace**:
-  - Sirve archivos HTML, CSS, JavaScript
-  - **Init Container** `url-replacer`: Antes de iniciar, reemplaza placeholders en HTML con URLs reales de LoadBalancer y CDN
-  - Interfaz web para jugar, ver rankings, login/register
-
-**¿Qué es un Init Container?**
-- Container que se ejecuta ANTES del container principal
-- Útil para preparar configuración, copiar archivos, etc.
-- En nuestro caso: reemplaza `PLACEHOLDER_LB_URL` por URL real del LoadBalancer
-
-#### **Kong API Gateway**
-- **Qué es**: Proxy reverso y API Gateway
-- **Puerto**: 8000 interno, expuesto en puerto 80 externamente vía LoadBalancer
-- **Réplicas**: 1
-- **Recursos**: 100m CPU, 256MB RAM
-- **Qué hace**:
-  - Recibe todas las peticiones externas
-  - Enruta a backend según la ruta (`/api/*`)
-  - Rate limiting (máx 100 requests/minuto por IP)
-  - Logging centralizado
-  - Puede agregar autenticación, CORS, etc.
-
-**¿Por qué Kong y no acceso directo al backend?**
-- **Seguridad**: Backend no está expuesto directamente
-- **Rate Limiting**: Previene abuso de API
-- **Single Entry Point**: Una sola URL externa
-- **Futuro**: HTTPS, OAuth, métricas, circuit breaker
-
-#### **db-init Job**
-- **Qué es**: Job de Kubernetes (tarea que se ejecuta una vez)
-- **Cuándo**: Automáticamente después del deploy
-- **Qué hace**:
-  - Conecta a RDS PostgreSQL
-  - Ejecuta script SQL que crea tablas (users, games, scores, rankings, etc.)
-  - Inserta 10 juegos en la tabla `games`
-  - Crea 1 usuario de prueba
-  - Se marca como "Completed" cuando termina
-
----
-
-### 3. **Automatizaciones**
-
-#### **null_resource.upload_static_files**
-**Qué hace**:
-- Después de crear CloudFront, sube automáticamente:
-  - `/infraestructure/cdn/juegos/*.jsdos` → S3
-  - `/infraestructure/cdn/img/*` → S3
-  - `/frontend/jsdos/*` (emulador completo) → S3
-- Total: 79 archivos
-
-**Triggers**: Se ejecuta si cambia:
-- El contenido del bucket S3
-- Los archivos en `cdn/juegos` o `cdn/img`
-
-#### **kubernetes_config_map_v1_data.frontend_urls**
-**Qué hace**:
-- Espera a que el LoadBalancer de Kong tenga una URL asignada
-- Actualiza el ConfigMap con:
-  - `LB_URL`: URL real del LoadBalancer (ej: http://aXXXX.elb.eu-west-1.amazonaws.com)
-  - `CDN_URL`: URL de CloudFront (ej: https://dXXXX.cloudfront.net)
-
-**¿Por qué?**
-- Al inicio del deploy, no sabemos cuál será la URL del LoadBalancer
-- AWS la asigna dinámicamente
-- Este ConfigMap actualiza el script que usa el init container del frontend
-
-#### **null_resource.restart_frontend**
-**Qué hace**:
-- Después de actualizar el ConfigMap con URLs reales
-- Ejecuta `kubectl rollout restart deployment/frontend`
-- Fuerza la recreación de pods del frontend
-- El nuevo pod usa el ConfigMap actualizado con URLs correctas
-
-**¿Por qué?**
-- Los pods que se crearon inicialmente tienen `PLACEHOLDER_LB_URL`
-- Necesitamos recrearlos para que el init container corra de nuevo
-- Ahora sí reemplaza con la URL real
-
----
-
-## Prerrequisitos
-
-1. **AWS CLI** configurado con credenciales
-   ```bash
-   aws configure
-   ```
-
-2. **Terraform** >= 1.5
-   ```bash
-   terraform --version
-   ```
-
-3. **kubectl** para interactuar con el cluster
-   ```bash
-   kubectl version --client
-   ```
-
-4. **Permisos IAM** necesarios:
-   - EKS Full Access
-   - VPC Full Access
-   - RDS Full Access
-   - EC2 Full Access
-   - IAM (para roles de servicio)
-
-## 🚀 Cómo Desplegar
-
-### 1. Configurar Variables
-
-**Opción A - Variables de entorno (recomendado):**
-
-```bash
-export TF_VAR_db_password="tu-password-seguro-aqui"
-export TF_VAR_jwt_secret="tu-jwt-secret-largo-aqui"
+```
+eks/
+├── provider.tf              # Providers AWS, Kubernetes, Helm, Null, Random
+├── variables.tf             # Variables de entrada (región, cluster_version, DB, etc.)
+├── data.tf                  # Data sources (account ID, availability zones, etc.)
+├── backend.conf             # Backend S3 config (from bootstrap project)
+├── 
+├── eks.tf                   # VPC + EKS Cluster + Node Group (terraform-aws-modules)
+├── kubernetes.tf            # Namespaces, Secrets, ConfigMaps (desde Terraform)
+├── rds.tf                   # PostgreSQL 15 (db.t3.micro)
+├── s3-cdn.tf                # S3 buckets + CloudFront distribution
+├── 
+├── ingress_nginx.tf         # NGINX Ingress Controller (Helm)
+├── alb.tf                   # Application Load Balancer (ALB)
+├── oauth2_proxy.tf          # oauth2-proxy para GitHub authentication
+├── 
+├── argocd.tf                # ArgoCD (Helm) - GitOps deployment
+├── monitoring.tf            # Prometheus Stack (Helm) - kube-prometheus-stack
+├── ebs-csi-driver.tf        # EBS CSI Driver (storage)
+├── ingress_monitoring.tf    # Ingress para Grafana, Prometheus, AlertManager
+├── 
+├── route53.tf               # DNS records (opcional)
+├── 
+├── outputs.tf               # Outputs importantes (URLs, endpoints)
+├── README.md                # Este archivo
+│
+├── values/
+│   ├── argocd-values.yaml   # Helm values customizados para ArgoCD
+│   └── ...
+│
+└── .gitignore
+    ├── terraform.tfstate*   # NO commitar estado local
+    ├── .terraform/
+    └── *.tfvars
 ```
 
-**Opción B - Archivo terraform.tfvars:**
+## Archivos .tf principales
 
-```bash
-cp terraform.tfvars.example terraform.tfvars
-nano terraform.tfvars
-```
+### provider.tf
+- **AWS Provider** (v5.0): Gestiona recursos AWS
+- **Kubernetes Provider** (v2.23): CRUD de recursos K8s (deployments, services, ingress)
+- **Helm Provider** (v2.11): Instala/actualiza charts (NGINX, Prometheus, ArgoCD)
+- **Null Provider** (v3.2): Ejecuta provisioners y scripts locales
+- **Random Provider** (v3.5): Genera valores aleatorios (cookies secrets)
+- **Backend S3**: Estado remoto en bucket creado por bootstrap project
+  - Bucket: `retrogamecloud-terraform-state-<ACCOUNT_ID>`
+  - DynamoDB: `terraform-lock` (para concurrencia)
 
-Editar:
+### variables.tf
+Configuración parametrizable:
+| Variable | Defecto | Tipo | Sensible |
+|----------|---------|------|----------|
+| `aws_region` | eu-west-1 | string | No |
+| `aws_profile` | retrogamecloud-terraform | string | No |
+| `cluster_name` | retrogame | string | No |
+| `cluster_version` | 1.34 | string | No |
+| `vpc_cidr` | 10.0.0.0/16 | string | No |
+| `node_instance_types` | ["t3.small"] | list(string) | No |
+| `node_desired_size` | 4 | number | No |
+| `node_min_size` | 2 | number | No |
+| `node_max_size` | 6 | number | No |
+| `db_instance_class` | db.t3.micro | string | No |
+| `db_allocated_storage` | 20 | number | No |
+| `db_password` | - | string | **Sí** |
+| `jwt_secret` | - | string | **Sí** |
+| `github_oauth_client_id` | - | string | **Sí** |
+| `github_oauth_client_secret` | - | string | **Sí** |
+| `slack_webhook_url` | (default) | string | **Sí** |
+
+### eks.tf
+**Módulos Terraform certificados:**
 ```hcl
-db_password = "tu-password-seguro"
-jwt_secret  = "tu-jwt-secret"
-aws_region  = "eu-west-1"  # Irlanda
-cluster_name = "retrogame"
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+  # Crea: VPC, subnets (3 pub + 3 priv), NAT Gateway, Internet Gateway
+}
+
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+  # Crea: EKS Cluster, Node Group (4 nodos t3.small)
+  # Add-ons: CoreDNS, kube-proxy, VPC-CNI
+}
 ```
 
-### 2. Inicializar Terraform
+**Recursos creados:**
+- **VPC**: 10.0.0.0/16
+  - 3 Subnets públicas: 10.0.101-103.0/24 (ALB, NAT Gateway)
+  - 3 Subnets privadas: 10.0.1-3.0/24 (EKS nodes)
+  - NAT Gateway: Permite egress de pods en subnets privadas
+  - Internet Gateway: Acceso desde internet al ALB
+- **EKS Cluster**: Kubernetes 1.34
+  - Control plane en AWS managed
+  - Endpoint público para kubectl
+- **Node Group**:
+  - Nombre: `general-nodes`
+  - Instance type: t3.small (2 vCPU, 2GB RAM)
+  - Desired: 4 nodos
+  - Autoscaling: min=2, max=6
+  - Estrategia: ON_DEMAND (no Spot)
+  - AMI: AL2023_x86_64_STANDARD (Amazon Linux 2023)
+- **Addons EKS**:
+  - CoreDNS: DNS del cluster
+  - kube-proxy: Networking
+  - VPC-CNI: IP management (pods usan IPs de VPC)
 
-```bash
-cd infraestructure/terraform/eks_test
-terraform init
+**Add-ons adicionales instalados vía Helm:**
+- **Cluster Autoscaler**: Scale automático de nodos
+- **Metrics Server**: Métricas para HPA (Horizontal Pod Autoscaling)
+- **AWS Load Balancer Controller**: Crea ALB/NLB automáticamente
+
+### kubernetes.tf
+Recursos K8s creados vía Terraform:
+- **Namespace `retrogame`**: Aisla aplicaciones
+- **Secrets**:
+  - `jwt-secret`: JWT_SECRET para autenticación
+  - `postgres-credentials`: Conexión a RDS
+- **ConfigMaps**: Configuración de aplicaciones
+
+**Nota**: Backend y Frontend deployments comentados porque **ArgoCD** ahora los gestiona.
+
+### rds.tf
+**PostgreSQL 15** gestionado:
+```
+Identifier:     retrogame-postgres
+Instance class: db.t3.micro (2 vCPU, 1GB RAM)
+Storage:        20GB gp3 (SSD)
+Engine version: 15.15
+Backup:         1 día (dev) / 7 días (prod)
+Multi-AZ:       No (dev) / Sí (prod)
+Subnet group:   Privadas (10.0.1-3.0/24)
+Security group: 5432 desde VPC CIDR (10.0.0.0/16)
 ```
 
-**Qué hace:**
-- Descarga providers (AWS, Kubernetes, Helm)
-- Configura backend local para state
-- Valida sintaxis de archivos .tf
+**Credenciales:**
+- Usuario: `retrogame` (variable `db_username`)
+- Password: Desde variable `db_password` (sensible)
+- DB name: `retrogamedb`
 
-### 3. Planificar el Despliegue
+### s3-cdn.tf
+**2 S3 Buckets:**
+1. **`retrogame-games-cdn`** (principal)
+   - Contenido: juegos .jsdos + imágenes + emulador js-dos
+   - Versionado: Habilitado
+   - Acceso público: Bloqueado (usa CloudFront)
+   - Política: Solo HTTPS
+   - Logging: Enviados a segundo bucket
 
-```bash
-terraform plan
-```
+2. **`retrogame-cdn-logs`** (logs)
+   - Contenido: Logs de acceso del primer bucket
+   - ACL: log-delivery-write
 
-**Verás:**
-- ~97 recursos a crear
-- VPC, subnets, security groups
-- EKS cluster + node group
-- RDS PostgreSQL
-- S3 + CloudFront
-- Todos los recursos de Kubernetes
+**CloudFront Distribution:**
+- Origin: S3 bucket (con OAI - Origin Access Identity)
+- Cache: 86400s (1 día) para assets estáticos
+- Compression: Habilitada para texto
+- Distribution domain: `d<XXXX>.cloudfront.net`
 
-⏱️ **Tiempo de lectura**: ~30 segundos
+### ingress_nginx.tf
+**NGINX Ingress Controller** v4.11.3:
+- Service type: ClusterIP (ALB hace el trabajo de LB)
+- Port: 80 dentro del cluster
+- Config:
+  - `use-forwarded-headers: true` (confiar en headers del ALB)
+  - `proxy-body-size: 50m` (permitir uploads grandes)
+  - `ssl-redirect: false` (ALB termina HTTPS)
+- Metrics: Habilitadas para Prometheus
 
-### 4. Aplicar la Infraestructura
+### alb.tf
+**Application Load Balancer** con HTTPS:
+- Listener puerto 80 → redirect a 443
+- Listener puerto 443 → target group de NGINX
+- Certificado: ACM (Let's Encrypt)
+- Dominio: retrogamehub.games (via Route53)
+- Path-based routing:
+  ```
+  /                 → frontend
+  /oauth2/*         → oauth2-proxy
+  /grafana/*        → Grafana (protegido)
+  /prometheus/*     → Prometheus (protegido)
+  /argocd*          → ArgoCD (protegido)
+  ```
 
-```bash
-terraform apply
-```
+### oauth2_proxy.tf
+**OAuth2-Proxy** para autenticación:
+- Proveedor: GitHub
+- Secreto de cookies: Generado aleatoriamente
+- Autenticación:
+  - GitHub OAuth App credentials (desde variables)
+  - Restricción: Organización `retrogamecloud`
+  - Roles: automático desde membership de GitHub
+- ConfigMap: Configuración de oauth2_proxy.cfg
+- Deployment: 1 réplica
+- Service: ClusterIP (accesible desde NGINX)
 
-Escribe `yes` para confirmar.
+### argocd.tf
+**ArgoCD v5.51.6** (GitOps):
+- Chart: `argo-cd` desde repo oficial
+- Namespace: `argocd` (separado)
+- Values: `argocd-values.yaml` customizado
+- Ingress: Detrás de oauth2-proxy (GitHub auth)
+- Función:
+  - Sincronizar aplicaciones desde git repos
+  - Automatizar deployments
+  - Revertir cambios fácilmente
+  
+**Acceso:**
+- URL: `https://retrogamehub.games/argocd`
+- Auth: GitHub OAuth
+- Admin password: Guardado en secret
 
-⏱️ **Tiempo estimado:** 15-20 minutos
+### monitoring.tf
+**Kube Prometheus Stack** (Prometheus Operator):
+- Componentes:
+  - Prometheus: Recolecta métricas (3d retención)
+  - Grafana: Dashboards + visualización
+  - AlertManager: Manejo de alertas
+  - Node Exporter: Métricas de nodos EC2
+  - Kube State Metrics: Estado de K8s objects
+  - Prometheus Operator: Gestiona PrometheusRules
 
-**Progreso:**
-- 0-3 min: VPC, subnets, security groups ✅
-- 3-12 min: EKS Cluster creación ⏳
-- 12-15 min: Node Group (espera nodos Ready) ⏳
-- 15-18 min: RDS PostgreSQL creación ⏳
-- 18-19 min: CloudFront distribution ⏳
-- 19-20 min: Kubernetes resources, upload assets, db-init ✅
+- Secrets:
+  - Slack webhook para AlertManager
 
-**Qué se crea:**
-```
-✅ VPC con 6 subnets (3 públicas + 3 privadas)
-✅ Internet Gateway + NAT Gateway
-✅ EKS Cluster (Kubernetes 1.32)
-✅ 3x EC2 Nodes (t3.micro) en Node Group
-✅ RDS PostgreSQL 15 (db.t3.micro)
-✅ S3 Bucket + CloudFront Distribution
-✅ Network Load Balancer para Kong
-✅ Backend, Frontend, Kong deployments
-✅ DB initialization (6 tablas + 10 juegos + 1 usuario)
-✅ 79 archivos subidos al CDN
-```
+- ConfigMaps:
+  - Configuración de Prometheus
+  - Grafana dashboards
 
-### 5. Configurar kubectl
+- Persistencia:
+  - PVC para Prometheus (10GB)
+  - Grafana: ephemeral (configuración vía ConfigMap)
 
-```bash
-aws eks update-kubeconfig --region eu-west-1 --name retrogame
-```
+### oauth2_proxy + argocd + monitoring
+Estos componentes trabajan juntos:
+1. **ALB** recibe petición a `/argocd` o `/grafana`
+2. **oauth2-proxy** intercepta y redirige a GitHub si no autenticado
+3. GitHub auth → vuelve con token válido
+4. **NGINX Ingress** enruta al servicio correspondiente
+5. **ArgoCD** / **Grafana** / **Prometheus** accesibles
+
+---
+
+## Prerequisitos
+
+### Herramientas Requeridas
+- **Terraform** >= 1.13
+  ```bash
+  terraform --version
+  # Terraform v1.13 o superior
+  ```
+
+- **AWS CLI** >= v2 configurada
+  ```bash
+  aws --version
+  aws configure --profile retrogamecloud-terraform
+  # Credenciales con permisos de administrador
+  ```
+
+- **kubectl** para interactuar con cluster
+  ```bash
+  kubectl version --client
+  # Version 1.27+
+  ```
+
+- **Helm** para gestionar charts
+  ```bash
+  helm version
+  # v3.12+
+  ```
+
+### Proyecto Bootstrap Ejecutado
+Este proyecto depende de `infrastructure/terraform/bootstrap`:
+- S3 bucket para estado remoto
+- DynamoDB table para locks
+- Usuarios IAM creados
 
 **Verificar:**
-
 ```bash
-# Ver nodos EC2
-kubectl get nodes
-# Output: 3 nodos t3.micro en estado Ready
-
-# Ver pods
-kubectl get pods -n retrogame
-# Output:
-# backend-xxxxxxxxx-xxxxx     1/1  Running    0  5m
-# frontend-xxxxxxxxx-xxxxx    1/1  Running    0  5m
-# kong-xxxxxxxxx-xxxxx        1/1  Running    0  5m
-# db-init-xxxxx               0/1  Completed  0  5m
-
-# Ver servicios
-kubectl get svc -n retrogame
+# Debería retornar nombre del bucket
+terraform output terraform_state_bucket -json
+# Output: "retrogamecloud-terraform-state-123456789012"
 ```
 
-### 6. Obtener URLs de Acceso
+### Credenciales Sensibles Requeridas
+Necesitarás generar:
+
+1. **GitHub OAuth App** (para oauth2-proxy)
+   - Ir a: https://github.com/settings/developers
+   - New OAuth App
+   - Homepage URL: `https://retrogamehub.games`
+   - Authorization callback: `https://retrogamehub.games/oauth2/callback`
+   - Copiar Client ID y Client Secret
+
+2. **Slack Webhook** (para alertas de AlertManager)
+   - Opcional pero recomendado
+   - Ir a: https://api.slack.com/apps
+   - Create New App → From scratch
+   - Habilitar Incoming Webhooks
+   - Copiar Webhook URL
+
+### Permisos IAM Mínimos
+El usuario/role de AWS necesita permisos para:
+- EKS (creación de clusters, node groups, addons)
+- EC2 (crear instances, security groups, AMI)
+- VPC (subnets, route tables, nat gateways, internet gateways)
+- RDS (crear instancias, snapshots)
+- S3 (crear buckets, objetos)
+- CloudFront (distribuciones)
+- ALB (load balancers, target groups)
+- ACM (certificados SSL)
+- Route53 (DNS records)
+- IAM (roles, policies, users)
+- CloudWatch (logs, alarms)
+
+**Recomendado:** Usar `AdministratorAccess` policy
+
+## Guía de despliegue
+
+### Paso 1: Clonar repositorio y preparar variables
 
 ```bash
+cd infrastructure/terraform/eks
+
+# Crear archivo de variables
+cat > terraform.tfvars <<EOF
+# AWS Configuration
+aws_region  = "eu-west-1"
+aws_profile = "retrogamecloud-terraform"
+
+# Cluster Configuration  
+cluster_name    = "retrogame"
+cluster_version = "1.34"
+environment     = "dev"
+
+# Node Group Configuration
+node_instance_types = ["t3.small"]
+node_desired_size   = 4
+node_min_size       = 2
+node_max_size       = 6
+
+# Database Configuration
+db_instance_class = "db.t3.micro"
+db_allocated_storage = 20
+db_password = "TuPassword123!Seguro" # CAMBIA ESTO
+
+# Application Secrets
+jwt_secret = "$(openssl rand -base64 32)"
+
+# GitHub OAuth (del paso anterior)
+github_oauth_client_id     = "Tu_Client_ID_Aqui"
+github_oauth_client_secret = "Tu_Client_Secret_Aqui"
+
+# Slack Webhook (opcional)
+slack_webhook_url = "https://hooks.slack.com/services/T.../B.../..."
+
+# Tags adicionales
+tags = {
+  Cost-Center = "Tech"
+  Owner       = "DevOps"
+}
+EOF
+```
+
+### Paso 2: Inicializar Terraform (con backend remoto)
+
+```bash
+# Inicializar con backend remoto del proyecto bootstrap
+terraform init -backend-config=backend.conf
+
+# Verificar que está usando backend S3
+terraform show | grep backend
+# Debería mostrar referencia al bucket S3
+```
+
+**¿Qué hace `backend.conf`?**
+```hcl
+bucket       = "retrogamecloud-terraform-state-<ACCOUNT_ID>"
+key          = "eks/terraform.tfstate"
+region       = "eu-west-1"
+dynamodb_table = "terraform-lock"
+```
+
+### Paso 3: Validar configuración
+
+```bash
+terraform validate
+# Output: Success! The configuration is valid.
+
+# Revisar archivos de variables
+terraform plan -var-file=terraform.tfvars | head -50
+# Muestra primeros 50 recursos a crear
+```
+
+### Paso 4: Planificar despliegue
+
+```bash
+terraform plan -out=tfplan
+
+# Output espera: ~150-200 recursos a crear
+# Tiempo: ~30-60 segundos
+
+# Revisar el plan en detalle
+terraform show tfplan | grep "Resource actions"
+```
+
+**Principales recursos a crear:**
+```
++ aws_vpc.main
++ aws_subnet.private (x3) + aws_subnet.public (x3)
++ aws_nat_gateway (x1) + aws_internet_gateway (x1)
++ aws_eks_cluster.main
++ aws_eks_node_group.general (4 nodos t3.small)
++ aws_db_instance.postgres
++ aws_s3_bucket.games_cdn + aws_cloudfront_distribution
++ aws_lb.main (ALB)
++ kubernetes_namespace.retrogame
++ kubernetes_secret (jwt-secret, postgres-credentials)
++ helm_release.ingress_nginx
++ helm_release.kube_prometheus_stack
++ helm_release.argocd
++ kubernetes_deployment.oauth2_proxy
++ etc...
+```
+
+### Paso 5: Aplicar cambios
+
+```bash
+terraform apply tfplan
+
+# Confirmará recursos a crear. Escribir "yes"
+# TIEMPO ESTIMADO: 20-35 minutos
+```
+
+**Progreso esperado:**
+```
+✓ VPC, subnets, internet/NAT gateways        [~2 min]
+✓ EKS Control Plane                           [~8 min]  ⏳ Lo más lento
+✓ Node Group (4 nodos t3.small)               [~8 min]  ⏳
+✓ RDS PostgreSQL 15                           [~8 min]
+✓ S3 Buckets + CloudFront                     [~2 min]
+✓ ALB + Target Groups                         [~2 min]
+✓ NGINX Ingress Controller (Helm)             [~1 min]
+✓ Monitoring Stack (Helm)                     [~2 min]
+✓ ArgoCD (Helm)                               [~1 min]
+✓ oauth2-proxy + configuración                [~1 min]
+```
+
+**Durante la creación:**
+```bash
+# En otra terminal, monitorear el cluster (después de 8 min)
+aws eks update-kubeconfig --name retrogame --region eu-west-1 --profile retrogamecloud-terraform
+kubectl get nodes -w
+# Esperar a que los 4 nodos estén en Ready
+```
+
+### Paso 6: Verificar despliegue
+
+```bash
+# Obtener información de salida
 terraform output
+
+# Información crítica:
+terraform output -raw alb_dns_name
+terraform output -raw rds_endpoint
+terraform output -raw cdn_distribution_domain
+
+# Configurar kubectl automáticamente
+aws eks update-kubeconfig --name retrogame --region eu-west-1 --profile retrogamecloud-terraform
+
+# Verificar nodos
+kubectl get nodes
+# Output:
+# NAME                          STATUS   ROLES    AGE   VERSION
+# ip-10-0-1-xx.ec2.internal    Ready    <none>   3m    v1.34.x
+# ip-10-0-2-xx.ec2.internal    Ready    <none>   3m    v1.34.x
+# ip-10-0-3-xx.ec2.internal    Ready    <none>   3m    v1.34.x
+# ip-10-0-1-yy.ec2.internal    Ready    <none>   3m    v1.34.x
+
+# Verificar pods en todos los namespaces
+kubectl get pods -A
+# Output: Pods de ingress-nginx, monitoring, argocd, etc.
+
+# Verificar servicios
+kubectl get svc -A
+# Output: ALB, Services de nginx-ingress, prometheus, grafana, etc.
 ```
 
-**Outputs importantes:**
-
-```bash
-# URL de la aplicación (Kong LoadBalancer)
-kong_load_balancer_url = "http://aXXXXXXXX.elb.eu-west-1.amazonaws.com"
-
-# URL del CDN (juegos y assets)
-cdn_url = "https://dXXXXXXXXXXXX.cloudfront.net"
-
-# Endpoint de base de datos
-rds_endpoint = "retrogame-postgres.XXXXX.eu-west-1.rds.amazonaws.com:5432"
-
-# Comando para configurar kubectl
-kubectl_config = "aws eks update-kubeconfig --region eu-west-1 --name retrogame"
-```
-
-### 7. Acceder a la Aplicación
+### Paso 7: Acceder a la aplicación
 
 **Frontend:**
 ```
-http://<KONG_LOAD_BALANCER_URL>
+https://retrogamehub.games/
 ```
 
-**Backend API:**
+**Servicios protegidos con GitHub OAuth:**
+```
+https://retrogamehub.games/argocd      (ArgoCD)
+https://retrogamehub.games/grafana     (Grafana Dashboards)
+https://retrogamehub.games/prometheus  (Prometheus Queries)
+https://retrogamehub.games/alertmanager (Alert Manager)
+```
+
+**Acceso ArgoCD:**
 ```bash
-# Health check
-curl http://<KONG_LOAD_BALANCER_URL>/api/health
+# Obtener contraseña de admin
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
 
-# Listar juegos
-curl http://<KONG_LOAD_BALANCER_URL>/api/games
-
-# Registrar usuario
-curl -X POST http://<KONG_LOAD_BALANCER_URL>/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"player1","email":"player1@test.com","password":"Test123!"}'
+# Username: admin
+# Password: (output del comando anterior)
 ```
 
-**Juegos en CDN:**
-```
-https://<CDN_URL>/juegos/doom.jsdos
-https://<CDN_URL>/img/doom.png
-https://<CDN_URL>/jsdos/js-dos.js
-```
-
-### 8. Verificar Upload de Assets
-
-El null_resource ya subió todo automáticamente, pero puedes verificar:
-
+**Acceso Grafana:**
 ```bash
-# Listar archivos en S3
-aws s3 ls s3://retrogame-games-cdn/ --recursive
+# Obtener contraseña de admin
+kubectl -n monitoring get secret --namespace monitoring kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode
 
-# Debería mostrar 79 archivos:
-# - juegos/*.jsdos (10 archivos)
-# - img/* (imágenes de portadas)
-# - jsdos/* (emulador js-dos completo)
+# Username: admin
+# Password: (output del comando anterior)
 ```
 
-Si necesitas re-subir manualmente:
+### Paso 8: Verificar componentes clave
 
 ```bash
-cd /mnt/c/proyecto_final
-aws s3 sync ./infraestructure/cdn/juegos/ s3://retrogame-games-cdn/juegos/
-aws s3 sync ./infraestructure/cdn/img/ s3://retrogame-games-cdn/img/
-aws s3 sync ./frontend/jsdos/ s3://retrogame-games-cdn/jsdos/
+# 1. NGINX Ingress Controller
+kubectl get svc -n ingress-nginx
+# Debería mostrar ingress-nginx-controller (ClusterIP)
+
+# 2. Monitoring Stack
+kubectl get pods -n monitoring | grep -E "prometheus|grafana|alertmanager"
+# Deberían estar Running
+
+# 3. ArgoCD
+kubectl get pods -n argocd
+# Deberían estar Running
+
+# 4. oauth2-proxy
+kubectl get deployment oauth2-proxy -n monitoring
+# Debería estar Running
+
+# 5. Ingress Rules
+kubectl get ingress -A
+# Deberían mostrar ingress para argocd, ingress_monitoring, etc.
+
+# 6. Base de datos
+kubectl get pvc -n retrogame
+# Debería mostrar postgres-data si está usando storage persistente
+
+# 7. Secretos
+kubectl get secrets -n monitoring
+# Deberían mostrar oauth2-proxy, alertmanager-slack-webhook, etc.
 ```
 
-## Outputs Importantes
+## Configuración
 
-Después del `terraform apply`, obtendrás:
+### Variables Principales (terraform.tfvars)
 
-```bash
-# Ver todos los outputs
-terraform output
-
-# Outputs específicos
-terraform output cluster_name
-terraform output cluster_endpoint
-terraform output rds_endpoint
-terraform output kong_load_balancer_hostname
-```
-
-## 💰 Costos Estimados
-
-### Configuración Actual (EC2 Node Groups)
-
-| Recurso | Especificaciones | Costo Mensual |
-|---------|-----------------|---------------|
-| **EKS Cluster** | Control Plane | **$73.00** |
-| **EC2 Nodes** | 3x t3.micro (2 vCPU, 1GB RAM) | **~$30.00** |
-| **NAT Gateway** | 1x en subnet pública | **~$45.00** |
-| **RDS PostgreSQL** | db.t3.micro (2 vCPU, 1GB RAM) | **~$20.00** |
-| **Load Balancer** | Network Load Balancer (NLB) | **~$16.00** |
-| **CloudFront** | CDN + data transfer | **~$10.00** |
-| **S3** | Storage + requests | **~$5.00** |
-| **Route53** | Hosted zone + queries | **~$1.00** |
-| **VPC** | Subnets, route tables | **Gratis** |
-| **CloudWatch Logs** | Logs de pods | **~$5.00** |
-| | | |
-| **TOTAL MENSUAL** | | **~$205/mes** |
-| **Costo diario** | | **~$6.80/día** |
-| **Hasta 11 Dic (24 días)** | | **~$165** |
-
-### Desglose por Componente
-
-#### EKS - $73/mes
-- Costo fijo del control plane de Kubernetes
-- Incluye API server, etcd, scheduler, controllers
-- **No se puede reducir** (es el costo base de EKS)
-
-#### EC2 Nodes - $30/mes
-- 3x t3.micro on-demand: $0.0104/hora × 3 × 730 horas = $22.78
-- Data transfer: ~$7
-- **Se puede reducir** usando Spot Instances (~70% descuento)
-
-#### NAT Gateway - $45/mes  
-- $0.045/hora × 730 horas = $32.85
-- Data transfer: ~$12
-- **Es caro pero necesario** para que pods en subnets privadas accedan a internet
-- Alternativa: Usar subnets públicas (menos seguro)
-
-#### RDS - $20/mes
-- db.t3.micro: $0.017/hora × 730 horas = $12.41
-- Storage 20GB: $0.115/GB × 20 = $2.30
-- Backups automáticos: ~$3
-- I/O operations: ~$2
-
-#### Load Balancer (NLB) - $16/mes
-- $0.0225/hora × 730 horas = $16.43
-- **Se puede reducir** usando un solo LB compartido
-
-#### CloudFront - $10/mes
-- Data transfer out: ~$8
-- Requests: ~$2
-- **Muy variable** según tráfico
-
-### 💡 Optimizaciones Posibles
-
-#### Para Desarrollo (ahorro ~$50-70/mes):
 ```hcl
-# 1. Usar Spot Instances para nodes (-70%)
-instance_types = ["t3.micro"]
-capacity_type  = "SPOT"  # $7/mes vs $30/mes
+# AWS Configuration
+aws_region  = "eu-west-1"
+aws_profile = "retrogamecloud-terraform"
 
-# 2. Reducir a 1 NAT Gateway (-$30/mes)
-# (menos HA, pero OK para dev)
+# Cluster Configuration
+cluster_name    = "retrogame"
+cluster_version = "1.34"
+environment     = "dev"
+environment_prefix = "dev"
 
-# 3. RDS: Deshabilitar Multi-AZ
-multi_az = false  # Ya está así
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+azs      = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
 
-# 4. Reducir nodos a 2 en horario bajo
-desired_size = 2  # -$10/mes
+# Node Group Configuration
+node_instance_types = ["t3.small"]
+node_desired_size   = 4
+node_min_size       = 2
+node_max_size       = 6
+node_disk_size      = 30
+
+# Database Configuration
+db_instance_class      = "db.t3.micro"
+db_allocated_storage   = 20
+db_engine_version      = "15"
+db_backup_retention    = 7       # 7 días en prod, 1 día en dev
+db_multi_az           = false    # true en producción
+db_storage_encrypted  = true
+db_password           = "TuPassword123!Seguro"
+
+# Application Secrets
+jwt_secret = "$(openssl rand -base64 32)"
+
+# GitHub OAuth Configuration
+github_oauth_client_id     = "Tu_Client_ID_Aqui"
+github_oauth_client_secret = "Tu_Client_Secret_Aqui"
+
+# Slack Webhook (opcional pero recomendado)
+slack_webhook_url = "https://hooks.slack.com/services/T.../B.../..."
+
+# Dominio
+domain_name = "retrogamehub.games"
+
+# Tags
+tags = {
+  Environment = "Development"
+  Project     = "RetroGameCloud"
+  ManagedBy   = "Terraform"
+  Cost-Center = "Tech"
+}
 ```
 
-#### Para Producción (costo similar, mejor rendimiento):
+### Backend Configuration (backend.conf)
+
 ```hcl
-# 1. Usar Reserved Instances (-40% en nodes)
-# Commit de 1 año: $18/mes vs $30/mes
-
-# 2. Usar RDS t3.small con Multi-AZ (+$20/mes)
-# Mejor para alta disponibilidad
-
-# 3. Agregar ElastiCache Redis (+$20/mes)
-# Para rankings y sesiones
+# Este archivo debe coincidir con el bucket creado en bootstrap
+bucket       = "retrogamecloud-terraform-state-<ACCOUNT_ID>"
+key          = "eks/terraform.tfstate"
+region       = "eu-west-1"
+encrypt      = true
+dynamodb_table = "terraform-lock"
 ```
 
-### 📊 Comparativa con Otras Opciones
+**Cómo obtener ACCOUNT_ID:**
+```bash
+aws sts get-caller-identity --profile retrogamecloud-terraform
 
-| Opción | Costo Mensual | Pros | Contras |
-|--------|---------------|------|--------|
-| **EKS + EC2 (actual)** | **$205** | Control total, estable | NAT Gateway caro |
-| EKS + Fargate | $229 | Sin gestión de nodes | Más caro, timeouts |
-| ECS + Fargate | $90 | Más barato | No es Kubernetes |
-| EC2 + Docker Compose | $60 | Muy barato | Sin orquestación |
-| Heroku | $150 | Más simple | Vendor lock-in |
-| DigitalOcean K8s | $100 | Más barato | Menos features AWS |
+# Output:
+# {
+#     "UserId": "AIDAI...",
+#     "Account": "450545962171",
+#     "Arn": "arn:aws:iam::450545962171:user/retrogamecloud-terraform"
+# }
 
-### ⚠️ Recordatorios Importantes
+# El valor "Account" es tu ACCOUNT_ID
+```
 
-1. **Destroy post-entrega**: Ejecutar `terraform destroy` después del 11 Dic para evitar costos continuos
-2. **Monitorear costos**: Revisar AWS Cost Explorer diariamente
-3. **Configurar billing alerts**: Alert si superas $250/mes
-4. **RDS backups**: Se mantienen 7 días, considera exportar data crítica
-5. **Free tier**: Algunos servicios tienen free tier los primeros 12 meses (no aplica a EKS)
+### Archivos Terraform Clave
 
-## 📈 Escalabilidad
+#### 1. variables.tf
+Define 17 variables con valores por defecto (ver tabla anterior)
 
-### EC2 Node Group Autoscaling
+#### 2. provider.tf
+Configura 5 proveedores:
+- **aws** (~5.0): VPC, EKS, RDS, S3, CloudFront, ALB
+- **kubernetes** (~2.23): Namespaces, Secrets, ConfigMaps, Ingress
+- **helm** (~2.11): Charts (NGINX, Monitoring, ArgoCD)
+- **null** (~3.2): Recursos locales (kubeconfig updates)
+- **random** (~3.5): Secrets aleatorios
 
-Actualmente configurado con nodos fijos, pero se puede habilitar autoscaling:
+Backend S3 desde bootstrap project
+
+#### 3. Archivos de Configuración Helm
+
+**values/argocd-values.yaml** - ArgoCD con OAuth2-proxy
+**values/monitoring-values.yaml** - Prometheus Stack (3 días retention)
+**values/nginx-ingress-values.yaml** - NGINX Ingress (ClusterIP, forwarded headers)
+
+### Modificar Configuración Post-Despliegue
+
+**Escalar nodos:**
+```hcl
+node_desired_size = 6  # De 4 a 6
+terraform apply
+```
+
+**Cambiar versión de Kubernetes:**
+```hcl
+cluster_version = "1.35"  # De 1.34 a 1.35
+terraform apply  # Sin downtime
+```
+
+**Cambiar tipo de nodos:**
+```hcl
+node_instance_types = ["t3.medium"]  # De t3.small
+terraform apply  # Reemplazará node group
+```
+
+**Aumentar storage de RDS:**
+```hcl
+db_allocated_storage = 50  # De 20GB a 50GB
+terraform apply  # Sin downtime en gp3
+```
+
+## 📈 Escalabilidad y Operaciones
+
+### Escalar Número de Nodos (Node Group Autoscaling)
+
+El node group está configurado con:
+- **Desired**: 4 nodos
+- **Min**: 2 nodos
+- **Max**: 6 nodos
+
+**Escalar manualmente:**
 
 ```bash
-# Ver estado actual del node group
+# Ver nodos actuales
 kubectl get nodes
 
-# Escalar manualmente el número de nodos (via Terraform)
-# Editar en eks.tf:
-desired_size = 5  # De 3 a 5 nodos
+# Cambiar en terraform.tfvars
+node_desired_size = 6
+
+# Aplicar
+terraform plan
+terraform apply
+
+# Esperar 3-5 minutos para que nuevos nodos estén Ready
+kubectl get nodes -w
 ```
 
-### Horizontal Pod Autoscaling (HPA)
+**Cluster Autoscaler (opcional):**
+```bash
+# Automáticamente escalar basado en pods pending
+# Ya está instalado en monitoring.tf pero comentado
+# Para habilitarlo, descomentar en monitoring.tf
 
-Escalar pods basado en métricas (CPU, memoria, custom metrics):
+# Verificar que está corriendo
+kubectl get deployment -n kube-system cluster-autoscaler
+```
+
+### Escalar Aplicaciones (Pods)
+
+**Backend:**
+```bash
+# Ver réplicas actuales
+kubectl get deployment backend -n retrogame
+
+# Escalar a 3 réplicas
+kubectl scale deployment backend -n retrogame --replicas=3
+
+# Verificar nuevo estado
+kubectl get pods -n retrogame | grep backend
+```
+
+**Frontend:**
+```bash
+kubectl scale deployment frontend -n retrogame --replicas=2
+```
+
+**Resource Limits (por pod):**
+```bash
+# Ver requests/limits actuales
+kubectl describe deployment backend -n retrogame | grep -A 5 "Requests"
+
+# Modificar via kubectl edit
+kubectl edit deployment backend -n retrogame
+# Cambiar en spec.containers[0].resources
+```
+
+### Horizontal Pod Autoscaler (HPA)
+
+Escalar basado en CPU o memoria:
 
 ```bash
-# Ejemplo: Escalar backend basado en CPU
-kubectl autoscale deployment backend -n retrogame \
-  --cpu-percent=70 \
+# Ver métricas actuales
+kubectl top pods -n retrogame
+kubectl top nodes
+
+# Crear HPA para backend (75% CPU threshold)
+kubectl autoscale deployment backend \
+  -n retrogame \
+  --cpu-percent=75 \
   --min=1 \
   --max=5
 
-# Ver estado de HPA
+# Verificar HPA
 kubectl get hpa -n retrogame
+kubectl describe hpa backend -n retrogame
+
+# Ver historial de escalado
+kubectl get hpa -n retrogame -w
 ```
 
-### Escalado Manual de Pods
+## 📊 Monitoreo y Troubleshooting
 
+### Acceder a Grafana
+
+**URL:**
+```
+https://retrogamehub.games/grafana/
+```
+
+**Credenciales:**
 ```bash
-# Escalar backend
-kubectl scale deployment backend -n retrogame --replicas=3
-
-# Escalar frontend
-kubectl scale deployment frontend -n retrogame --replicas=2
-
-# Ver réplicas actuales
-kubectl get deployment -n retrogame
+# Obtener password de admin
+kubectl -n monitoring get secret kube-prometheus-stack-grafana \
+  -o jsonpath="{.data.admin-password}" | base64 --decode
+# Username: admin
 ```
 
-**Costo por réplica adicional:**
-- Backend (100m CPU, 256MB RAM): ~$10-15/mes por réplica
-- Frontend (50m CPU, 128MB RAM): ~$5-8/mes por réplica
+**Dashboards disponibles:**
+- Kubernetes Cluster Monitoring
+- Prometheus Stats
+- Node Exporter for Prometheus
+- NGINX Ingress Controller
 
-### Resource Requests/Limits
+### Prometheus Queries
 
-Configurados para optimizar uso de t3.micro nodes:
-
-```yaml
-# Backend
-requests:
-  cpu: 100m      # 0.1 vCPU
-  memory: 256Mi  # 256 MB
-limits:
-  cpu: 200m      # 0.2 vCPU
-  memory: 512Mi  # 512 MB
-
-# Frontend
-requests:
-  cpu: 50m       # 0.05 vCPU
-  memory: 128Mi  # 128 MB
-limits:
-  cpu: 100m      # 0.1 vCPU
-  memory: 256Mi  # 256 MB
+**URL:**
+```
+https://retrogamehub.games/prometheus/
 ```
 
-**Capacidad por nodo t3.micro:**
-- 2 vCPU disponibles
-- ~700MB RAM disponible (1GB - sistema)
-- Puede ejecutar ~7-10 pods pequeños
+**Queries útiles:**
+```promql
+# CPU usado por nodo
+node_cpu_seconds_total
 
-## 📊 Monitoreo y Logs
+# Memoria disponible
+node_memory_MemAvailable_bytes
+
+# Pods por namespace
+count(kube_pod_info) by (namespace)
+
+# Pod CPU usage
+container_cpu_usage_seconds_total
+
+# Pod Memory usage
+container_memory_usage_bytes
+```
 
 ### CloudWatch Logs
 
-RDS PostgreSQL exporta logs automáticamente a CloudWatch:
-- `postgresql` - Logs de consultas SQL
-- `upgrade` - Logs de actualizaciones de versión
+```bash
+# Ver logs de ALB
+aws logs tail /aws/alb/retrogame --follow
 
-**Ver logs en AWS Console:**
+# Ver logs de RDS
+aws logs tail /aws/rds/instance/retrogame-postgres/postgresql --follow
+
+# Ver logs de cluster
+aws logs tail /aws/eks/retrogame/cluster --follow
+
+# Buscar errores
+aws logs filter-log-events \
+  --log-group-name /aws/eks/retrogame/cluster \
+  --filter-pattern "ERROR"
 ```
-CloudWatch → Logs → Log groups → /aws/rds/instance/retrogame-postgres/
+
+### Troubleshooting Común
+
+**1. Pods en pending:**
+```bash
+# Ver por qué está pending
+kubectl describe pod <pod-name> -n retrogame
+
+# Posibles causas:
+# - Insufficient CPU: escalar nodos
+# - Insufficient memory: escalar nodos
+# - Node not ready: verificar nodo
+# - Image pull failed: revisar imagen en ECR
 ```
 
-### Kubernetes Metrics
+**2. CrashLoopBackOff:**
+```bash
+# Ver logs del pod
+kubectl logs <pod-name> -n retrogame --previous
 
-Ver métricas de recursos en tiempo real:
+# Causas comunes:
+# - Error en aplicación (revisar logs)
+# - Falta de env vars (revisar ConfigMap/Secret)
+# - Falta de permisos (revisar RBAC)
+```
+
+**3. RDS Connection Timeout:**
+```bash
+# Verificar que security group permite conexiones
+aws ec2 describe-security-groups \
+  --filters "Name=group-name,Values=eks_rds_sg"
+
+# Verificar status de RDS
+aws rds describe-db-instances \
+  --db-instance-identifier retrogame-postgres \
+  --query 'DBInstances[0].DBInstanceStatus'
+# Output: available
+```
+
+**4. ALB no responde:**
+```bash
+# Verificar target health
+aws elbv2 describe-target-health \
+  --target-group-arn <arn>
+
+# Verificar security groups
+aws ec2 describe-security-groups \
+  --group-ids <alb-sg-id>
+
+# Verificar que NGINX Ingress Controller está corriendo
+kubectl get pods -n ingress-nginx
+```
+
+### Ver Eventos del Cluster
 
 ```bash
-# Métricas de nodos EC2
-kubectl top nodes
+# Eventos recientes
+kubectl get events -A --sort-by='.lastTimestamp'
 
-# Métricas de pods
+# Eventos de un namespace específico
+kubectl get events -n retrogame
+
+# Eventos de un pod
+kubectl describe pod <pod-name> -n retrogame
+```
+
+### Logs de Kubernetes
+
+```bash
+# Pod logs
+kubectl logs <pod-name> -n retrogame
+
+# Pod logs (seguimiento en tiempo real)
+kubectl logs <pod-name> -n retrogame -f
+
+# Logs de múltiples pods
+kubectl logs -n retrogame -l app=backend --tail=100
+
+# Logs con timestamps
+kubectl logs <pod-name> -n retrogame --timestamps=true
 kubectl top pods -n retrogame
 
 # Métricas de un deployment específico
@@ -703,183 +1081,13 @@ kubectl get events -n retrogame --sort-by='.lastTimestamp'
 # Kong
 kubectl logs -n retrogame deployment/kong --tail=50 -f
 
-# Ver logs de Fargate nodes
-kubectl get pods -n retrogame -o wide
+# Ver logs con timestamps
+kubectl logs <pod-name> -n retrogame --timestamps=true
 ```
 
-## 🔧 Troubleshooting
+## Mantenimiento
 
-### Pods en estado Pending
-
-```bash
-kubectl describe pod <pod-name> -n retrogame
-```
-
-**Posibles causas con EC2 Node Groups:**
-- **Recursos insuficientes**: Nodos t3.micro sin espacio para más pods
-  - Solución: Escalar node group o reducir resource requests
-- **Imagen no encontrada**: DockerHub rate limit o imagen inexistente
-  - Solución: Verificar nombre de imagen en deployment
-- **Secrets/ConfigMaps faltantes**: Pod esperando por recursos
-  - Solución: Verificar que secrets y configmaps existen
-
-**Verificar capacidad de nodos:**
-
-```bash
-# Ver recursos disponibles en cada nodo
-kubectl describe nodes | grep -A 5 "Allocated resources"
-
-# Ver pods por nodo
-kubectl get pods -n retrogame -o wide
-```
-
-### Pods en CrashLoopBackOff
-
-```bash
-# Ver logs del container que falla
-kubectl logs -n retrogame <pod-name> --previous
-
-# Ver eventos del pod
-kubectl describe pod <pod-name> -n retrogame
-```
-
-**Causas comunes:**
-- **Backend**: Error de conexión a RDS (verificar security group)
-- **Frontend**: Init container falló (verificar ConfigMap con URLs)
-- **Kong**: Problemas de configuración
-
-### RDS Connection Timeout
-
-**Verificar Security Groups:**
-
-```bash
-# Obtener security group de RDS
-aws rds describe-db-instances \
-  --db-instance-identifier retrogame-postgres \
-  --query 'DBInstances[0].VpcSecurityGroups[0].VpcSecurityGroupId'
-
-# Verificar reglas del security group
-aws ec2 describe-security-groups \
-  --group-ids <sg-id> \
-  --query 'SecurityGroups[0].IpPermissions'
-```
-
-**Debe permitir:**
-- Port 5432 desde CIDR de VPC (10.0.0.0/16)
-- O desde security group de EKS nodes
-
-**Probar conectividad desde un pod:**
-
-```bash
-kubectl run -it --rm debug --image=postgres:15 --restart=Never -n retrogame -- \
-  psql -h <RDS_ENDPOINT> -U retrogame_user -d retrogame_db
-```
-
-### Load Balancer no responde
-
-```bash
-# Verificar estado del servicio
-kubectl get svc kong -n retrogame
-
-# Verificar eventos
-kubectl describe svc kong -n retrogame
-
-# Ver targets del Load Balancer en AWS Console
-# EC2 → Load Balancers → <NLB> → Target Groups
-```
-
-**El NLB puede tardar 2-3 minutos en:**
-- Registrar targets (pods de Kong)
-- Health checks pasen
-- DNS se propague
-
-### Node Group no escala
-
-```bash
-# Ver estado del node group
-aws eks describe-nodegroup \
-  --cluster-name retrogame \
-  --nodegroup-name retrogame-node-group
-
-# Ver eventos del cluster autoscaler (si está instalado)
-kubectl logs -n kube-system deployment/cluster-autoscaler
-```
-
-**Causas:**
-- Límite de instancias EC2 en tu región
-- IAM role sin permisos para crear EC2
-- Desired size = max size (no puede crecer más)
-
-### Frontend con URLs incorrectas (PLACEHOLDER)
-
-**Síntoma**: Frontend intenta conectar a `http://.../PLACEHOLDER_LB_URL/api/...`
-
-**Solución:**
-
-```bash
-# 1. Verificar que ConfigMap tiene la URL real
-kubectl get configmap frontend-url-replacer -n retrogame -o yaml | grep LB_URL
-
-# 2. Si tiene PLACEHOLDER, esperar a que null_resource lo actualice
-terraform apply
-
-# 3. Forzar restart del frontend
-kubectl rollout restart deployment/frontend -n retrogame
-
-# 4. Verificar que el nuevo pod tiene la URL correcta
-kubectl wait --for=condition=ready pod -l app=frontend -n retrogame --timeout=120s
-kubectl logs -n retrogame deployment/frontend -c url-replacer
-```
-
-### DB Init Job falla
-
-```bash
-# Ver logs del job
-kubectl logs -n retrogame job/db-init
-
-# Ver describe para más detalles
-kubectl describe job db-init -n retrogame
-```
-
-**Causas comunes:**
-- RDS aún no está disponible (esperar 5-8 minutos)
-- Credenciales incorrectas en secret
-- Security group no permite conexión
-
-**Reintentar job manualmente:**
-
-```bash
-# Eliminar job fallido
-kubectl delete job db-init -n retrogame
-
-# Volver a aplicar
-terraform apply -target=kubernetes_job.db_init
-```
-
-### Node en NotReady
-
-```bash
-# Ver estado de nodos
-kubectl get nodes
-
-# Describir nodo problemático
-kubectl describe node <node-name>
-```
-
-**Soluciones:**
-- Esperar 2-3 minutos (nodo iniciando)
-- Verificar límites de EC2 en AWS Console
-- Terminar y recrear node (AWS EKS lo reemplaza automáticamente)
-
-```bash
-# Terminar instancia EC2 problemática
-aws ec2 terminate-instances --instance-ids <instance-id>
-# EKS Auto Scaling Group creará un reemplazo automáticamente
-```
-
-## 🔄 Mantenimiento
-
-### Actualizar imágenes Docker
+### Actualizar Imágenes de Aplicaciones
 
 **Cuando se hace un cambio en el código:**
 
@@ -1265,30 +1473,12 @@ aws ecr create-repository --repository-name retrogame/frontend
 #### 7. HTTPS en dominio custom
 ```hcl
 # Configurar SSL/TLS en Load Balancer
-# Ver DOMAIN_SETUP.md para detalles
 
 resource "aws_acm_certificate" "retrogame" {
   domain_name       = "retrogamehub.games"
   validation_method = "DNS"
 }
 ```
-
-### Security Checklist
-
-- [ ] Secrets en AWS Secrets Manager (no en Kubernetes Secrets)
-- [ ] Network Policies habilitadas
-- [ ] Pod Security Standards enforced
-- [ ] HTTPS en Load Balancer con certificado ACM
-- [ ] WAF configurado con reglas managed
-- [ ] Imágenes Docker escaneadas (ECR o Snyk)
-- [ ] IAM roles con least privilege
-- [ ] MFA habilitado para usuarios IAM
-- [ ] CloudTrail para auditoría de cambios AWS
-- [ ] Backup y DR plan documentado
-- [ ] Security groups revisados (mínimo acceso necesario)
-- [ ] RDS con SSL/TLS requerido
-- [ ] Logs centralizados y monitoreados
-- [ ] Incident response plan definido
 
 ### Vulnerabilidades Conocidas (Aceptadas para Dev)
 
@@ -1332,53 +1522,3 @@ aws dynamodb create-table \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 ```
-
-## CI/CD Integration
-
-Ejemplo de pipeline con GitHub Actions:
-
-```yaml
-name: Deploy to EKS
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-      
-      - name: Terraform Init
-        run: terraform init
-        
-      - name: Terraform Plan
-        run: terraform plan
-        
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
-```
-
-## Soporte
-
-Para problemas o preguntas:
-- Revisar logs de Terraform: `terraform.log`
-- Revisar logs de Kubernetes: `kubectl logs`
-- Consultar documentación de AWS EKS
-- Abrir issue en el repositorio
-
-## Licencia
-
-Este proyecto es parte de RetroGameCloud.
