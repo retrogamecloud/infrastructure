@@ -44,9 +44,10 @@ La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima 
 │  Path-based routing:                                                    │
 │  / → Frontend (público)                                                 │
 │  /oauth2/* → OAuth2-Proxy (GitHub auth)                                 │
+│  /wiki/* → Wiki/Mintlify (proxy externo)                                │
 │  /grafana/* → Grafana (protegido)                                       │
 │  /prometheus/* → Prometheus (protegido)                                 │
-│  /argocd* → ArgoCD (protegido)                                          │
+│  /argocd* → ArgoCD v3.2.0 (protegido)                                   │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -58,14 +59,14 @@ La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima 
 ┌───────────────────── EKS Cluster (Kubernetes 1.34) ─────────────────────┐
 │                                                                         │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │ Namespaces:                                                       |  │
-│  │                                                                   |  │
-│  │ retrogame       | kube-system | monitoring       | argocd         |  |
-│  │ ├─ Frontend     | ├─ CoreDNS  | ├─ Prometheus    | ├─ ArgoCD      |  | 
-│  │ ├─ Backend      | └─ VPC-CNI  | ├─ Grafana       | └─ Repo Server |  |
-│  │ └─ Job DB-Init  |             | ├─ AlertManager  |                |  |
-│  │                 |             | └─ oauth2-proxy  |                |  |
-│  └───────────────────────────────────────────────────────────────────┘  |
+│  │ Namespaces:                                                       │  │
+│  │                                                                   │  │
+│  │ retrogame       | kube-system | monitoring       | argocd         │  │
+│  │ ├─ Frontend     | ├─ CoreDNS  | ├─ Prometheus    | ├─ ArgoCD      │  │ 
+│  │ ├─ Backend      | └─ VPC-CNI  | ├─ Grafana       | └─ Repo Server │  │
+│  │ └─ Job DB-Init  |             | ├─ AlertManager  |                │  │
+│  │                 |             | └─ oauth2-proxy  |                │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
 │                                                                         │
 │  EC2 Node Group: 4 nodos t3.small (2 vCPU, 2GB RAM cada uno)            │
 │  ├─ Subnets privadas (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)            │
@@ -84,7 +85,7 @@ La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima 
 │  ├─ Cluster Autoscaler                                                  │
 │  ├─ AWS Load Balancer Controller                                        │
 │  ├─ oauth2-proxy (GitHub authentication)                                │
-│  └─ ArgoCD (GitOps)                                                     │
+│  └─ ArgoCD v3.2.0 (Chart v5.51.6) - GitOps                              │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -104,8 +105,8 @@ La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima 
 │  │  └─ Distribution: Cache global                                       │
 │  │                                                                      │
 │  ├─ VPC (10.0.0.0/16)                                                   │
-│  │  ├─ 3 Subnets públicas (10.0.101-103.0/24)                           |
-│  │  ├─ 3 Subnets privadas (10.0.1-3.0/24)                               |
+│  │  ├─ 3 Subnets públicas (10.0.101-103.0/24)                           │
+│  │  ├─ 3 Subnets privadas (10.0.1-3.0/24)                               │ 
 │  │  ├─ NAT Gateway (1 en subnet pública)                                │
 │  │  └─ Internet Gateway                                                 │
 │  │                                                                      │
@@ -155,7 +156,7 @@ eks/
 │   └── ...
 │
 └── .gitignore
-    ├── terraform.tfstate*   # NO commitar estado local
+    ├── terraform.tfstate*   # NO commitear estado local
     ├── .terraform/
     └── *.tfvars
 ```
@@ -303,6 +304,7 @@ Security group: 5432 desde VPC CIDR (10.0.0.0/16)
   ```
   /                 → frontend
   /oauth2/*         → oauth2-proxy
+  /wiki/*           → Wiki/Mintlify (proxy externo)
   /grafana/*        → Grafana (protegido)
   /prometheus/*     → Prometheus (protegido)
   /argocd*          → ArgoCD (protegido)
@@ -320,9 +322,22 @@ Security group: 5432 desde VPC CIDR (10.0.0.0/16)
 - Deployment: 1 réplica
 - Service: ClusterIP (accesible desde NGINX)
 
+### kubernetes.tf (Wiki)
+**Wiki/Mintlify** (Documentación externa):
+- Tipo: ExternalName Service (proxy a documentación externa)
+- Path: `/wiki/*` con regex rewrite: `/wiki(/|$)(.*)`
+- Origen: Servicio externo de documentación (Mintlify)
+- Ingress: Enrutada desde NGINX
+- Función:
+  - Servir documentación técnica
+  - Accesible públicamente sin autenticación
+  - Assets estáticos con rewrite de URLs
+- Ingress adicional para assets estáticos: `/wiki-assets/*`
+
 ### argocd.tf
-**ArgoCD v5.51.6** (GitOps):
-- Chart: `argo-cd` desde repo oficial
+**ArgoCD v3.2.0** (Chart Helm v5.51.6) - GitOps:
+- Chart: `argo-cd` v5.51.6 desde repo oficial
+- Imagen: ArgoCD v3.2.0 (especificada en `global.image.tag`)
 - Namespace: `argocd` (separado)
 - Values: `argocd-values.yaml` customizado
 - Ingress: Detrás de oauth2-proxy (GitHub auth)
@@ -395,20 +410,36 @@ Estos componentes trabajan juntos:
   # v3.12+
   ```
 
-### Proyecto Bootstrap Ejecutado
-Este proyecto depende de `infrastructure/terraform/bootstrap`:
-- S3 bucket para estado remoto
-- DynamoDB table para locks
-- Usuarios IAM creados
+### ⚠️ Proyecto Bootstrap (OBLIGATORIO - Ejecutar Primero)
 
-**Verificar:**
+**IMPORTANTE:** Este proyecto depende completamente de `infrastructure/terraform/bootstrap`. **DEBES ejecutar bootstrap ANTES de este proyecto EKS.**
+
+Bootstrap crea:
+- ✅ S3 bucket para estado remoto de Terraform
+- ✅ DynamoDB table para locks (evita ejecuciones concurrentes)
+- ✅ Usuarios IAM requeridos
+- ✅ Políticas de acceso a S3
+
+**Pasos previos obligatorios:**
 ```bash
-# Debería retornar nombre del bucket
+# 1. Navegar al directorio bootstrap
+cd infrastructure/terraform/bootstrap
+
+# 2. Ejecutar bootstrap (completamente)
+terraform init
+terraform apply
+
+# 3. Verificar que se creó correctamente
 terraform output terraform_state_bucket -json
-# Output: "retrogamecloud-terraform-state-123456789012"
+# Output esperado: "retrogamecloud-terraform-state-123456789012"
+
+# 4. SOLO DESPUÉS, volver a eks
+cd ../eks
 ```
 
-### Credenciales Sensibles Requeridas
+**Sin ejecutar bootstrap primero, este proyecto fallará.**
+
+### Credenciales sensibles requeridas
 Necesitarás generar:
 
 1. **GitHub OAuth App** (para oauth2-proxy)
@@ -442,6 +473,30 @@ El usuario/role de AWS necesita permisos para:
 **Recomendado:** Usar `AdministratorAccess` policy
 
 ## Guía de despliegue
+
+### Paso 0: Ejecutar Bootstrap (OBLIGATORIO)
+
+**Antes de comenzar, DEBES ejecutar el proyecto bootstrap:**
+
+```bash
+# Ir al directorio bootstrap
+cd infrastructure/terraform/bootstrap
+
+# Inicializar y aplicar
+terraform init
+terraform apply
+
+# Esperar a que termine completamente (~5-10 min)
+
+# Verificar que se creó el bucket S3
+terraform output terraform_state_bucket
+# Output esperado: retrogamecloud-terraform-state-<ACCOUNT_ID>
+
+# SOLO DESPUÉS DE ESTO, volver a eks
+cd ../eks
+```
+
+**⚠️ Si no ejecutas bootstrap primero, los siguientes pasos fallarán.**
 
 ### Paso 1: Clonar repositorio y preparar variables
 
@@ -492,11 +547,12 @@ EOF
 
 ```bash
 # Inicializar con backend remoto del proyecto bootstrap
+# backend.conf referencia automáticamente el bucket creado en bootstrap
 terraform init -backend-config=backend.conf
 
 # Verificar que está usando backend S3
 terraform show | grep backend
-# Debería mostrar referencia al bucket S3
+# Debería mostrar referencia al bucket S3 de bootstrap
 ```
 
 **¿Qué hace `backend.conf`?**
@@ -1480,25 +1536,30 @@ resource "aws_acm_certificate" "retrogame" {
 }
 ```
 
-### Vulnerabilidades Conocidas (Aceptadas para Dev)
+## Backend State (Configurado automáticamente)
 
-⚠️ **Para proyecto académico:**
-1. **Secrets en Kubernetes** - Deberían estar en Secrets Manager
-2. **HTTP sin HTTPS** - Dominio configurado pero sin SSL aún (pendiente FASE 2)
-3. **No hay WAF** - Expuesto a ataques comunes (pendiente FASE 3)
-4. **RDS en subnet privada pero con password estático** - Debería rotar
-5. **No hay rate limiting** - Solo en Kong (100 req/min)
-6. **Imágenes de DockerHub** - Sin scan de vulnerabilidades
+El estado de Terraform se almacena automáticamente en S3 desde el proyecto **bootstrap**:
 
-✅ **Aceptable porque:**
-- Es un proyecto de desarrollo/académico
-- No maneja datos sensibles reales
-- Se destruirá después de la presentación
-- Costo de implementar todo sería prohibitivo (~$100+/mes adicionales)
+**Configuración actual (backend.conf):**
+```hcl
+bucket         = "retrogamecloud-terraform-state-<ACCOUNT_ID>"
+key            = "eks/terraform.tfstate"
+region         = "eu-west-1"
+dynamodb_table = "terraform-lock"
+encrypt        = true
+```
 
-## Backend State (Opcional)
+**Recursos creados por bootstrap:**
+- ✅ **S3 Bucket**: `retrogamecloud-terraform-state-<ACCOUNT_ID>` (con encriptación y versionado)
+- ✅ **DynamoDB Table**: `terraform-lock` (para evitar locks concurrentes)
+- ✅ **Política S3**: Acceso solo a usuarios IAM autorizados
+- ✅ **Bloqueo público**: Deshabilitado en bucket
 
-Para equipos, configurar S3 backend en `provider.tf`:
+**No es necesario crear recursos adicionales**, el archivo `backend.conf` simplemente hace referencia a lo ya creado en bootstrap.
+
+### Para Equipos (Opcional: Configurar Backend Remoto Personalizado)
+
+Si deseas usar un backend diferente al del bootstrap, puedes configurar un S3 backend personalizado en `provider.tf`:
 
 ```hcl
 terraform {
@@ -1512,7 +1573,7 @@ terraform {
 }
 ```
 
-Crear recursos previos:
+**Crear recursos previos:**
 
 ```bash
 aws s3 mb s3://tu-bucket-terraform-state
@@ -1521,4 +1582,9 @@ aws dynamodb create-table \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+```
+
+**Luego inicializar Terraform:**
+```bash
+terraform init -migrate-state
 ```
