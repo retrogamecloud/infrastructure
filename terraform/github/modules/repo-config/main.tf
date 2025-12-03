@@ -62,13 +62,13 @@ resource "github_repository_ruleset" "main_protection" {
 
   rules {
     pull_request {
-      required_approving_review_count = 0
-      dismiss_stale_reviews_on_push   = false
-      require_code_owner_review       = false
-      require_last_push_approval      = false
+      required_approving_review_count   = 0
+      dismiss_stale_reviews_on_push     = false
+      require_code_owner_review         = false
+      require_last_push_approval        = false
       required_review_thread_resolution = false
     }
-    
+
     dynamic "required_status_checks" {
       for_each = var.require_status_checks ? [1] : []
       content {
@@ -79,7 +79,7 @@ resource "github_repository_ruleset" "main_protection" {
         do_not_enforce_on_create             = false
       }
     }
-    
+
     deletion         = true
     non_fast_forward = true
   }
@@ -151,7 +151,7 @@ locals {
 
 resource "github_issue_label" "labels" {
   for_each = local.common_labels
-  
+
   repository  = var.repo_name
   name        = each.key
   color       = each.value.color

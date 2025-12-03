@@ -1,9 +1,9 @@
 output "rulesets" {
   description = "IDs de los rulesets creados"
   value = {
-    branch_naming    = github_repository_ruleset.branch_naming.id
-    main_protection  = github_repository_ruleset.main_protection.id
-    tag_protection   = github_repository_ruleset.tag_protection.id
+    branch_naming   = github_repository_ruleset.branch_naming.id
+    main_protection = github_repository_ruleset.main_protection.id
+    tag_protection  = github_repository_ruleset.tag_protection.id
   }
 }
 

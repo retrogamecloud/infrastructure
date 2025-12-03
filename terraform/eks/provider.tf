@@ -28,12 +28,12 @@ terraform {
   # IMPORTANTE: Actualizar después de ejecutar bootstrap con:
   # terraform init -backend-config=backend.conf
   backend "s3" {
-    bucket         = "retrogamecloud-terraform-state-450545962171"
-    key            = "eks/terraform.tfstate"
-    region         = "eu-west-1"
-    encrypt        = true
-    profile        = "retrogamecloud-terraform"
-    use_lockfile   = true
+    bucket       = "retrogamecloud-terraform-state-450545962171"
+    key          = "eks/terraform.tfstate"
+    region       = "eu-west-1"
+    encrypt      = true
+    profile      = "retrogamecloud-terraform"
+    use_lockfile = true
   }
 }
 
