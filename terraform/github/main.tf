@@ -1,12 +1,12 @@
 terraform {
   cloud {
     organization = "retrogamecloud"
-    
+
     workspaces {
       name = "github-config"
     }
   }
-  
+
   required_providers {
     github = {
       source  = "integrations/github"
@@ -43,7 +43,7 @@ variable "repos" {
 module "repos" {
   source   = "./modules/repo-config"
   for_each = toset(var.repos)
-  
-  repo_name            = each.key
+
+  repo_name             = each.key
   require_status_checks = contains(["backend", "frontend", "docs"], each.key)
 }
