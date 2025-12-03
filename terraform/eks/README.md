@@ -174,24 +174,24 @@ eks/
 
 ### variables.tf
 Configuración parametrizable:
-| Variable | Defecto | Tipo | Sensible |
-|----------|---------|------|----------|
-| `aws_region` | eu-west-1 | string | No |
-| `aws_profile` | retrogamecloud-terraform | string | No |
-| `cluster_name` | retrogame | string | No |
-| `cluster_version` | 1.34 | string | No |
-| `vpc_cidr` | 10.0.0.0/16 | string | No |
-| `node_instance_types` | ["t3.small"] | list(string) | No |
-| `node_desired_size` | 4 | number | No |
-| `node_min_size` | 2 | number | No |
-| `node_max_size` | 6 | number | No |
-| `db_instance_class` | db.t3.micro | string | No |
-| `db_allocated_storage` | 20 | number | No |
-| `db_password` | - | string | **Sí** |
-| `jwt_secret` | - | string | **Sí** |
-| `github_oauth_client_id` | - | string | **Sí** |
-| `github_oauth_client_secret` | - | string | **Sí** |
-| `slack_webhook_url` | (default) | string | **Sí** |
+| Variable | Defecto | Ejemplo Alternativo | Tipo | Sensible |
+|----------|---------|-------------------|------|----------|
+| `aws_region` | eu-west-1 | us-east-1, ap-southeast-1 | string | No |
+| `aws_profile` | retrogamecloud-terraform | default, prod-profile | string | No |
+| `cluster_name` | retrogame | retrogame-prod, gaming-k8s | string | No |
+| `cluster_version` | 1.34 | 1.33, 1.35 | string | No |
+| `vpc_cidr` | 10.0.0.0/16 | 10.1.0.0/16, 172.16.0.0/16 | string | No |
+| `node_instance_types` | ["t3.small"] | ["t3.medium"], ["t3.small", "t3.micro"] | list(string) | No |
+| `node_desired_size` | 4 | 2 (dev), 8 (prod) | number | No |
+| `node_min_size` | 2 | 1 (dev), 3 (prod) | number | No |
+| `node_max_size` | 6 | 4 (dev), 12 (prod) | number | No |
+| `db_instance_class` | db.t3.micro | db.t3.small, db.t3.medium | string | No |
+| `db_allocated_storage` | 20 | 50 (prod), 100 (prod-high) | number | No |
+| `db_password` | - | (generated: openssl rand -b64 32) | string | **Sí** |
+| `jwt_secret` | - | (generated: openssl rand -b64 32) | string | **Sí** |
+| `github_oauth_client_id` | - | (from GitHub App settings) | string | **Sí** |
+| `github_oauth_client_secret` | - | (from GitHub App settings) | string | **Sí** |
+| `slack_webhook_url` | (default) | https://hooks.slack.com/... | string | **Sí** |
 
 ### eks.tf
 **Módulos Terraform certificados:**
