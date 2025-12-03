@@ -34,86 +34,86 @@ La arquitectura utiliza **módulos Terraform** certificados de AWS para máxima 
 ### Componentes principales
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Internet                                │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│              Application Load Balancer (ALB)                     │
-│  HTTP:80 → HTTPS:443 (ACM Certificate)                          │
-│  Path-based routing:                                            │
-│  / → Frontend (público)                                         │
-│  /oauth2/* → OAuth2-Proxy (GitHub auth)                         │
-│  /grafana/* → Grafana (protegido)                               │
-│  /prometheus/* → Prometheus (protegido)                         │
-│  /argocd* → ArgoCD (protegido)                                  │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│               NGINX Ingress Controller (ClusterIP)              │
-│  Gestiona ingress rules internas                                │
-│  TLS termination (Let's Encrypt)                                │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────────── EKS Cluster (Kubernetes 1.34) ──────────────────┐
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Namespaces:                                              │  │
-│  │                                                          │  │
-│  │ retrogame              | kube-system | monitoring | argocd
-│  │ ├─ Frontend            | ├─ CoreDNS  | ├─ Prometheus    | ├─ ArgoCD
-│  │ ├─ Backend             | └─ VPC-CNI  | ├─ Grafana       | └─ Repo Server
-│  │ └─ Job DB-Init         |             | ├─ AlertManager  |
-│  │                        |             | └─ oauth2-proxy  |
-│  └──────────────────────────────────────────────────────────┘
-│                                                                  │
-│  EC2 Node Group: 4 nodos t3.small (2 vCPU, 2GB RAM cada uno)   │
-│  ├─ Subnets privadas (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)   │
-│  ├─ Auto Scaling: min=2, desired=4, max=6                       │
-│  ├─ Cluster Autoscaler habilitado                               │
-│  └─ Metrics Server para HPA                                     │
-│                                                                  │
-│  Add-ons de EKS:                                                │
-│  ├─ CoreDNS (servicio DNS interno)                              │
-│  ├─ kube-proxy (networking)                                     │
-│  └─ VPC-CNI (IP management)                                     │
-│                                                                  │
-│  Helm Releases:                                                 │
-│  ├─ NGINX Ingress Controller                                    │
-│  ├─ Kube Prometheus Stack (Prometheus + Grafana + AlertManager) │
-│  ├─ Cluster Autoscaler                                          │
-│  ├─ AWS Load Balancer Controller                                │
-│  ├─ oauth2-proxy (GitHub authentication)                        │
-│  └─ ArgoCD (GitOps)                                             │
-└──────────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────────────────────────────────────────────────────────────┐
-│                    AWS Services Externos                         │
-│                                                                  │
-│  ├─ RDS PostgreSQL 15 (db.t3.micro)                            │
-│  │  ├─ Storage: 20GB gp3 encriptado                            │
-│  │  ├─ Backup: 1-7 días según entorno                          │
-│  │  └─ Multi-AZ: No (dev) / Sí (prod)                          │
-│  │                                                              │
-│  ├─ S3 Buckets                                                 │
-│  │  ├─ Games CDN: juegos .jsdos + imágenes + emulador          │
-│  │  └─ CDN Logs: logs de acceso                                │
-│  │                                                              │
-│  ├─ CloudFront Distribution (CDN)                              │
-│  │  ├─ Origin: S3 bucket                                       │
-│  │  └─ Distribution: Cache global                              │
-│  │                                                              │
-│  ├─ VPC (10.0.0.0/16)                                          │
-│  │  ├─ 3 Subnets públicas (10.0.101-103.0/24)                 │
-│  │  ├─ 3 Subnets privadas (10.0.1-3.0/24)                     │
-│  │  ├─ NAT Gateway (1 en subnet pública)                       │
-│  │  └─ Internet Gateway                                        │
-│  │                                                              │
-│  └─ Security Groups                                            │
-│     ├─ ALB: 80/443 desde internet                              │
-│     ├─ Nodes: tráfico interno + egress                         │
-│     └─ RDS: 5432 desde VPC CIDR                                │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                 Internet                                │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     Application Load Balancer (ALB)                     │
+│  HTTP:80 → HTTPS:443 (ACM Certificate)                                  │
+│  Path-based routing:                                                    │
+│  / → Frontend (público)                                                 │
+│  /oauth2/* → OAuth2-Proxy (GitHub auth)                                 │
+│  /grafana/* → Grafana (protegido)                                       │
+│  /prometheus/* → Prometheus (protegido)                                 │
+│  /argocd* → ArgoCD (protegido)                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                   NGINX Ingress Controller (ClusterIP)                  │
+│  Gestiona ingress rules internas                                        │
+│  TLS termination (Let's Encrypt)                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌───────────────────── EKS Cluster (Kubernetes 1.34) ─────────────────────┐
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Namespaces:                                                       |  │
+│  │                                                                   |  │
+│  │ retrogame       | kube-system | monitoring       | argocd         |  |
+│  │ ├─ Frontend     | ├─ CoreDNS  | ├─ Prometheus    | ├─ ArgoCD      |  | 
+│  │ ├─ Backend      | └─ VPC-CNI  | ├─ Grafana       | └─ Repo Server |  |
+│  │ └─ Job DB-Init  |             | ├─ AlertManager  |                |  |
+│  │                 |             | └─ oauth2-proxy  |                |  |
+│  └───────────────────────────────────────────────────────────────────┘  |
+│                                                                         │
+│  EC2 Node Group: 4 nodos t3.small (2 vCPU, 2GB RAM cada uno)            │
+│  ├─ Subnets privadas (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)            │
+│  ├─ Auto Scaling: min=2, desired=4, max=6                               │
+│  ├─ Cluster Autoscaler habilitado                                       │
+│  └─ Metrics Server para HPA                                             │
+│                                                                         │
+│  Add-ons de EKS:                                                        │
+│  ├─ CoreDNS (servicio DNS interno)                                      │
+│  ├─ kube-proxy (networking)                                             │
+│  └─ VPC-CNI (IP management)                                             │
+│                                                                         │
+│  Helm Releases:                                                         │
+│  ├─ NGINX Ingress Controller                                            │
+│  ├─ Kube Prometheus Stack (Prometheus + Grafana + AlertManager)         │
+│  ├─ Cluster Autoscaler                                                  │
+│  ├─ AWS Load Balancer Controller                                        │
+│  ├─ oauth2-proxy (GitHub authentication)                                │
+│  └─ ArgoCD (GitOps)                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          AWS Services Externos                          │
+│                                                                         │
+│  ├─ RDS PostgreSQL 15 (db.t3.micro)                                     │
+│  │  ├─ Storage: 20GB gp3 encriptado                                     │
+│  │  ├─ Backup: 1-7 días según entorno                                   │
+│  │  └─ Multi-AZ: No (dev) / Sí (prod)                                   │
+│  │                                                                      │
+│  ├─ S3 Buckets                                                          │
+│  │  ├─ Games CDN: juegos .jsdos + imágenes + emulador                   │
+│  │  └─ CDN Logs: logs de acceso                                         │
+│  │                                                                      │
+│  ├─ CloudFront Distribution (CDN)                                       │
+│  │  ├─ Origin: S3 bucket                                                │
+│  │  └─ Distribution: Cache global                                       │
+│  │                                                                      │
+│  ├─ VPC (10.0.0.0/16)                                                   │
+│  │  ├─ 3 Subnets públicas (10.0.101-103.0/24)                           |
+│  │  ├─ 3 Subnets privadas (10.0.1-3.0/24)                               |
+│  │  ├─ NAT Gateway (1 en subnet pública)                                │
+│  │  └─ Internet Gateway                                                 │
+│  │                                                                      │
+│  └─ Security Groups                                                     │
+│     ├─ ALB: 80/443 desde internet                                       │
+│     ├─ Nodes: tráfico interno + egress                                  │
+│     └─ RDS: 5432 desde VPC CIDR                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 
 S3 + CloudFront
      ↓
