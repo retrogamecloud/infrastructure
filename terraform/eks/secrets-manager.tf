@@ -67,27 +67,19 @@ resource "aws_secretsmanager_secret_version" "jwt_secret" {
   secret_string = var.jwt_secret
 }
 
-# GitHub OAuth (JSON con client_id y client_secret)
-resource "aws_secretsmanager_secret" "github_oauth" {
-  name        = "prod/retrogame/github-oauth"
-  description = "GitHub OAuth credentials para ArgoCD y Grafana"
-  
-  recovery_window_in_days = 7
+# ============================================================================
+# GitHub OAuth Apps - Secretos separados para cada servicio
+# ============================================================================
 
-  tags = {
-    Environment = "production"
-    ManagedBy   = "terraform"
-    Project     = "retrogame"
-  }
-}
+# ============================================================================
+# NOTA: Los secretos OAuth ya fueron creados manualmente en AWS Secrets Manager
+# Solo se gestionan mediante data sources en secrets-data.tf para leer sus valores
+# Para actualizarlos, usar AWS CLI o la consola de AWS
+# ============================================================================
 
-resource "aws_secretsmanager_secret_version" "github_oauth" {
-  secret_id = aws_secretsmanager_secret.github_oauth.id
-  secret_string = jsonencode({
-    client_id     = var.github_oauth_client_id
-    client_secret = var.github_oauth_client_secret
-  })
-}
+# Grafana OAuth - Ya existe en AWS, se lee via data source
+# ArgoCD OAuth - Ya existe en AWS, se lee via data source  
+# OAuth2 Proxy - Ya existe en AWS, se lee via data source
 
 # Slack Bot Token
 resource "aws_secretsmanager_secret" "slack_bot_token" {
