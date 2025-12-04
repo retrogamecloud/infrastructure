@@ -14,6 +14,25 @@ output "aws_region" {
 }
 
 # =============================================================================
+# OUTPUTS DE ROUTE53
+# =============================================================================
+
+output "route53_zone_id" {
+  description = "ID de la Hosted Zone de Route53"
+  value       = aws_route53_zone.main.zone_id
+}
+
+output "route53_nameservers" {
+  description = "Nameservers de Route53 para configurar en el registrador"
+  value       = aws_route53_zone.main.name_servers
+}
+
+output "domain_name" {
+  description = "Nombre de dominio configurado"
+  value       = var.domain_name
+}
+
+# =============================================================================
 # OUTPUTS DE USUARIOS IAM
 # =============================================================================
 
