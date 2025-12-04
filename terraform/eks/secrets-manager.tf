@@ -14,7 +14,7 @@
 resource "aws_secretsmanager_secret" "github_token" {
   name        = "prod/retrogame/github-token"
   description = "GitHub Personal Access Token para ArgoCD"
-  
+
   recovery_window_in_days = 0
 
   tags = {
@@ -33,7 +33,7 @@ resource "aws_secretsmanager_secret_version" "github_token" {
 resource "aws_secretsmanager_secret" "db_password" {
   name        = "prod/retrogame/db-password"
   description = "PostgreSQL database password"
-  
+
   recovery_window_in_days = 0
 
   tags = {
@@ -52,7 +52,7 @@ resource "aws_secretsmanager_secret_version" "db_password" {
 resource "aws_secretsmanager_secret" "jwt_secret" {
   name        = "prod/retrogame/jwt-secret"
   description = "JWT secret for authentication service"
-  
+
   recovery_window_in_days = 0
 
   tags = {
@@ -85,7 +85,7 @@ resource "aws_secretsmanager_secret_version" "jwt_secret" {
 resource "aws_secretsmanager_secret" "slack_bot_token" {
   name        = "prod/retrogame/slack-bot-token"
   description = "Slack Bot Token para notificaciones de ArgoCD"
-  
+
   recovery_window_in_days = 0
 
   tags = {
@@ -104,7 +104,7 @@ resource "aws_secretsmanager_secret_version" "slack_bot_token" {
 resource "aws_secretsmanager_secret" "slack_webhook_url" {
   name        = "prod/retrogame/slack-webhook-url"
   description = "Slack Incoming Webhook URL para alertas de Prometheus"
-  
+
   recovery_window_in_days = 0
 
   tags = {
@@ -123,7 +123,7 @@ resource "aws_secretsmanager_secret_version" "slack_webhook_url" {
 resource "aws_secretsmanager_secret" "db_username" {
   name        = "prod/retrogame/db-username"
   description = "PostgreSQL database username"
-  
+
   recovery_window_in_days = 0
 
   tags = {
