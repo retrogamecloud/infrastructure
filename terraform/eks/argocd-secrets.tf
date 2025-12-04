@@ -7,13 +7,31 @@
 #
 # ============================================================================
 
-# NOTA: ArgoCD crea automáticamente el secret "argocd-secret" al instalarse.
-# Si necesitas configurar OAuth u otras opciones, hazlo mediante argocd-cm ConfigMap
-# o a través de la UI de ArgoCD.
-#
-# Para configurar GitHub OAuth posteriormente:
-# kubectl -n argocd edit cm argocd-cm
-# kubectl -n argocd edit secret argocd-secret
+# ArgoCD main secret (required for Dex OAuth configuration and server encryption)
+resource "kubernetes_secret" "argocd_secret" {
+  metadata {
+    name      = "argocd-secret"
+    namespace = "argocd"
+    labels = {
+      "app.kubernetes.io/part-of" = "argocd"
+    }
+  }
+
+  type = "Opaque"
+
+  data = {
+    "dex.github.clientSecret" = local.argocd_oauth_client_secret
+    "server.secretkey"        = base64encode(random_password.argocd_server_secret.result)
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+# Generate random secret key for ArgoCD server encryption
+resource "random_password" "argocd_server_secret" {
+  length  = 32
+  special = false
+}
 
 # Secret para acceso al repositorio de Kubernetes
 resource "kubernetes_secret" "argocd_repo_kubernetes" {
