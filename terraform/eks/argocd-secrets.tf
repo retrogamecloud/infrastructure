@@ -20,6 +20,7 @@ resource "kubernetes_secret" "argocd_secret" {
   type = "Opaque"
 
   data = {
+    "dex.github.clientID"     = local.argocd_oauth_client_id
     "dex.github.clientSecret" = local.argocd_oauth_client_secret
     "server.secretkey"        = base64encode(random_password.argocd_server_secret.result)
   }

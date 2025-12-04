@@ -39,13 +39,15 @@ configs:
     application.resourceTrackingMethod: annotation
     
     # GitHub OAuth via Dex
+    # IMPORTANT: clientID and clientSecret are injected from argocd-secret Kubernetes Secret
+    # Created by Terraform in argocd-secrets.tf, values from AWS Secrets Manager
     dex.config: |
       connectors:
       - type: github
         id: github
         name: GitHub
         config:
-          clientID: ${argocd_oauth_client_id}
+          clientID: $dex.github.clientID
           clientSecret: $dex.github.clientSecret
           orgs:
           - name: retrogamecloud
