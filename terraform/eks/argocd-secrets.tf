@@ -7,28 +7,13 @@
 #
 # ============================================================================
 
-# Genera una clave secreta aleatoria para el servidor de ArgoCD
-resource "random_password" "argocd_server_secret" {
-  length  = 32
-  special = true
-}
-
-# Secret principal de ArgoCD con OAuth y server key
-resource "kubernetes_secret" "argocd_secret" {
-  metadata {
-    name      = "argocd-secret"
-    namespace = "argocd"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "dex.github.clientSecret" = local.github_oauth_client_secret
-    "server.secretkey"         = random_password.argocd_server_secret.result
-  }
-
-  depends_on = [helm_release.argocd]
-}
+# NOTA: ArgoCD crea automáticamente el secret "argocd-secret" al instalarse.
+# Si necesitas configurar OAuth u otras opciones, hazlo mediante argocd-cm ConfigMap
+# o a través de la UI de ArgoCD.
+#
+# Para configurar GitHub OAuth posteriormente:
+# kubectl -n argocd edit cm argocd-cm
+# kubectl -n argocd edit secret argocd-secret
 
 # Secret para acceso al repositorio de Kubernetes
 resource "kubernetes_secret" "argocd_repo_kubernetes" {
@@ -74,18 +59,7 @@ resource "kubernetes_secret" "argocd_repo_infrastructure" {
   depends_on = [helm_release.argocd]
 }
 
-# Secret para notificaciones de Slack de ArgoCD
-resource "kubernetes_secret" "argocd_notifications_secret" {
-  metadata {
-    name      = "argocd-notifications-secret"
-    namespace = "argocd"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "slack-token" = local.slack_bot_token
-  }
-
-  depends_on = [helm_release.argocd]
-}
+# NOTA: ArgoCD crea automáticamente el secret "argocd-notifications-secret".
+# Para configurar Slack posteriormente:
+# kubectl -n argocd edit secret argocd-notifications-secret
+# Agregar: slack-token: <tu-token>
