@@ -67,10 +67,14 @@ resource "aws_secretsmanager_secret_version" "jwt_secret" {
   secret_string = var.jwt_secret
 }
 
-# GitHub OAuth (JSON con client_id y client_secret)
-resource "aws_secretsmanager_secret" "github_oauth" {
-  name        = "prod/retrogame/github-oauth"
-  description = "GitHub OAuth credentials para ArgoCD y Grafana"
+# ============================================================================
+# GitHub OAuth Apps - Secretos separados para cada servicio
+# ============================================================================
+
+# Grafana OAuth
+resource "aws_secretsmanager_secret" "grafana_oauth" {
+  name        = "prod/retrogame/grafana-oauth"
+  description = "GitHub OAuth credentials for Grafana"
   
   recovery_window_in_days = 7
 
@@ -78,14 +82,61 @@ resource "aws_secretsmanager_secret" "github_oauth" {
     Environment = "production"
     ManagedBy   = "terraform"
     Project     = "retrogame"
+    Service     = "grafana"
   }
 }
 
-resource "aws_secretsmanager_secret_version" "github_oauth" {
-  secret_id = aws_secretsmanager_secret.github_oauth.id
+resource "aws_secretsmanager_secret_version" "grafana_oauth" {
+  secret_id = aws_secretsmanager_secret.grafana_oauth.id
   secret_string = jsonencode({
-    client_id     = var.github_oauth_client_id
-    client_secret = var.github_oauth_client_secret
+    client_id     = var.grafana_oauth_client_id
+    client_secret = var.grafana_oauth_client_secret
+  })
+}
+
+# ArgoCD OAuth
+resource "aws_secretsmanager_secret" "argocd_oauth" {
+  name        = "prod/retrogame/argocd-oauth"
+  description = "GitHub OAuth credentials for ArgoCD"
+  
+  recovery_window_in_days = 7
+
+  tags = {
+    Environment = "production"
+    ManagedBy   = "terraform"
+    Project     = "retrogame"
+    Service     = "argocd"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "argocd_oauth" {
+  secret_id = aws_secretsmanager_secret.argocd_oauth.id
+  secret_string = jsonencode({
+    client_id     = var.argocd_oauth_client_id
+    client_secret = var.argocd_oauth_client_secret
+  })
+}
+
+# OAuth2 Proxy (Prometheus/AlertManager)
+resource "aws_secretsmanager_secret" "oauth2_proxy" {
+  name        = "prod/retrogame/oauth2-proxy"
+  description = "GitHub OAuth credentials for OAuth2 Proxy (Prometheus/AlertManager)"
+  
+  recovery_window_in_days = 7
+
+  tags = {
+    Environment = "production"
+    ManagedBy   = "terraform"
+    Project     = "retrogame"
+    Service     = "oauth2-proxy"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "oauth2_proxy" {
+  secret_id = aws_secretsmanager_secret.oauth2_proxy.id
+  secret_string = jsonencode({
+    client_id     = var.oauth2_proxy_client_id
+    client_secret = var.oauth2_proxy_client_secret
   })
 }
 

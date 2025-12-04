@@ -45,7 +45,7 @@ configs:
         id: github
         name: GitHub
         config:
-          clientID: Ov23li1po0fBSpoAPweT
+          clientID: ${argocd_oauth_client_id}
           clientSecret: $dex.github.clientSecret
           orgs:
           - name: retrogamecloud
@@ -63,7 +63,7 @@ configs:
   # Secret for GitHub OAuth
   secret:
     extra:
-      dex.github.clientSecret: eee8350a40817bf1758c6dc287acfc5c6840af4d
+      dex.github.clientSecret: ${argocd_oauth_client_secret}
 
   repositories:
     # These will be configured via ArgoCD UI or kubectl after installation
