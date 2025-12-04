@@ -1,4 +1,4 @@
-# ☁️ Infrastructure as Code - RetroGameCloud
+# Infrastructure as Code - RetroGameCloud
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-blueviolet?logo=terraform)](https://www.terraform.io/)
 [![AWS](https://img.shields.io/badge/AWS-EKS%201.34-orange?logo=amazon)](https://aws.amazon.com/)
@@ -6,12 +6,12 @@
 
 Infraestructura como código (IaC) para desplegar RetroGameCloud en AWS EKS. Terraform automatiza la creación de VPC, clúster Kubernetes, base de datos, monitoreo y más.
 
-**Documentación General:** 📖 [Ir al README Principal](./../README.md)  
-**Documentación Profesional:** 📚 [Acceder a docs.retrogamehub.games](https://docs.retrogamehub.games)
+**Documentación General:** [Ir al README Principal](https://github.com/retrogamecloud/.github/blob/main/README.md)  
+**Documentación Profesional:** [Acceder a la Wiki](https://www.retrogamehub.games/wiki)
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 - [Descripción del Repositorio](#descripción-del-repositorio)
 - [Funcionalidad Principal](#funcionalidad-principal)
@@ -24,10 +24,12 @@ Infraestructura como código (IaC) para desplegar RetroGameCloud en AWS EKS. Ter
 - [Costos AWS](#costos-aws)
 - [Troubleshooting](#troubleshooting)
 - [Rollback & Limpieza](#rollback--limpieza)
+- [Pipeline CI/CD](#pipeline-cicd)
+- [Referencias](#referencias)
 
 ---
 
-## 📖 Descripción del Repositorio
+## Descripción del Repositorio
 
 Este repositorio contiene toda la **infraestructura como código** para RetroGameCloud en AWS usando **Terraform**. Crea automáticamente:
 
@@ -42,7 +44,7 @@ Este repositorio contiene toda la **infraestructura como código** para RetroGam
 
 ---
 
-## 🎯 Funcionalidad Principal
+## Funcionalidad Principal
 
 ### 1. Aprovisionamiento de VPC
 
@@ -91,6 +93,8 @@ Este repositorio contiene toda la **infraestructura como código** para RetroGam
 - Integración automática con EKS
 - Rotación automática de claves
 
+> **IMPORTANTE:** Todos los secrets (API keys, contraseñas de BD, tokens JWT, credenciales, certificados) se almacenan **exclusivamente en AWS Secrets Manager** y **NO están en este repositorio**. Este repositorio de Terraform solo contiene configuración de infraestructura, sin ninguna información sensible.
+
 ### 5. Monitoreo
 
 - **Prometheus:** Recopilación de métricas
@@ -99,7 +103,7 @@ Este repositorio contiene toda la **infraestructura como código** para RetroGam
 
 ---
 
-## 📦 Stack Tecnológico
+## Stack Tecnológico
 
 | Componente | Versión | Descripción |
 |---|---|---|
@@ -157,9 +161,16 @@ terraform/
 └── backend.tf
 ```
 
+### Workflows CI/CD
+
+| Workflow | Trigger | Descripción |
+|---|---|---|
+| **validate-and-scan.yml** | Push a cualquier rama | Terraform fmt/validate, Trivy IaC scan, SonarCloud |
+| **dependabot.yml** | Scheduled (diario) | Actualiza GitHub Actions, Terraform modules, npm packages |
+
 ---
 
-## 🚀 Instalación & Setup
+## Instalación & Setup
 
 ### Requisitos Previos
 
@@ -256,44 +267,46 @@ kubectl get nodes
 
 ---
 
-## 📁 Estructura de Directorios
+## Estructura de Directorios
 
 ```
 infrastructure/
+├── .github/
+│   ├── dependabot.yml             # Configuración de Dependabot
+│   └── workflows/
+│       └── validate-and-scan.yml # Validación de Terraform + Trivy
+│
 ├── terraform/
-│   ├── eks/
-│   │   ├── main.tf              # Definición del cluster EKS
+│   ├── bootstrap/               # Configuración inicial (S3, DynamoDB, IAM)
+│   │   ├── s3-tfstate.tf       # Bucket S3 para remote state
+│   │   ├── dynamodb.tf         # DynamoDB para state locking
+│   │   ├── iam.tf              # Roles y políticas
+│   │   ├── data.tf
+│   │   ├── provider.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
-│   │   ├── karpenter.tf         # Auto-scaling con Karpenter
+│   │   ├── README.md
+│   │   └── .gitignore
+│   ├── eks/
+│   │   ├── main.tf             # Definición del cluster EKS
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   ├── karpenter.tf        # Auto-scaling con Karpenter
 │   │   ├── iam-roles.tf
 │   │   └── security-groups.tf
-│   ├── vpc/
+│   ├── github/                 # Configuración de GitHub (secrets, tokens)
 │   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── nat-gateway.tf       # NAT para salida a internet
-│   │   ├── route-tables.tf
-│   │   └── outputs.tf
-│   ├── rds/
-│   │   ├── main.tf              # PostgreSQL 15
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── alb/
-│   │   ├── main.tf              # Application Load Balancer
-│   │   └── variables.tf
-│   ├── route53/
-│   │   ├── main.tf              # DNS + ACM certificates
-│   │   └── variables.tf
-│   ├── monitoring/
-│   │   ├── main.tf
-│   │   ├── prometheus.tf
-│   │   ├── grafana.tf
-│   │   └── alerting.tf
-│   ├── main.tf
-│   ├── variables.tf             # Variables globales
+│   │   ├── modules/
+│   │   ├── README.md
+│   │   └── .gitignore
+│   ├── main.tf                 # Orquestación principal
+│   ├── variables.tf            # Variables globales
 │   ├── outputs.tf
-│   ├── terraform.tfvars         # Valores específicos del entorno
-│   └── backend.tf               # Remote state (S3)
+│   ├── terraform.tfvars        # Valores específicos
+│   └── backend.tf              # Remote state (S3)
+├── cdn/                        # Configuración de CDN (nginx)
+├── monitoring/                 # Configuración de monitoreo
+├── argocd/                     # Configuración de GitOps (Argo CD)
 ├── tests/
 │   ├── terraform_test.sh
 │   └── README.md
@@ -302,7 +315,7 @@ infrastructure/
 
 ---
 
-## 🔧 Variables Terraform
+## Variables Terraform
 
 ### Configuración Principal (terraform.tfvars)
 
@@ -370,7 +383,7 @@ variable "cluster_name" {
 
 ---
 
-## 🚀 Despliegue
+## Despliegue
 
 ### Despliegue Completo (Producción)
 
@@ -432,7 +445,7 @@ terraform apply
 
 ---
 
-## 📊 Monitoreo
+## Monitoreo
 
 ### Prometheus
 
@@ -476,7 +489,7 @@ kubectl port-forward -n monitoring svc/grafana 3000:80
 
 ---
 
-## 💰 Costos AWS
+## Costos AWS
 
 ### Desglose por Servicio
 
@@ -523,7 +536,7 @@ use_nat_instance = true  # Ahorrar $32/mes
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Error: VPC Limit Exceeded
 
@@ -595,7 +608,7 @@ aws ec2 authorize-security-group-ingress \
 
 ---
 
-## 🔄 Rollback & Limpieza
+## Rollback & Limpieza
 
 ### Destruir Toda la Infraestructura
 
@@ -656,29 +669,56 @@ terraform init
 
 ---
 
-## 📚 Referencias
+## Pipeline CI/CD
+
+Este repositorio implementa validaciones automáticas mediante GitHub Actions para asegurar la calidad y seguridad de las configuraciones de infraestructura como código.
+
+### Validaciones Automáticas
+
+Cada vez que haces un push o abres un Pull Request, se ejecutan automáticamente:
+
+✅ **Terraform Linting:** `terraform fmt` y `terraform validate` en todos los directorios  
+✅ **Validación:** `terraform init` verifica configuración y plugins  
+✅ **Escaneo de Vulnerabilidades:** Trivy escanea el código Terraform  
+✅ **Análisis Estático:** SonarCloud detecta misconfigurations y problemas de IaC  
+✅ **ArgoCD:** Validación de manifiestos GitOps  
+✅ **Notificaciones:** Slack alertas para fallos críticos en validaciones  
+
+### Workflows Disponibles
+
+| Workflow | Trigger | Descripción |
+|---|---|---|
+| **validate-and-scan.yml** | Push a `main`, PR | Validación Terraform, seguridad y análisis estático |
+| **dependabot.yml** | Scheduled (diario) | Mantener dependencias y providers actualizados |
+
+**Documentación detallada:** Ver [`.github/README-WF.md`](./.github/README-WF.md) para más información sobre cada workflow, triggers, variables y secrets.
+
+---
+
+## Referencias
 
 ### Documentación Oficial
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 - [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
 - [Karpenter Documentation](https://karpenter.sh/docs/)
 
+### Documentación del Proyecto
+- **Workflows CI/CD:** [.github/README-WF.md](./.github/README-WF.md)
+- **Secretos & Seguridad:** [SECRETS-STRATEGY.md](../.github/docs/SECRETS-STRATEGY.md)
+- **Documentación General:** [/README.md](/../README.md)
+
 ### Repositorios Relacionados
-- 🔌 [Kong Gateway](../kong/README.md)
-- 🔙 [Backend API](../backend/README.md)
-- 🎮 [Frontend](../frontend/README.md)
-- ☸️ [Kubernetes Manifests](../kubernetes/README.md)
-- 📖 [Documentación General](../README.md)
+- [Backend API](https://github.com/retrogamecloud/backend/blob/main/README.md)
+- [Frontend](https://github.com/retrogamecloud/frontend/blob/main/README.md)
+- [Kong Gateway](https://github.com/retrogamecloud/kong/blob/main/README.md)
+- [Kubernetes Manifests](https://github.com/retrogamecloud/kubernetes/blob/main/README.md)
+- [Documentación Centralizada](https://github.com/retrogamecloud/docs)
 
-### Secretos & Seguridad
-- [SECRETS-STRATEGY.md](../.github/docs/SECRETS-STRATEGY.md)
-
----
-
-## 📚 Referencias
-
-- 📖 [Terraform Cloud Console](https://app.terraform.io/)
-- 💬 [Documentación General](../README.md)
+### Documentación Externa
+- [Terraform Cloud Console](https://app.terraform.io/)
+- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
+- [Karpenter Documentation](https://karpenter.sh/docs/)
 
 ---
 
