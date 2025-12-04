@@ -53,17 +53,17 @@ locals {
   jwt_secret        = aws_secretsmanager_secret_version.jwt_secret.secret_string
   slack_bot_token   = aws_secretsmanager_secret_version.slack_bot_token.secret_string
   slack_webhook_url = aws_secretsmanager_secret_version.slack_webhook_url.secret_string
-  
+
   # Parse GitHub OAuth JSONs (desde data sources)
   grafana_oauth      = jsondecode(data.aws_secretsmanager_secret_version.grafana_oauth.secret_string)
   argocd_oauth       = jsondecode(data.aws_secretsmanager_secret_version.argocd_oauth.secret_string)
   oauth2_proxy_oauth = jsondecode(data.aws_secretsmanager_secret_version.oauth2_proxy.secret_string)
-  
+
   # OAuth credentials para cada servicio
-  grafana_oauth_client_id        = local.grafana_oauth.client_id
-  grafana_oauth_client_secret    = local.grafana_oauth.client_secret
-  argocd_oauth_client_id         = local.argocd_oauth.client_id
-  argocd_oauth_client_secret     = local.argocd_oauth.client_secret
-  oauth2_proxy_client_id         = local.oauth2_proxy_oauth.client_id
-  oauth2_proxy_client_secret     = local.oauth2_proxy_oauth.client_secret
+  grafana_oauth_client_id     = local.grafana_oauth.client_id
+  grafana_oauth_client_secret = local.grafana_oauth.client_secret
+  argocd_oauth_client_id      = local.argocd_oauth.client_id
+  argocd_oauth_client_secret  = local.argocd_oauth.client_secret
+  oauth2_proxy_client_id      = local.oauth2_proxy_oauth.client_id
+  oauth2_proxy_client_secret  = local.oauth2_proxy_oauth.client_secret
 }
