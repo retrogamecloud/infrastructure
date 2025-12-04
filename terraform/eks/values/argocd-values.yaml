@@ -61,11 +61,6 @@ configs:
       g, evaristogz, role:admin
       g, retrogamecloud:*, role:admin
     scopes: '[groups]'
-  
-  # Secret for GitHub OAuth
-  secret:
-    extra:
-      dex.github.clientSecret: ${argocd_oauth_client_secret}
 
   repositories:
     # These will be configured via ArgoCD UI or kubectl after installation
