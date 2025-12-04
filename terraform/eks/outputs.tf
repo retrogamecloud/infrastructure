@@ -109,13 +109,13 @@ output "upload_images_command" {
 # ============================================================================
 
 output "route53_zone_id" {
-  description = "ID de la zona Route53"
-  value       = try(aws_route53_zone.main.zone_id, null)
+  description = "ID de la zona Route53 (gestionada en bootstrap)"
+  value       = data.terraform_remote_state.bootstrap.outputs.route53_zone_id
 }
 
 output "route53_nameservers" {
-  description = "Nameservers de Route53 (configurar en Namecheap)"
-  value       = try(aws_route53_zone.main.name_servers, null)
+  description = "Nameservers de Route53 (gestionados en bootstrap, configurar en Namecheap)"
+  value       = data.terraform_remote_state.bootstrap.outputs.route53_nameservers
 }
 
 output "ssl_certificate_arn" {
