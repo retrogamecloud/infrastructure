@@ -177,17 +177,10 @@ variable "slack_webhook_url" {
   sensitive   = true
 }
 
-variable "github_oauth_client_id" {
-  description = "Client ID de GitHub OAuth App"
-  type        = string
-  sensitive   = true
-}
-
-variable "github_oauth_client_secret" {
-  description = "Client Secret de GitHub OAuth App"
-  type        = string
-  sensitive   = true
-}
+# ============================================================================
+# NOTA: Los secretos OAuth se gestionan directamente en AWS Secrets Manager
+# No se requieren variables en Terraform, se leen mediante data sources
+# ============================================================================
 
 variable "github_token" {
   description = "GitHub Personal Access Token para ArgoCD repository access"
