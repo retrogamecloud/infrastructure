@@ -412,9 +412,10 @@ resource "kubernetes_config_map" "cdn_config" {
   }
 
   data = {
-    CDN_URL          = "https://${aws_cloudfront_distribution.games_cdn.domain_name}"
-    CDN_DISTRIBUTION = aws_cloudfront_distribution.games_cdn.id
-    S3_BUCKET        = aws_s3_bucket.games_cdn.id
+    LOAD_BALANCER_URL = "https://retrogamehub.games"
+    CDN_URL           = "https://retrogamehub.games/cdn"
+    CDN_DISTRIBUTION  = aws_cloudfront_distribution.games_cdn.id
+    S3_BUCKET         = aws_s3_bucket.games_cdn.id
   }
 
   depends_on = [
