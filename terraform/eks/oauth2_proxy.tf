@@ -67,6 +67,9 @@ resource "kubernetes_config_map" "oauth2_proxy" {
       # Configuración HTTP
       http_address = "0.0.0.0:4180"
       
+      # URL de callback OAuth (CRÍTICO para que GitHub redirija correctamente)
+      redirect_url = "https://retrogamehub.games/oauth2/callback"
+      
       # Configuración de cookies
       cookie_name = "_oauth2_proxy"
       cookie_secure = true
