@@ -7,22 +7,20 @@
 #
 # ============================================================================
 
-# ArgoCD main secret (required for Dex OAuth configuration and server encryption)
-resource "kubernetes_secret" "argocd_secret" {
-  metadata {
-    name      = "argocd-secret"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/part-of" = "argocd"
-    }
+# ArgoCD main secret (ArgoCD Helm chart lo crea automáticamente)
+# Usamos kubectl patch para agregar los valores de OAuth sin conflictos
+resource "null_resource" "argocd_secret_oauth" {
+  triggers = {
+    client_id     = local.argocd_oauth_client_id
+    client_secret = local.argocd_oauth_client_secret
   }
 
-  type = "Opaque"
-
-  data = {
-    "dex.github.clientID"     = local.argocd_oauth_client_id
-    "dex.github.clientSecret" = local.argocd_oauth_client_secret
-    "server.secretkey"        = base64encode(random_password.argocd_server_secret.result)
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl patch secret argocd-secret -n argocd \
+        --type merge \
+        -p '{"data":{"dex.github.clientID":"${base64encode(local.argocd_oauth_client_id)}","dex.github.clientSecret":"${base64encode(local.argocd_oauth_client_secret)}"}}'
+    EOT
   }
 
   depends_on = [helm_release.argocd]
