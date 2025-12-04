@@ -118,6 +118,34 @@ variable "db_name" {
   default     = "retrogamedb"
 }
 
+# ============================================================================
+# SECRETOS MOVIDOS A AWS SECRETS MANAGER
+# ============================================================================
+#
+# Las siguientes variables han sido ELIMINADAS y ahora se leen desde
+# AWS Secrets Manager usando data sources en secrets-data.tf
+#
+# Secretos gestionados en AWS Secrets Manager:
+#   - prod/retrogame/db-username
+#   - prod/retrogame/db-password
+#   - prod/retrogame/jwt-secret
+#   - prod/retrogame/github-oauth (JSON: client_id, client_secret)
+#   - prod/retrogame/github-token
+#   - prod/retrogame/slack-bot-token
+#   - prod/retrogame/slack-webhook-url
+#
+# Los valores se leen automáticamente mediante locals definidos en secrets-data.tf:
+#   - local.db_username
+#   - local.db_password
+#   - local.jwt_secret
+#   - local.github_oauth_client_id
+#   - local.github_oauth_client_secret
+#   - local.github_token
+#   - local.slack_bot_token
+#   - local.slack_webhook_url
+#
+# ============================================================================
+
 variable "db_username" {
   description = "Usuario de la base de datos"
   type        = string
@@ -147,7 +175,6 @@ variable "slack_webhook_url" {
   description = "Webhook URL de Slack para alertas de AlertManager"
   type        = string
   sensitive   = true
-  default     = "https://hooks.slack.com/services/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"
 }
 
 variable "github_oauth_client_id" {
@@ -161,3 +188,16 @@ variable "github_oauth_client_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token para ArgoCD repository access"
+  type        = string
+  sensitive   = true
+}
+
+variable "slack_bot_token" {
+  description = "Slack Bot Token para notificaciones de ArgoCD (xoxb-...)"
+  type        = string
+  sensitive   = true
+}
+
