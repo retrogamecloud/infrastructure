@@ -137,7 +137,7 @@ resource "kubernetes_deployment" "oauth2_proxy" {
         container {
           name  = "oauth2-proxy"
           image = "quay.io/oauth2-proxy/oauth2-proxy:v7.6.0"
-          
+
           args = [
             "--config=/etc/oauth2-proxy/oauth2_proxy.cfg",
             "--client-id=$(CLIENT_ID)",
@@ -247,7 +247,7 @@ resource "kubernetes_service" "oauth2_proxy" {
 
   spec {
     type = "ClusterIP"
-    
+
     selector = {
       app = "oauth2-proxy"
     }
