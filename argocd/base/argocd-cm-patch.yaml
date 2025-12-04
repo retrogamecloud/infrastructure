@@ -7,13 +7,16 @@ data:
   url: https://retrogamehub.games/argocd
   
   # GitHub OAuth configuration
+  # IMPORTANT: clientID and clientSecret are managed via Kubernetes Secret (argocd-secret)
+  # The secret is created by Terraform in terraform/eks/argocd-secrets.tf
+  # Values are stored in AWS Secrets Manager: prod/retrogame/argocd-oauth
   dex.config: |
     connectors:
     - type: github
       id: github
       name: GitHub
       config:
-        clientID: Ov23li1po0fBSpoAPweT
+        clientID: $dex.github.clientID
         clientSecret: $dex.github.clientSecret
         orgs:
         - name: retrogamecloud
