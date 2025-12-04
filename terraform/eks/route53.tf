@@ -1,23 +1,16 @@
 # ============================================================================
-# Route53 & SSL Certificate
+# Route53 Records & SSL Certificate
 # ============================================================================
 # 
-# IMPORTANTE: Después de crear esta zona, debes actualizar los nameservers 
-# en Namecheap con los valores de aws_route53_zone.main.name_servers
+# IMPORTANTE: La Hosted Zone ahora se gestiona en terraform/bootstrap/
+# Esto permite que los nameservers permanezcan constantes incluso si 
+# destruyes y recreas el cluster EKS.
+#
+# Este archivo solo gestiona:
+# - Certificado SSL y su validación
+# - Registros A para el dominio (apuntando al ALB)
 #
 # ============================================================================
-
-# Zona DNS para retrogamehub.games
-resource "aws_route53_zone" "main" {
-  name = "retrogamehub.games"
-
-  tags = {
-    Name        = "retrogamehub-zone"
-    Environment = var.environment
-    Project     = "retrogame"
-    ManagedBy   = "terraform"
-  }
-}
 
 # Certificado SSL para HTTPS (válido para dominio y wildcard)
 resource "aws_acm_certificate" "main" {
@@ -55,7 +48,7 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = aws_route53_zone.main.zone_id
+  zone_id         = data.terraform_remote_state.bootstrap.outputs.route53_zone_id
 }
 
 # Esperar a que el certificado sea validado
@@ -70,7 +63,7 @@ resource "aws_acm_certificate_validation" "main" {
 
 # Registro A para el dominio principal apuntando al ALB
 resource "aws_route53_record" "main" {
-  zone_id = aws_route53_zone.main.zone_id
+  zone_id = data.terraform_remote_state.bootstrap.outputs.route53_zone_id
   name    = "retrogamehub.games"
   type    = "A"
 
@@ -85,7 +78,7 @@ resource "aws_route53_record" "main" {
 
 # Registro A wildcard para subdominios (opcional)
 resource "aws_route53_record" "wildcard" {
-  zone_id = aws_route53_zone.main.zone_id
+  zone_id = data.terraform_remote_state.bootstrap.outputs.route53_zone_id
   name    = "*.retrogamehub.games"
   type    = "A"
 
