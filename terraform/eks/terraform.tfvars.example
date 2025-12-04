@@ -1,0 +1,39 @@
+# ============================================================================
+# Terraform Variables - EJEMPLO
+# ============================================================================
+#
+# IMPORTANTE: Los secretos NO se definen aquí, se leen de AWS Secrets Manager
+#
+# Este archivo muestra las variables NO sensibles que necesitas configurar
+# Los secretos se gestionan en AWS Secrets Manager y se leen automáticamente
+#
+# ============================================================================
+
+# Configuración del cluster
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 4
+
+# Base de datos
+db_allocated_storage = 20
+
+# ============================================================================
+# SECRETOS ELIMINADOS - Ahora en AWS Secrets Manager
+# ============================================================================
+#
+# Los siguientes secretos ya NO se definen aquí:
+#
+# - github_token               → prod/retrogame/github-token
+# - db_password                → prod/retrogame/db-password
+# - db_username                → prod/retrogame/db-username
+# - jwt_secret                 → prod/retrogame/jwt-secret
+# - github_oauth_client_id     → prod/retrogame/github-oauth (JSON: client_id)
+# - github_oauth_client_secret → prod/retrogame/github-oauth (JSON: client_secret)
+# - slack_bot_token            → prod/retrogame/slack-bot-token
+# - slack_webhook_url          → prod/retrogame/slack-webhook-url
+#
+# Para crear los secretos, ejecuta terraform apply con secrets-manager.tf
+# Una vez creados, los data sources en secrets-data.tf los leerán automáticamente
+#
+# ============================================================================

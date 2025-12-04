@@ -4,12 +4,15 @@ kind: Kustomization
 namespace: argocd
 
 resources:
-  - argocd-secret.yaml
-  # Temporalmente deshabilitado - gestionado manualmente con token nuevo
-  # - argocd-repo.yaml
-  # - argocd-repo-infrastructure.yaml
+  # SECRETOS GESTIONADOS POR TERRAFORM - NO incluir aquí
+  # Los siguientes secretos se crean en terraform/eks/argocd-secrets.tf:
+  # - argocd-secret (OAuth + server key)
+  # - repo-retrogame-kubernetes (acceso al repo)
+  # - repo-retrogame-infrastructure (acceso al repo)
+  # - argocd-notifications-secret (Slack token)
+  
+  # Solo ConfigMaps e Ingress (sin secretos)
   - argocd-notifications-cm.yaml
-  - argocd-notifications-secret.yaml
   - argocd-ingress.yaml
 
 patches:

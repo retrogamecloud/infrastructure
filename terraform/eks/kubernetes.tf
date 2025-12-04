@@ -19,7 +19,7 @@ resource "kubernetes_secret" "jwt_secret" {
   }
 
   data = {
-    JWT_SECRET = var.jwt_secret
+    JWT_SECRET = local.jwt_secret
   }
 
   depends_on = [module.eks]
@@ -851,15 +851,15 @@ resource "null_resource" "verify_db_tables" {
       echo "🔍 Verificando tablas creadas en PostgreSQL..."
       echo "Tablas en la base de datos:"
       kubectl run db-verify-tables --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
-        --env="PGPASSWORD=${var.db_password}" \
-        -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
+        --env="PGPASSWORD=${local.db_password}" \
+        -- psql "postgresql://${local.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
         -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;" 2>&1 | grep -v "pod" | tail -n +3 || true
       
       echo ""
       echo "Total de registros en users:"
       kubectl run db-count-users --rm -i --restart=Never --image=postgres:15-alpine -n retrogame \
-        --env="PGPASSWORD=${var.db_password}" \
-        -- psql "postgresql://${var.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
+        --env="PGPASSWORD=${local.db_password}" \
+        -- psql "postgresql://${local.db_username}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require" \
         -c "SELECT COUNT(*) as total_users FROM users;" 2>&1 | grep -v "pod" | tail -n +3 || true
       
       echo "✅ Verificación completada"
