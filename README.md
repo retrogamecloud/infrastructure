@@ -343,7 +343,7 @@ grafana_admin_password = "SecurePassword123!"
 
 # Costos
 enable_cost_monitoring = true
-budget_alert_email = "ops@retrogamehub.games"
+# budget_alert_email = configurar según necesidad
 ```
 
 ### Variables con Valores por Defecto
@@ -675,16 +675,9 @@ terraform init
 
 ---
 
-## 🤝 Contribuir
-
-Ver: [CONTRIBUTING.md](../.github/CONTRIBUTING.md)
-
----
-
-## 📞 Soporte
+## 📚 Referencias
 
 - 📖 [Terraform Cloud Console](https://app.terraform.io/)
-- 🐛 [GitHub Issues](https://github.com/retrogamecloud/infrastructure/issues)
 - 💬 [Documentación General](../README.md)
 
 ---

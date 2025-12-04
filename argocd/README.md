@@ -271,7 +271,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@retrogamehub.games
+    email: admin@example.com  # Reemplazar con email válido
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:

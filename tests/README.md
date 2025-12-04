@@ -599,12 +599,6 @@ npm run test:plan:costs -- --verbose
 
 ---
 
-## 🤝 Contribuir
-
-Ver: [CONTRIBUTING.md](../../.github/CONTRIBUTING.md)
-
----
-
 **Última actualización:** 1 de diciembre de 2025  
 **Versión:** 1.0  
 **Mantenedor:** RetroGameCloud DevOps Team
