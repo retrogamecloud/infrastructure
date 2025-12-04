@@ -4,15 +4,24 @@
 *.tfplan
 *.tfplan.json
 
-# Estado - IMPORTANTE: considera hacer backup o versionar estos archivos
-# ya que contienen la configuración del backend de todos tus proyectos
+# Estado - NO DEBE ESTAR EN GIT
 terraform.tfstate
 terraform.tfstate.backup
 .terraform.tfstate.lock.info
 
-# Sensitive files
+# Variables sensibles - NO COMMITEAR
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
+
+# Secretos y claves
 *.pem
 *.key
+*secret*.yaml
+*oauth*.yaml
+
+# Reportes de seguridad
+gitleaks-report.json
 
 # OS files
 .DS_Store
@@ -24,4 +33,3 @@ Thumbs.db
 *.swp
 *.swo
 *~
-terraform.tfvars

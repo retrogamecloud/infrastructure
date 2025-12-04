@@ -2,8 +2,8 @@
 # Secretos de ArgoCD gestionados por Terraform
 # ============================================================================
 #
-# IMPORTANTE: Estos secretos NO deben estar en el repositorio de Git.
-# Todos los valores sensibles vienen de variables en terraform.tfvars
+# IMPORTANTE: Los valores sensibles se leen desde AWS Secrets Manager
+# Los data sources están definidos en secrets-data.tf
 #
 # ============================================================================
 
@@ -23,7 +23,7 @@ resource "kubernetes_secret" "argocd_secret" {
   type = "Opaque"
 
   data = {
-    "dex.github.clientSecret" = var.github_oauth_client_secret
+    "dex.github.clientSecret" = local.github_oauth_client_secret
     "server.secretkey"         = random_password.argocd_server_secret.result
   }
 
@@ -46,7 +46,7 @@ resource "kubernetes_secret" "argocd_repo_kubernetes" {
     type     = "git"
     url      = "https://github.com/retrogamecloud/kubernetes"
     username = "git"
-    password = var.github_token
+    password = local.github_token
   }
 
   depends_on = [helm_release.argocd]
@@ -68,7 +68,7 @@ resource "kubernetes_secret" "argocd_repo_infrastructure" {
     type     = "git"
     url      = "https://github.com/retrogamecloud/infrastructure.git"
     username = "git"
-    password = var.github_token
+    password = local.github_token
   }
 
   depends_on = [helm_release.argocd]
@@ -84,7 +84,7 @@ resource "kubernetes_secret" "argocd_notifications_secret" {
   type = "Opaque"
 
   data = {
-    "slack-token" = var.slack_bot_token
+    "slack-token" = local.slack_bot_token
   }
 
   depends_on = [helm_release.argocd]

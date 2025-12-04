@@ -118,24 +118,52 @@ variable "db_name" {
   default     = "retrogamedb"
 }
 
-variable "db_username" {
-  description = "Usuario de la base de datos"
-  type        = string
-  default     = "retrogame"
-  sensitive   = true
-}
+# ============================================================================
+# SECRETOS MOVIDOS A AWS SECRETS MANAGER
+# ============================================================================
+#
+# Las siguientes variables han sido ELIMINADAS y ahora se leen desde
+# AWS Secrets Manager usando data sources en secrets-data.tf
+#
+# Secretos gestionados en AWS Secrets Manager:
+#   - prod/retrogame/db-username
+#   - prod/retrogame/db-password
+#   - prod/retrogame/jwt-secret
+#   - prod/retrogame/github-oauth (JSON: client_id, client_secret)
+#   - prod/retrogame/github-token
+#   - prod/retrogame/slack-bot-token
+#   - prod/retrogame/slack-webhook-url
+#
+# Los valores se leen automáticamente mediante locals definidos en secrets-data.tf:
+#   - local.db_username
+#   - local.db_password
+#   - local.jwt_secret
+#   - local.github_oauth_client_id
+#   - local.github_oauth_client_secret
+#   - local.github_token
+#   - local.slack_bot_token
+#   - local.slack_webhook_url
+#
+# ============================================================================
 
-variable "db_password" {
-  description = "Contraseña de la base de datos"
-  type        = string
-  sensitive   = true
-}
+# variable "db_username" {
+#   description = "Usuario de la base de datos"
+#   type        = string
+#   default     = "retrogame"
+#   sensitive   = true
+# }
 
-variable "jwt_secret" {
-  description = "Secret para JWT"
-  type        = string
-  sensitive   = true
-}
+# variable "db_password" {
+#   description = "Contraseña de la base de datos"
+#   type        = string
+#   sensitive   = true
+# }
+
+# variable "jwt_secret" {
+#   description = "Secret para JWT"
+#   type        = string
+#   sensitive   = true
+# }
 
 variable "tags" {
   description = "Tags adicionales para recursos"
@@ -143,33 +171,34 @@ variable "tags" {
   default     = {}
 }
 
-variable "slack_webhook_url" {
-  description = "Webhook URL de Slack para alertas de AlertManager"
-  type        = string
-  sensitive   = true
-  default     = "https://hooks.slack.com/services/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"
-}
+# variable "slack_webhook_url" {
+#   description = "Webhook URL de Slack para alertas de AlertManager"
+#   type        = string
+#   sensitive   = true
+#   default     = "https://hooks.slack.com/services/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"
+# }
 
-variable "github_oauth_client_id" {
-  description = "Client ID de GitHub OAuth App"
-  type        = string
-  sensitive   = true
-}
+# variable "github_oauth_client_id" {
+#   description = "Client ID de GitHub OAuth App"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "github_oauth_client_secret" {
-  description = "Client Secret de GitHub OAuth App"
-  type        = string
-  sensitive   = true
-}
+# variable "github_oauth_client_secret" {
+#   description = "Client Secret de GitHub OAuth App"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "github_token" {
-  description = "GitHub Personal Access Token para ArgoCD repository access"
-  type        = string
-  sensitive   = true
-}
+# variable "github_token" {
+#   description = "GitHub Personal Access Token para ArgoCD repository access"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "slack_bot_token" {
-  description = "Slack Bot Token para notificaciones de ArgoCD (xoxb-...)"
-  type        = string
-  sensitive   = true
-}
+# variable "slack_bot_token" {
+#   description = "Slack Bot Token para notificaciones de ArgoCD (xoxb-...)"
+#   type        = string
+#   sensitive   = true
+# }
+

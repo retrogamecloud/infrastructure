@@ -34,7 +34,7 @@ resource "kubernetes_secret" "alertmanager_slack" {
   }
 
   data = {
-    webhook_url = var.slack_webhook_url
+    webhook_url = local.slack_webhook_url
   }
 
   type = "Opaque"
