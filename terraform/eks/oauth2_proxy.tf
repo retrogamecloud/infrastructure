@@ -24,10 +24,9 @@ resource "kubernetes_secret" "oauth2_proxy" {
   }
 
   data = {
-    # ⚠️ REEMPLAZA ESTOS VALORES CON TUS CREDENCIALES DE GITHUB OAUTH APP
-    # Obtenlas de: https://github.com/settings/developers
-    client-id     = var.github_oauth_client_id
-    client-secret = var.github_oauth_client_secret
+    # Credenciales de OAuth2 Proxy (Retro Game Hun Oauth)
+    client-id     = local.oauth2_proxy_client_id
+    client-secret = local.oauth2_proxy_client_secret
     cookie-secret = base64encode(random_password.oauth2_proxy_cookie_secret.result)
   }
 
@@ -135,7 +134,7 @@ resource "kubernetes_deployment" "oauth2_proxy" {
         container {
           name  = "oauth2-proxy"
           image = "quay.io/oauth2-proxy/oauth2-proxy:v7.6.0"
-
+          
           args = [
             "--config=/etc/oauth2-proxy/oauth2_proxy.cfg",
             "--client-id=$(CLIENT_ID)",
@@ -245,7 +244,7 @@ resource "kubernetes_service" "oauth2_proxy" {
 
   spec {
     type = "ClusterIP"
-
+    
     selector = {
       app = "oauth2-proxy"
     }
