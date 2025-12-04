@@ -178,44 +178,9 @@ variable "slack_webhook_url" {
 }
 
 # ============================================================================
-# GitHub OAuth Apps - Variables separadas por servicio
+# NOTA: Los secretos OAuth se gestionan directamente en AWS Secrets Manager
+# No se requieren variables en Terraform, se leen mediante data sources
 # ============================================================================
-
-variable "grafana_oauth_client_id" {
-  description = "Client ID de GitHub OAuth App para Grafana"
-  type        = string
-  sensitive   = true
-}
-
-variable "grafana_oauth_client_secret" {
-  description = "Client Secret de GitHub OAuth App para Grafana"
-  type        = string
-  sensitive   = true
-}
-
-variable "argocd_oauth_client_id" {
-  description = "Client ID de GitHub OAuth App para ArgoCD"
-  type        = string
-  sensitive   = true
-}
-
-variable "argocd_oauth_client_secret" {
-  description = "Client Secret de GitHub OAuth App para ArgoCD"
-  type        = string
-  sensitive   = true
-}
-
-variable "oauth2_proxy_client_id" {
-  description = "Client ID de GitHub OAuth App para OAuth2 Proxy (Prometheus/AlertManager)"
-  type        = string
-  sensitive   = true
-}
-
-variable "oauth2_proxy_client_secret" {
-  description = "Client Secret de GitHub OAuth App para OAuth2 Proxy"
-  type        = string
-  sensitive   = true
-}
 
 variable "github_token" {
   description = "GitHub Personal Access Token para ArgoCD repository access"
