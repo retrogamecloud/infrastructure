@@ -296,8 +296,72 @@ resource "helm_release" "aws_load_balancer_controller" {
     value = module.vpc.vpc_id
   }
 
+  # Configurar el webhook para validar solo ingress con clase alb
+  set {
+    name  = "enableIngressClassNameSpec"
+    value = "true"
+  }
+
+  set {
+    name  = "ingressClassParams.create"
+    value = "false"
+  }
+
   depends_on = [
     module.eks,
     module.aws_load_balancer_controller_irsa
+  ]
+}
+
+# Parche del webhook para que solo valide ingress con ingressClassName: alb
+resource "null_resource" "patch_alb_webhook" {
+  triggers = {
+    helm_release = helm_release.aws_load_balancer_controller.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Esperar a que el webhook esté disponible
+      sleep 10
+      
+      # Crear un patch para agregar objectSelector al webhook de ingress
+      kubectl patch validatingwebhookconfiguration aws-load-balancer-webhook --type='json' -p='[
+        {
+          "op": "replace",
+          "path": "/webhooks/2/objectSelector",
+          "value": {
+            "matchExpressions": [
+              {
+                "key": "app.kubernetes.io/ingress-class",
+                "operator": "In",
+                "values": ["alb"]
+              }
+            ]
+          }
+        }
+      ]' || \
+      kubectl patch validatingwebhookconfiguration aws-load-balancer-webhook --type='json' -p='[
+        {
+          "op": "add",
+          "path": "/webhooks/2/objectSelector",
+          "value": {
+            "matchExpressions": [
+              {
+                "key": "app.kubernetes.io/ingress-class",
+                "operator": "In",
+                "values": ["alb"]
+              }
+            ]
+          }
+        }
+      ]'
+      
+      echo "✅ Webhook configurado para validar solo ingress con clase alb"
+    EOT
+  }
+
+  depends_on = [
+    helm_release.aws_load_balancer_controller,
+    null_resource.update_kubeconfig
   ]
 }
