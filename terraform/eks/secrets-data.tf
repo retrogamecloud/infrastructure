@@ -1,56 +1,20 @@
 # ============================================================================
-# AWS Secrets Manager - Data Sources
+# AWS Secrets Manager - Local Values from Resources
 # ============================================================================
 #
-# Lee secretos desde AWS Secrets Manager
-# Esto permite hacer el repositorio público sin exponer credenciales
+# Este archivo define locals que referencian directamente los secretos
+# CREADOS en secrets-manager.tf (usando recursos, no data sources)
 #
-# Los secretos deben existir previamente en AWS Secrets Manager
-# (creados con secrets-manager.tf o manualmente)
+# Esto permite que Terraform gestione los secretos sin dependencias circulares
+# Los secretos OAuth se leen mediante data sources porque existen previamente
 #
 # ============================================================================
 
-# GitHub Token para ArgoCD repos
-data "aws_secretsmanager_secret" "github_token" {
-  name = "prod/retrogame/github-token"
-}
-
-data "aws_secretsmanager_secret_version" "github_token" {
-  secret_id = data.aws_secretsmanager_secret.github_token.id
-}
-
-# Database Password
-data "aws_secretsmanager_secret" "db_password" {
-  name = "prod/retrogame/db-password"
-}
-
-data "aws_secretsmanager_secret_version" "db_password" {
-  secret_id = data.aws_secretsmanager_secret.db_password.id
-}
-
-# Database Username
-data "aws_secretsmanager_secret" "db_username" {
-  name = "prod/retrogame/db-username"
-}
-
-data "aws_secretsmanager_secret_version" "db_username" {
-  secret_id = data.aws_secretsmanager_secret.db_username.id
-}
-
-# JWT Secret
-data "aws_secretsmanager_secret" "jwt_secret" {
-  name = "prod/retrogame/jwt-secret"
-}
-
-data "aws_secretsmanager_secret_version" "jwt_secret" {
-  secret_id = data.aws_secretsmanager_secret.jwt_secret.id
-}
-
 # ============================================================================
-# GitHub OAuth Apps - Data sources separados
+# GitHub OAuth Apps - Data sources para secretos que ya existen en AWS
 # ============================================================================
 
-# Grafana OAuth
+# Grafana OAuth (creado manualmente en AWS)
 data "aws_secretsmanager_secret" "grafana_oauth" {
   name = "prod/retrogame/grafana-oauth"
 }
@@ -59,7 +23,7 @@ data "aws_secretsmanager_secret_version" "grafana_oauth" {
   secret_id = data.aws_secretsmanager_secret.grafana_oauth.id
 }
 
-# ArgoCD OAuth
+# ArgoCD OAuth (creado manualmente en AWS)
 data "aws_secretsmanager_secret" "argocd_oauth" {
   name = "prod/retrogame/argocd-oauth"
 }
@@ -68,7 +32,7 @@ data "aws_secretsmanager_secret_version" "argocd_oauth" {
   secret_id = data.aws_secretsmanager_secret.argocd_oauth.id
 }
 
-# OAuth2 Proxy
+# OAuth2 Proxy (creado manualmente en AWS)
 data "aws_secretsmanager_secret" "oauth2_proxy" {
   name = "prod/retrogame/oauth2-proxy"
 }
@@ -77,41 +41,23 @@ data "aws_secretsmanager_secret_version" "oauth2_proxy" {
   secret_id = data.aws_secretsmanager_secret.oauth2_proxy.id
 }
 
-# Slack Bot Token
-data "aws_secretsmanager_secret" "slack_bot_token" {
-  name = "prod/retrogame/slack-bot-token"
-}
-
-data "aws_secretsmanager_secret_version" "slack_bot_token" {
-  secret_id = data.aws_secretsmanager_secret.slack_bot_token.id
-}
-
-# Slack Webhook URL
-data "aws_secretsmanager_secret" "slack_webhook_url" {
-  name = "prod/retrogame/slack-webhook-url"
-}
-
-data "aws_secretsmanager_secret_version" "slack_webhook_url" {
-  secret_id = data.aws_secretsmanager_secret.slack_webhook_url.id
-}
-
 # ============================================================================
-# Locals para parsear secretos
+# Locals para uso en toda la configuración
 # ============================================================================
 
 locals {
-  # Parse GitHub OAuth JSONs
-  grafana_oauth  = jsondecode(data.aws_secretsmanager_secret_version.grafana_oauth.secret_string)
-  argocd_oauth   = jsondecode(data.aws_secretsmanager_secret_version.argocd_oauth.secret_string)
-  oauth2_proxy_oauth = jsondecode(data.aws_secretsmanager_secret_version.oauth2_proxy.secret_string)
+  # Secretos gestionados por Terraform (desde secrets-manager.tf)
+  github_token      = aws_secretsmanager_secret_version.github_token.secret_string
+  db_username       = aws_secretsmanager_secret_version.db_username.secret_string
+  db_password       = aws_secretsmanager_secret_version.db_password.secret_string
+  jwt_secret        = aws_secretsmanager_secret_version.jwt_secret.secret_string
+  slack_bot_token   = aws_secretsmanager_secret_version.slack_bot_token.secret_string
+  slack_webhook_url = aws_secretsmanager_secret_version.slack_webhook_url.secret_string
   
-  # Extraer valores individuales
-  github_token               = data.aws_secretsmanager_secret_version.github_token.secret_string
-  db_username                = data.aws_secretsmanager_secret_version.db_username.secret_string
-  db_password                = data.aws_secretsmanager_secret_version.db_password.secret_string
-  jwt_secret                 = data.aws_secretsmanager_secret_version.jwt_secret.secret_string
-  slack_bot_token            = data.aws_secretsmanager_secret_version.slack_bot_token.secret_string
-  slack_webhook_url          = data.aws_secretsmanager_secret_version.slack_webhook_url.secret_string
+  # Parse GitHub OAuth JSONs (desde data sources)
+  grafana_oauth      = jsondecode(data.aws_secretsmanager_secret_version.grafana_oauth.secret_string)
+  argocd_oauth       = jsondecode(data.aws_secretsmanager_secret_version.argocd_oauth.secret_string)
+  oauth2_proxy_oauth = jsondecode(data.aws_secretsmanager_secret_version.oauth2_proxy.secret_string)
   
   # OAuth credentials para cada servicio
   grafana_oauth_client_id        = local.grafana_oauth.client_id
