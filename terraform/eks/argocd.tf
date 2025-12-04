@@ -8,10 +8,7 @@ resource "helm_release" "argocd" {
   version          = "5.51.6"
 
   values = [
-    templatefile("${path.module}/values/argocd-values.yaml", {
-      argocd_oauth_client_id     = local.argocd_oauth_client_id
-      argocd_oauth_client_secret = local.argocd_oauth_client_secret
-    })
+    file("${path.module}/values/argocd-values.yaml")
   ]
 
   depends_on = [
