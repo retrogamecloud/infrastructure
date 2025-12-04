@@ -27,3 +27,9 @@ variable "admin_users" {
   type        = list(string)
   default     = ["evaristogz", "naesman1", "jpalenz77"]
 }
+
+variable "domain_name" {
+  description = "Nombre de dominio principal del proyecto"
+  type        = string
+  default     = "retrogamehub.games"
+}
