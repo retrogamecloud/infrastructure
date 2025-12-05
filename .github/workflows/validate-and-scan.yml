@@ -192,7 +192,7 @@ jobs:
           args: >
             -Dsonar.projectKey=retrogamecloud_${{ github.event.repository.name }}
             -Dsonar.organization=retrogamecloud
-            -Dsonar.sources=terraform,argocd,monitoring
+            -Dsonar.sources=terraform,argocd
             -Dsonar.exclusions=**/*.tfstate,**/*.tfstate.backup,**/node_modules/**,**/.terraform/**
       - name: Verificar resultado de SonarCloud
         if: always()
