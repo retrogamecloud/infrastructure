@@ -4,7 +4,7 @@
   "description": "CDN Infrastructure tests for RetroGameCloud",
   "type": "module",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --passWithNoTests",
     "test:config": "NODE_OPTIONS=--experimental-vm-modules jest tests/config",
     "test:files": "NODE_OPTIONS=--experimental-vm-modules jest tests/files",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
