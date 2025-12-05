@@ -425,8 +425,8 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "default"
               slack_configs = [
                 {
-                  api_url       = "https://slack.com/api/chat.postMessage"
-                  http_config   = {
+                  api_url = "https://slack.com/api/chat.postMessage"
+                  http_config = {
                     authorization = {
                       credentials = local.slack_bot_token
                     }
@@ -443,8 +443,8 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "critical-alerts"
               slack_configs = [
                 {
-                  api_url       = "https://slack.com/api/chat.postMessage"
-                  http_config   = {
+                  api_url = "https://slack.com/api/chat.postMessage"
+                  http_config = {
                     authorization = {
                       credentials = local.slack_bot_token
                     }
@@ -461,8 +461,8 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "warning-alerts"
               slack_configs = [
                 {
-                  api_url       = "https://slack.com/api/chat.postMessage"
-                  http_config   = {
+                  api_url = "https://slack.com/api/chat.postMessage"
+                  http_config = {
                     authorization = {
                       credentials = local.slack_bot_token
                     }
@@ -479,8 +479,8 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "app-alerts"
               slack_configs = [
                 {
-                  api_url       = "https://slack.com/api/chat.postMessage"
-                  http_config   = {
+                  api_url = "https://slack.com/api/chat.postMessage"
+                  http_config = {
                     authorization = {
                       credentials = local.slack_bot_token
                     }
