@@ -1,359 +1,583 @@
 # Terraform - GitHub Configuration
 
-Configuración de Terraform para gestionar recursos de GitHub en la organización `retrogamecloud`.
+Gestión automatizada de configuración de GitHub para la organización `retrogamecloud` mediante Terraform Cloud.
 
-## 📋 Recursos Gestionados
+## 📋 Descripción
 
-Este módulo de Terraform gestiona:
+Este proyecto utiliza Terraform para gestionar recursos de GitHub de forma centralizada y versionada:
 
-- **Rulesets de repositorios:**
-  - Nomenclatura de ramas estándar
-  - Protección de rama `main`
-  - Protección de tags con Semantic Versioning
+- **Rulesets de protección** en ramas y tags (seguridad, nomenclatura)
+- **Labels estándar** en todos los repositorios (organización)
+- **Backend remoto** en Terraform Cloud (estado compartido)
+- **Multi-repositorio** (backend, frontend, kubernetes, docs, infrastructure, kong)
 
-- **Labels comunes** en todos los repositorios:
-  - `auto` - PR automática generada por workflows
-  - `images` - Cambios en imágenes de Docker
-  - `documentation` - Mejoras o adiciones a la documentación
-  - `enhancement` - Nueva funcionalidad o mejora
-  - `bug` - Algo no funciona correctamente
+**Arquitectura:**
+```
+┌─────────────────────────────────────────┐
+│           GitHub Organization           │
+│           (retrogamecloud)              │
+└────────────────────┬────────────────────┘
+                     ↑
+                     │ Gestionado por
+                     │
+┌────────────────────┴────────────────────┐
+│   Terraform Cloud                       │
+│   └─ Workspace: github-config           │
+│   └─ Backend: Estado remoto             │
+│   └─ Variables: GitHub Token + Config   │
+└─────────────────────────────────────────┘
+```
 
-## 🏗️ Estructura
+## 🏗️ Estructura de archivos
 
 ```
-.
-├── main.tf                  # Configuración principal y provider
+infrastructure/terraform/github/
+├── main.tf                 # Provider, variables, repositorios
 ├── modules/
-│   └── repo-config/        # Módulo reutilizable para configurar repos
+│   └── repo-config/        # Módulo reutilizable para cada repo
 │       ├── main.tf         # Recursos (rulesets y labels)
-│       └── outputs.tf      # Outputs del módulo
-├── .gitignore              # Archivos ignorados por Git
+│       ├── variables.tf    # Variables del módulo
+│       └── outputs.tf      # Outputs
+├── .gitignore              # Archivos ignorados
+├── .terraform.lock.hcl     # Lock de versiones de providers
 └── README.md               # Este archivo
 ```
 
+## 📋 Tabla de contenidos
+
+- [Descripción](#descripción)
+- [Estructura de archivos](#estructura-de-archivos)
+- [Configuración Inicial](#configuración-inicial)
+- [Uso](#uso)
+- [Rulesets Configurados](#rulesets-configurados)
+- [Repositorios Gestionados](#repositorios-gestionados)
+- [Troubleshooting](#troubleshooting)
+
 ## 🚀 Configuración Inicial
 
-### 1. Prerrequisitos
+### Prerequisitos
 
-- Terraform >= 1.0
-- Cuenta en [Terraform Cloud](https://app.terraform.io) (gratuita)
-- Token de GitHub con permisos de organización
+- **Terraform** >= 1.0
+  ```bash
+  terraform version
+  # Terraform v1.0 o superior
+  ```
 
-### 2. Autenticación en Terraform Cloud
+- **Cuenta en Terraform Cloud** (gratuita)
+  - Ir a: https://app.terraform.io
+  - Sign up → Create account
+  - Crear organización: `retrogamecloud`
 
-Crea una cuenta en Terraform Cloud y autentica tu CLI:
+- **GitHub Token (Personal Access Token)**
+  - Permisos: `repo`, `admin:org`, `workflow`
+  - Nunca compartir directamente
+
+### Paso 1: Crear Token de GitHub
+
+1. **Ir a configuración de tokens:**
+   ```
+   https://github.com/settings/tokens
+   ```
+
+2. **Click en "Generate new token" → "Generate new token (classic)"**
+
+3. **Configurar el token:**
+   | Campo | Valor |
+   |-------|-------|
+   | Note | `terraform-retrogamecloud` |
+   | Expiration | 90 días |
+   | Scopes | ✅ `repo` |
+   | | ✅ `admin:org` |
+   | | ✅ `workflow` |
+
+4. **Copiar token** (empieza con `ghp_` o `github_pat_`)
+
+5. **GUARDAR en lugar seguro** - Solo se muestra una vez
+
+**Permisos requeridos:**
+- `repo` - Full control of private repositories (necesario para rulesets)
+- `admin:org` - Full control of orgs and teams (necesario para organización)
+- `workflow` - Update GitHub Action workflows (recomendado)
+
+### Paso 2: Autenticarse en Terraform Cloud
 
 ```bash
 terraform login
 ```
 
-Esto abrirá tu navegador para crear un token de autenticación de Terraform Cloud.
+**Qué hace:**
+1. Abre navegador para crear token de Terraform Cloud
+2. Ve a: https://app.terraform.io/app/settings/tokens
+3. Click **Create an API token**
+4. Copia el token en la terminal cuando se pida
+5. Se guarda en: `~/.terraform.d/credentials.tfrc.json`
 
-### 3. Crear Token de GitHub
+### Paso 3: Configurar Variables en Terraform Cloud
 
-El provider de GitHub necesita un Personal Access Token con permisos específicos:
+**Acceder al workspace:**
+```
+https://app.terraform.io/app/retrogamecloud/workspaces/github-config/variables
+```
 
-1. Ve a https://github.com/settings/tokens
-2. Click en **Generate new token** → **Generate new token (classic)**
-3. Configuración:
-   - **Note:** `terraform-retrogamecloud`
-   - **Expiration:** 90 días o Custom
-   - **Scopes requeridos:**
-     - ✅ `repo` - Full control of private repositories
-     - ✅ `admin:org` - Full control of orgs and teams, read and write org projects
-     - ✅ `workflow` - Update GitHub Action workflows (opcional)
-4. Click **Generate token** y copia el token (empieza con `ghp_` o `github_pat_`)
-5. **Guarda este token** - solo se muestra una vez
+**Agregar variables:**
 
-### 4. Configurar Variables en Terraform Cloud
+#### Terraform Variables
+```
+Variable name: github_token
+Value: [Tu GitHub PAT]
+Sensitive: ✅ Marcar como sensible
+```
 
-Ve al workspace: https://app.terraform.io/app/retrogamecloud/workspaces/github-config/variables
+#### Environment Variables
+```
+GITHUB_TOKEN = [Tu GitHub PAT]
+Sensitive: ✅
 
-**Terraform Variables:**
+GITHUB_OWNER = retrogamecloud
+Sensitive: ❌
+```
 
-| Variable | Valor | Sensitive | Descripción |
-|----------|-------|-----------|-------------|
-| `github_token` | Tu GitHub PAT | ✅ | Token para el provider de GitHub |
-
-**Environment Variables:**
-
-| Variable | Valor | Sensitive | Descripción |
-|----------|-------|-----------|-------------|
-| `GITHUB_TOKEN` | Tu GitHub PAT | ✅ | Token de GitHub para autenticación |
-| `GITHUB_OWNER` | `retrogamecloud` | ❌ | Organización de GitHub |
-
-### 5. Inicializar Terraform
+### Paso 4: Inicializar Terraform
 
 ```bash
 cd infrastructure/terraform/github
-terraform init
-```
 
-Si ya tienes un estado local, Terraform te preguntará si quieres migrarlo a Terraform Cloud. Responde `yes` para preservar los recursos importados.
+# Inicializar
+terraform init
+
+# Si tienes estado local previo, Terraform preguntará:
+# "Do you want to copy existing state to the new backend?"
+# Responde: yes
+```
 
 ## 📦 Uso
 
-### Ver cambios planeados
+### Ver configuración planeada
 
 ```bash
 terraform plan
+
+# Output esperado:
+# Plan: 48 to add, 0 to change, 0 to destroy
+# (Rulesets, labels para 6 repositorios)
 ```
 
 ### Aplicar cambios
 
 ```bash
 terraform apply
+
+# Confirmará recursos a crear. Escribir "yes"
+# Tiempo estimado: ~30-60 segundos
 ```
 
-### Ver estado actual
+### Verificar estado actual
 
 ```bash
+# Ver todos los recursos gestionados
 terraform state list
+
+# Ver detalles de un recurso específico
+terraform state show 'module.repos["backend"].github_repository_ruleset.branch_naming'
+
+# Obtener outputs
+terraform output
 ```
 
-## 🔧 Configuración de Repositorios
+### Agregar un nuevo repositorio
 
-Los repositorios gestionados están definidos en `main.tf`:
-
+**1. Editar `main.tf`:**
 ```hcl
 variable "repos" {
-  default = ["backend", "frontend", "kubernetes", "docs", "infrastructure", "kong"]
+  default = ["backend", "frontend", "kubernetes", "docs", "infrastructure", "kong", "nuevo-repo"]
 }
 ```
 
-### Configuración de Status Checks
-
-Algunos repositorios requieren status checks en la rama `main`:
-
-- `backend` ✅
-- `frontend` ✅
-- `docs` ✅
-
-Para agregar más repositorios con status checks, actualiza en `main.tf`:
-
+**2. Si requiere status checks, actualizar:**
 ```hcl
-require_status_checks = contains(["backend", "frontend", "docs", "NUEVO_REPO"], each.key)
+require_status_checks = contains(["backend", "frontend", "docs", "nuevo-repo"], each.key)
 ```
 
-## 🌐 Backend Remoto
+**3. Aplicar:**
+```bash
+terraform plan
+terraform apply
+```
 
-El estado de Terraform se almacena en **Terraform Cloud**:
+## 🌐 Backend Remoto (Terraform Cloud)
 
-- **Organización:** `retrogamecloud`
-- **Workspace:** `github-config`
+El estado se almacena en **Terraform Cloud**, no localmente:
 
-### Ventajas del Backend Remoto
+**Ventajas:**
+- ✅ Estado compartido entre usuarios
+- ✅ Historial completo de cambios
+- ✅ Bloqueo automático (evita conflictos)
+- ✅ Variables cifradas (tokens seguros)
+- ✅ Ejecución remota opcional
 
-✅ **Estado compartido:** Múltiples usuarios pueden trabajar sin conflictos  
-✅ **Historial completo:** Registro de todos los cambios aplicados  
-✅ **Bloqueo automático:** Previene ejecuciones concurrentes  
-✅ **Variables cifradas:** Los tokens se almacenan de forma segura  
-✅ **Ejecución remota:** Opcional - ejecutar terraform apply desde la nube  
+**Workspace en Terraform Cloud:**
+```
+Organización: retrogamecloud
+Workspace: github-config
+Backend: S3 (managed by Terraform Cloud)
+```
 
-### Tokens Necesarios
+**Dos tokens diferentes necesarios:**
 
-**Dos tokens diferentes son requeridos:**
+| Token | Propósito | Dónde se crea | Dónde se configura |
+|-------|-----------|---------------|--------------------|
+| **Terraform Cloud** | Autenticar CLI | https://app.terraform.io/app/settings/tokens | `terraform login` |
+| **GitHub (PAT)** | Gestionar recursos de GitHub | https://github.com/settings/tokens | Variables en workspace |
 
-1. **Token de Terraform Cloud:**
-   - Propósito: Autenticar CLI con Terraform Cloud
-   - Se crea en: https://app.terraform.io/app/settings/tokens
-   - Se configura con: `terraform login`
-   - Almacenado en: `~/.terraform.d/credentials.tfrc.json`
-
-2. **Token de GitHub (PAT):**
-   - Propósito: Permitir al provider de GitHub gestionar recursos
-   - Se crea en: https://github.com/settings/tokens
-   - Permisos: `repo`, `admin:org`, `workflow`
-   - Se configura como variable en el workspace de Terraform Cloud
-
-## 📝 Variables en Terraform Cloud
-
-Configura estas variables en el workspace de Terraform Cloud:
-
-### Variables de Terraform
-
-| Variable | Tipo | Valor | Sensitive |
-|----------|------|-------|-----------|
-| `github_token` | Terraform variable | Tu GitHub PAT | ✅ |
-
-### Variables de Entorno
-
-| Variable | Valor | Sensitive |
-|----------|-------|-----------|
-| `GITHUB_TOKEN` | Tu GitHub PAT | ✅ |
-| `GITHUB_OWNER` | `retrogamecloud` | ❌ |
-
-## 🔄 Agregar un Nuevo Repositorio
-
-1. Agrega el nombre del repo a la lista en `main.tf`:
-   ```hcl
-   variable "repos" {
-     default = ["backend", "frontend", ..., "nuevo-repo"]
-   }
-   ```
-
-2. Si requiere status checks, actualiza:
-   ```hcl
-   require_status_checks = contains(["backend", "frontend", "docs", "nuevo-repo"], each.key)
-   ```
-
-3. Aplica los cambios:
-   ```bash
-   terraform plan
-   terraform apply
-   ```
-
-## 🛡️ Rulesets Configurados
+## 🛡️ Rulesets configurados
 
 ### 1. Nomenclatura de Ramas
 
+**Propósito:** Estandarizar nombres de ramas (feature/, bugfix/, etc.)
+
+**Configuración:**
 - **Nombre:** `Nomenclatura ramas - Estándar`
 - **Aplica a:** Todas las ramas excepto `main`, `master`, `develop`, `staging`, `production`
+- **Patrón:** `tipo/descripcion` (ej: `feature/user-auth`)
 - **Estado:** Activo
-- **Patrón requerido:** `tipo/descripcion`
-  
-**Tipos válidos:**
-- `feature/` - Nueva funcionalidad
-- `bugfix/` - Corrección de errores
-- `hotfix/` - Parche urgente para producción
-- `release/` - Preparación de nueva versión
-- `chore/` - Tareas de mantenimiento
-- `docs/` - Documentación
-- `refactor/` - Refactorización de código
-- `test/` - Añadir o modificar tests
-- `ci/` - Cambios en CI/CD
+
+**Tipos válidos (prefijos):**
+```
+feature/  - Nueva funcionalidad
+bugfix/   - Corrección de errores
+hotfix/   - Parche urgente
+release/  - Preparación de versión
+chore/    - Tareas de mantenimiento
+docs/     - Documentación
+refactor/ - Refactorización
+test/     - Tests
+ci/       - Cambios en CI/CD
+```
 
 **Ejemplos válidos:**
-- ✅ `feature/user-authentication`
-- ✅ `bugfix/fix-login-error`
-- ✅ `hotfix/security-patch-001`
-- ✅ `docs/update-readme`
+```bash
+✅ feature/user-authentication
+✅ bugfix/fix-login-error
+✅ hotfix/security-patch
+✅ docs/update-readme
+✅ ci/add-github-actions
+```
 
-**Ejemplos inválidos:**
-- ❌ `new-feature` (sin tipo/)
-- ❌ `feature/User-Auth` (mayúsculas)
-- ❌ `feature/user_auth` (guión bajo)
-- ❌ `fix-bug` (tipo incorrecto)
+**Ejemplos INVÁLIDOS:**
+```bash
+❌ new-feature (sin tipo/)
+❌ feature/User-Auth (mayúsculas)
+❌ feature/user_auth (guión bajo)
+❌ fix-bug (tipo incorrecto)
+```
 
 **Restricciones aplicadas:**
-- ⛔ No se puede crear una rama sin seguir el patrón
-- ⛔ Las ramas que no cumplan el patrón serán rechazadas
-- ⚠️ Solo se puede eliminar ramas (no se pueden actualizar)
-- 👥 Los usuarios con rol "Maintain" o superior pueden hacer bypass
+- ⛔ Imposible crear ramas sin patrón correcto
+- ⛔ Imposible hacer push a rama que no cumple patrón
+- ⚠️ Solo se pueden eliminar ramas (no actualizar)
+- 👥 Admin puede hacer bypass siempre
 
 ### 2. Protección de Main
 
+**Propósito:** Evitar cambios directo a `main`, requiere PR
+
+**Configuración:**
 - **Nombre:** `Protección rama - Main`
 - **Aplica a:** Rama `main` únicamente
 - **Estado:** Activo
 
 **Restricciones aplicadas:**
-- ⛔ **Requiere Pull Request:** No se pueden hacer commits directos a `main`
-- ⛔ **Force Push bloqueado:** No se permite `git push --force`
-- ⛔ **Eliminación bloqueada:** La rama `main` no puede ser eliminada
-- ⚠️ **Status checks requeridos** (solo en `backend`, `frontend`, `docs`):
-  - Debe pasar el check `tests` antes de mergear
-  - Debe estar actualizado con la rama base (strict mode)
-  - No se requiere en la creación del PR, solo al mergear
+- ⛔ **Requiere Pull Request** - No se pueden hacer commits directos
+- ⛔ **Force push bloqueado** - No se permite `git push --force`
+- ⛔ **Eliminación bloqueada** - No se puede borrar `main`
+- ⚠️ **Status checks** (solo en `backend`, `frontend`, `docs`):
+  - Check `tests` debe pasar antes de mergear
+  - Rama debe estar actualizado con base (strict mode)
 
 **Configuración de Pull Requests:**
-- ❌ No requiere revisiones aprobadas (0 reviewers)
-- ❌ No se descartan revisiones en nuevos commits
-- ❌ No requiere revisión de code owners
-- ❌ No requiere aprobación del último push
-- ❌ No requiere resolver threads de conversación
+- ❌ NO requiere revisiones aprobadas (0 reviewers)
+- ❌ NO descarta revisiones en nuevos commits
+- ❌ NO requiere aprobación de code owners
 
 **Bypass permitido:**
-- 👥 Usuarios con rol de repositorio "Admin" pueden hacer bypass siempre
+- 👥 Usuarios con rol "Admin" del repositorio
 
 ### 3. Protección de Tags
 
+**Propósito:** Estandarizar versionado con Semantic Versioning
+
+**Configuración:**
 - **Nombre:** `Protección tag - Semantic Versioning`
 - **Aplica a:** Todos los tags (`refs/tags/**`)
+- **Formato:** Semantic Versioning `vX.Y.Z[-prerelease][+build]`
 - **Estado:** Activo
-- **Formato requerido:** Semantic Versioning
-
-**Patrón válido:** `vX.Y.Z[-prerelease][+build]`
 
 **Componentes:**
-- `X` = Versión mayor (breaking changes)
-- `Y` = Versión menor (nuevas features compatibles)
-- `Z` = Patch (bug fixes)
-- `-prerelease` = Opcional (alpha, beta, rc.1, etc.)
-- `+build` = Opcional (metadata de build)
+```
+v{X}.{Y}.{Z}[-prerelease][+build]
+  │  │  │       │           │
+  │  │  │       │           └─ Metadata de build (opcional)
+  │  │  │       └─ Pre-release: alpha, beta, rc.1 (opcional)
+  │  │  └─ Patch: bug fixes
+  │  └─ Minor: nuevas features compatibles
+  └─ Major: breaking changes
+```
 
 **Ejemplos válidos:**
-- ✅ `v1.0.0` - Release estable
-- ✅ `v2.1.3` - Release con features y patches
-- ✅ `v1.0.0-alpha` - Pre-release alpha
-- ✅ `v1.0.0-beta.2` - Pre-release beta 2
-- ✅ `v1.0.0-rc.1` - Release candidate
-- ✅ `v1.0.0+build.123` - Con metadata de build
-- ✅ `v1.0.0-alpha.1+exp.sha.5114f85` - Completo
+```bash
+✅ v1.0.0              - Release estable
+✅ v2.1.3              - Release con features y patches
+✅ v1.0.0-alpha        - Pre-release alpha
+✅ v1.0.0-beta.2       - Pre-release beta 2
+✅ v1.0.0-rc.1         - Release candidate
+✅ v1.0.0+build.123    - Con metadata de build
+✅ v1.0.0-alpha.1+exp.sha.5114f85  - Completo
+```
 
-**Ejemplos inválidos:**
-- ❌ `1.0.0` (sin prefijo `v`)
-- ❌ `v1.0` (falta componente patch)
-- ❌ `v1` (formato incompleto)
-- ❌ `release-1.0.0` (prefijo incorrecto)
-- ❌ `version-1.0.0` (formato no válido)
+**Ejemplos INVÁLIDOS:**
+```bash
+❌ 1.0.0               - Sin prefijo v
+❌ v1.0                - Falta patch
+❌ v1                  - Incompleto
+❌ release-1.0.0       - Prefijo incorrecto
+❌ version-1.0.0       - Formato no válido
+```
 
 **Restricciones aplicadas:**
-- ⛔ **No se pueden eliminar tags:** Los tags son permanentes
-- ⛔ **No se pueden actualizar tags:** No se puede hacer `git tag -f`
-- ⛔ Tags que no sigan el formato serán rechazados
-- 👥 Los usuarios con rol "Admin" pueden hacer bypass siempre
+- ⛔ Imposible eliminar tags
+- ⛔ Imposible actualizar/reescribir tags (`git tag -f`)
+- ⛔ Tags que no sigan formato serán rechazados
+- 👥 Admin puede hacer bypass siempre
 
-**Buenas prácticas:**
+**Crear tags correctamente:**
 ```bash
-# Crear un tag anotado con mensaje
+# Release estable
 git tag -a v1.0.0 -m "Release 1.0.0: Initial stable release"
 git push origin v1.0.0
 
-# Para pre-releases
+# Pre-release
 git tag -a v1.1.0-beta.1 -m "Beta 1 de versión 1.1.0"
 git push origin v1.1.0-beta.1
+
+# Con metadata (para CI)
+git tag -a v1.0.0+build.123 -m "Build 123"
+git push origin v1.0.0+build.123
+```
+
+## 📊 Labels estándar
+
+Aplicados a todos los repositorios:
+
+| Label | Color | Descripción |
+|-------|-------|-------------|
+| `auto` | 🟦 Azul | PR automática generada por workflows |
+| `images` | 🟩 Verde | Cambios en imágenes de Docker |
+| `documentation` | 📘 Púrpura | Mejoras o adiciones a documentación |
+| `enhancement` | ⭐ Amarillo | Nueva funcionalidad o mejora |
+| `bug` | 🔴 Rojo | Algo no funciona correctamente |
+
+## 📚 Repositorios gestionados
+
+### Lista actual
+
+| Repo | Status Checks | Descripción |
+|------|---------------|-------------|
+| `backend` | ✅ Sí | API REST y lógica de negocio |
+| `frontend` | ✅ Sí | Aplicación web cliente |
+| `kubernetes` | ❌ No | Manifiestos de Kubernetes |
+| `docs` | ✅ Sí | Documentación técnica |
+| `infrastructure` | ❌ No | Terraform + infraestructura |
+| `kong` | ❌ No | Configuración de Kong API Gateway |
+
+### Status Checks Requeridos
+
+Los repositorios con `require_status_checks = true` requieren que pase el check `tests` antes de mergear a `main`:
+
+**Repos con status checks:**
+- ✅ `backend` - Tests de API
+- ✅ `frontend` - Tests de componentes
+- ✅ `docs` - Validación de markdown
+
+**Repos sin status checks:**
+- ❌ `kubernetes` - Manifiestos (validación manual)
+- ❌ `infrastructure` - Terraform (validación manual)
+- ❌ `kong` - Configuración (validación manual)
+
+## 🔧 Configuración avanzada
+
+### Modificar rulesets
+
+**Archivo:** `modules/repo-config/main.tf`
+
+Tipos de cambios comunes:
+
+**1. Agregar nuevo prefijo de rama:**
+```hcl
+# En el patrón de nomenclatura
+pattern = "^(feature|bugfix|hotfix|release|chore|docs|refactor|test|ci|nuevo-tipo)/.+"
+```
+
+**2. Cambiar requisitos de status checks:**
+```hcl
+require_status_checks = contains(["backend", "frontend", "docs", "nuevo-repo"], each.key)
+```
+
+**3. Cambiar reglas de tags:**
+```hcl
+pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+.*"  # Para otro formato
+```
+
+### Cambiar repositorios gestionados
+
+**Archivo:** `main.tf`
+
+```hcl
+variable "repos" {
+  default = [
+    "backend",
+    "frontend",
+    "kubernetes",
+    "docs",
+    "infrastructure",
+    "kong",
+    # Agregar aquí nuevos repos
+  ]
+}
 ```
 
 ## 🚨 Troubleshooting
 
 ### Error: 404 Not Found
 
-Si recibes errores 404 al ejecutar terraform plan/apply:
+**Síntomas:**
+```
+Error: GET https://api.github.com/orgs/retrogamecloud: 404 Not Found
+```
 
-**Causa:** El token de GitHub no tiene permisos o no está configurado correctamente en Terraform Cloud.
+**Causas posibles:**
+- Token de GitHub no configurado en Terraform Cloud
+- Token expirado o revocado
+- Permisos insuficientes
 
 **Solución:**
-1. Verifica que las variables estén configuradas en Terraform Cloud:
-   - `github_token` (Terraform variable, sensitive)
-   - `GITHUB_TOKEN` (Environment variable, sensitive)
-   - `GITHUB_OWNER` = `retrogamecloud` (Environment variable)
+```bash
+# 1. Verificar que variables están en Terraform Cloud
+# https://app.terraform.io/app/retrogamecloud/workspaces/github-config/variables
 
-2. Verifica que el token de GitHub tenga los permisos correctos:
-   ```bash
-   # Usa el token para probar acceso
-   curl -H "Authorization: token TU_TOKEN_AQUI" https://api.github.com/orgs/retrogamecloud/repos
-   ```
+# Deben estar:
+# - github_token (Terraform variable)
+# - GITHUB_TOKEN (Environment variable)
+# - GITHUB_OWNER = retrogamecloud
+
+# 2. Crear nuevo token si el anterior expiró
+# https://github.com/settings/tokens
+
+# 3. Actualizar en Terraform Cloud
+```
 
 ### Error: Resource already managed
 
-Si intentas importar un recurso ya gestionado:
+**Síntomas:**
+```
+Error: Resource already exists
+```
 
+**Causa:** Intentar importar un recurso ya gestionado
+
+**Solución:**
 ```bash
-terraform state rm 'module.repos["REPO"].RECURSO'
-terraform import 'module.repos["REPO"].RECURSO' 'REPO:ID'
+# Ver estado actual
+terraform state list
+
+# Remover si es duplicado
+terraform state rm 'module.repos["backend"].github_repository_ruleset.branch_naming'
+
+# Re-importar si es necesario
+terraform import 'module.repos["backend"].github_repository_ruleset.branch_naming' 'backend:ruleset_id'
+```
+
+### Error: Failed to read configuration from disk
+
+**Síntomas:**
+```
+Error: Failed to read configuration from disk
+```
+
+**Causa:** Archivo `.terraform.lock.hcl` corrupto o versión de provider incompatible
+
+**Solución:**
+```bash
+# Reinicializar terraform
+rm -rf .terraform .terraform.lock.hcl
+terraform init
 ```
 
 ### Plan muestra crear recursos que ya existen
 
-**Causa:** El estado en Terraform Cloud está vacío o desincronizado.
+**Síntomas:**
+```
+Plan: 48 to add, 0 to change, 0 to destroy
+```
 
-**Solución:** Los recursos ya fueron importados en el estado local que se migró. Si ves `Plan: 48 to add`, asegúrate de haber:
-1. Migrado el estado local a Terraform Cloud con `terraform init` (responde `yes` cuando pregunte)
-2. Configurado las variables en Terraform Cloud antes de hacer plan/apply
+**Pero no se ve cambio real:**
 
-## 📚 Recursos Adicionales
+**Causa:** Estado no migrado de local a Terraform Cloud
+
+**Solución:**
+```bash
+# En init, responder YES a pregunta de migración
+terraform init
+# → Preguntrá: "Do you want to copy existing state to new backend?"
+# Responder: yes
+```
+
+### Ramas no siguen nomenclatura
+
+**Síntomas:**
+```
+Cannot create or update ref refs/heads/my-feature
+Ruleset Violation: Ref name does not conform to pattern
+```
+
+**Causa:** Nombre de rama no sigue patrón `tipo/descripcion`
+
+**Solución:**
+```bash
+# Crear rama con formato correcto
+git checkout -b feature/my-new-feature
+
+# Si ya existe rama mal nombrada, renombrarla
+git branch -m old-name feature/new-name
+git push origin :old-name origin feature/new-name
+```
+
+### No puedo mergear a main
+
+**Síntomas:**
+```
+Merge blocked by ruleset
+Status checks required
+```
+
+**Causa:** Status check no pasó o rama no actualizada
+
+**Solución:**
+```bash
+# 1. Verificar checks en GitHub Actions
+# https://github.com/retrogamecloud/[repo]/actions
+
+# 2. Actualizar rama con main
+git fetch origin
+git rebase origin/main
+
+# 3. Hacer push y esperar a que pasen checks
+git push origin feature/my-feature
+```
+
+## 📚 Recursos adicionales
 
 - [Terraform GitHub Provider](https://registry.terraform.io/providers/integrations/github/latest/docs)
 - [Terraform Cloud Docs](https://developer.hashicorp.com/terraform/cloud-docs)
 - [GitHub Rulesets API](https://docs.github.com/en/rest/repos/rules)
+- [Semantic Versioning](https://semver.org/)
+- [GitHub Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository)
