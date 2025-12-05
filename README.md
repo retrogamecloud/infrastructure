@@ -1,5 +1,6 @@
 # RetroGame Hub - Infraestructura AWS
 
+[![CI/CD Pipeline](https://github.com/retrogamecloud/infrastructure/actions/workflows/validate-and-scan.yml/badge.svg)](https://github.com/retrogamecloud/infrastructure/actions/workflows/validate-and-scan.yml)
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-blueviolet?logo=terraform)](https://www.terraform.io/)
 [![AWS](https://img.shields.io/badge/AWS-EKS%201.31-orange?logo=amazon)](https://aws.amazon.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
