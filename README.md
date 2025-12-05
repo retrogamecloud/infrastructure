@@ -1,6 +1,15 @@
 # RetroGame Hub - Infraestructura AWS
 
-Infraestructura como código para desplegar RetroGame Hub en AWS usando Terraform y Kubernetes.
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-blueviolet?logo=terraform)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-EKS%201.31-orange?logo=amazon)](https://aws.amazon.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Infraestructura como código para desplegar RetroGame Hub en AWS usando Terraform y Kubernetes. Automatiza la creación de VPC, clúster EKS, base de datos, DNS, secretos, monitoreo y más.
+
+**Documentación General:** [Ir al README Principal](https://github.com/retrogamecloud/.github/blob/main/README.md)  
+**Documentación Profesional:** [Acceder a la Wiki](https://www.retrogamehub.games/wiki)
+
+---
 
 ## Tabla de Contenidos
 
@@ -10,9 +19,18 @@ Infraestructura como código para desplegar RetroGame Hub en AWS usando Terrafor
 - [Bootstrap de Terraform State](#bootstrap-de-terraform-state)
 - [Despliegue del Cluster EKS](#despliegue-del-cluster-eks)
 - [Configuración de ArgoCD](#configuración-de-argocd)
+- [Estructura de Directorios](#estructura-de-directorios)
+- [Variables Terraform](#variables-terraform)
 - [Verificación](#verificación)
+- [Monitoreo](#monitoreo)
+- [Costos AWS](#costos-aws)
+- [Troubleshooting](#troubleshooting)
 - [Destrucción de Recursos](#destrucción-de-recursos)
 - [Servicios de AWS Utilizados](#servicios-de-aws-utilizados)
+- [Pipeline CI/CD](#pipeline-cicd)
+- [Referencias](#referencias)
+
+---
 
 ## Arquitectura
 
@@ -310,6 +328,161 @@ EOF
 echo "secrets.tfvars" >> .gitignore
 ```
 
+---
+
+## Estructura de Directorios
+
+```
+infrastructure/
+├── .github/
+│   ├── dependabot.yml             # Configuración de Dependabot
+│   └── workflows/
+│       └── validate-and-scan.yml # Validación de Terraform + Trivy
+│
+├── terraform/
+│   ├── bootstrap/               # Configuración inicial (S3, DynamoDB, Route53)
+│   │   ├── main.tf             # Bootstrap principal
+│   │   ├── s3-tfstate.tf       # Bucket S3 para remote state
+│   │   ├── dynamodb.tf         # DynamoDB para state locking
+│   │   ├── route53.tf          # Route 53 Hosted Zone
+│   │   ├── iam.tf              # Roles y políticas
+│   │   ├── provider.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   ├── terraform.tfvars.example
+│   │   ├── README.md
+│   │   └── .gitignore
+│   │
+│   ├── eks/
+│   │   ├── main.tf             # Definición del cluster EKS
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   ├── karpenter.tf        # Auto-scaling con Karpenter
+│   │   ├── iam-roles.tf
+│   │   ├── security-groups.tf
+│   │   ├── terraform.tfvars.example
+│   │   └── .gitignore
+│   │
+│   ├── github/                 # Configuración de GitHub (secrets, tokens)
+│   │   ├── main.tf
+│   │   ├── modules/
+│   │   ├── README.md
+│   │   └── .gitignore
+│   │
+│   ├── main.tf                 # Orquestación principal
+│   ├── variables.tf            # Variables globales
+│   ├── outputs.tf
+│   ├── terraform.tfvars.example # Valores específicos (COPIAR)
+│   ├── backend.tf              # Remote state (S3)
+│   └── .gitignore
+│
+├── cdn/                        # Configuración de CDN (nginx)
+├── monitoring/                 # Configuración de monitoreo
+├── argocd/                     # Configuración de GitOps (Argo CD)
+├── tests/
+│   ├── terraform_test.sh
+│   └── README.md
+└── README.md (este archivo)
+```
+
+---
+
+## Variables Terraform
+
+### Stack Tecnológico
+
+| Componente | Versión | Descripción |
+|---|---|---|
+| **Terraform** | ~1.9+ | Infrastructure as Code |
+| **AWS** | Latest | Cloud provider |
+| **EKS** | 1.31 | Kubernetes managed |
+| **VPC** | AWS VPC | Networking (10.0.0.0/16) |
+| **RDS** | PostgreSQL 15 | Database |
+| **ALB** | Application LB | Load balancer |
+| **Route53** | AWS DNS | Domain management |
+| **ACM** | AWS Certificates | SSL/TLS |
+| **Secrets Manager** | AWS | Credentials |
+| **Prometheus** | 2.45+ | Metrics collection |
+| **Grafana** | 10.0+ | Dashboards |
+| **ArgoCD** | 2.10+ | GitOps |
+
+### Configuración Principal (terraform.tfvars)
+
+```hcl
+# AWS Region
+aws_region = "eu-west-1"
+environment = "production"
+
+# Cluster EKS
+cluster_name = "retrogame"
+cluster_version = "1.31"
+kubernetes_network_cidr = "10.100.0.0/16"
+
+# VPC
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+private_subnet_cidrs = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+
+# Nodos EKS
+desired_capacity = 2
+min_size = 2
+max_size = 3
+instance_types = ["t3.medium", "t3.large"]
+
+# RDS PostgreSQL
+db_instance_class = "db.t3.micro"
+allocated_storage = 20
+engine_version = "15.3"
+
+# Route53
+domain_name = "retrogamehub.games"
+
+# Monitoreo
+enable_prometheus = true
+enable_grafana = true
+grafana_admin_password = "SecurePassword123!"
+
+# Costos
+enable_cost_monitoring = true
+```
+
+### Variables con Valores por Defecto
+
+```hcl
+variable "aws_region" {
+  description = "AWS region (default: eu-west-1)"
+  type = string
+  default = "eu-west-1"
+}
+
+variable "cluster_version" {
+  description = "Kubernetes version"
+  type = string
+  default = "1.31"
+}
+
+variable "cluster_name" {
+  description = "Nombre del cluster EKS"
+  type = string
+  default = "retrogame"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR de la VPC"
+  type = string
+  default = "10.0.0.0/16"
+}
+
+variable "db_instance_class" {
+  description = "Clase de instancia RDS"
+  type = string
+  default = "db.t3.micro"
+}
+```
+
+---
+
 ## Bootstrap de Terraform State
 
 El bootstrap configura los recursos necesarios para el backend remoto de Terraform y la infraestructura base de Route 53.
@@ -526,61 +699,7 @@ ip-10-0-1-xxx.eu-west-1.compute.internal    Ready    <none>   5m    v1.31.x
 ip-10-0-2-xxx.eu-west-1.compute.internal    Ready    <none>   5m    v1.31.x
 ```
 
-## Configuración de ArgoCD
-
-ArgoCD se despliega automáticamente como parte del stack de Terraform.
-
-### 1. Obtener Password de ArgoCD
-
-```bash
-# Desde output de Terraform
-terraform output -raw argocd_admin_password
-
-# O directamente desde Kubernetes
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d && echo
-```
-
-### 2. Port-Forward a ArgoCD UI
-
-```bash
-# En una terminal separada
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-# Acceder en navegador
-# https://localhost:8080
-# Usuario: admin
-# Password: [output anterior]
-```
-
-### 3. Verificar Aplicación ArgoCD
-
-```bash
-# Ver aplicaciones
-kubectl get applications -n argocd
-
-# Verificar sincronización
-kubectl get app retrogame-apps -n argocd -o jsonpath='{.status.sync.status}'
-# Debe mostrar: Synced
-
-# Verificar estado de salud
-kubectl get app retrogame-apps -n argocd -o jsonpath='{.status.health.status}'
-# Debe mostrar: Healthy
-```
-
-### 4. Verificar Pods de la Aplicación
-
-```bash
-# Ver todos los pods
-kubectl get pods -n retrogame
-
-# Salida esperada
-NAME                       READY   STATUS    RESTARTS   AGE
-backend-xxxxx-xxxxx        1/1     Running   0          5m
-frontend-xxxxx-xxxxx       1/1     Running   0          5m
-cdn-xxxxx-xxxxx            1/1     Running   0          5m
-kong-xxxxx-xxxxx           1/1     Running   0          5m
-```
+---
 
 ## Verificación
 
@@ -647,6 +766,197 @@ nslookup retrogamehub.games
 
 # Testear aplicación
 curl https://retrogamehub.games/health
+```
+
+## Monitoreo
+
+### Prometheus
+
+```bash
+# Acceder a Prometheus
+kubectl port-forward -n prometheus svc/prometheus 9090:9090
+# http://localhost:9090
+```
+
+**Métricas principales:**
+- `node_cpu_seconds_total` - CPU del nodo
+- `node_memory_MemAvailable_bytes` - Memoria disponible
+- `kubelet_running_pods` - Pods ejecutándose
+- `http_request_duration_seconds` - Latencia HTTP
+
+### Grafana
+
+```bash
+# Acceder a Grafana
+kubectl port-forward -n monitoring svc/grafana 3000:80
+# http://localhost:3000
+# Usuario: admin
+# Contraseña: (ver en Secrets Manager)
+```
+
+**Dashboards:**
+- Kubernetes Cluster Monitoring
+- Node Exporter Full
+- PostgreSQL Database
+- Kong API Gateway
+
+### AlertManager
+
+```bash
+# Alertas configuradas:
+# - CPU > 80%
+# - Memoria > 85%
+# - Pods pendientes > 5
+# - Pod CrashLoopBackOff
+```
+
+---
+
+## Costos AWS
+
+### Desglose por Servicio
+
+| Servicio | Configuración | Costo/mes (USD) |
+|----------|---------------|-----------------|
+| **EKS Control Plane** | 1 cluster | $72 |
+| **EC2 Instances** | 2x t3.medium | ~$60 |
+| **NAT Gateways** | 3x NAT | ~$100 |
+| **RDS PostgreSQL** | db.t3.micro | ~$15 |
+| **EBS Volumes** | ~50GB | ~$5 |
+| **Application LB** | 1 ALB | ~$20 |
+| **Route 53** | 1 hosted zone | $0.50 |
+| **Secrets Manager** | 6 secrets | $2.40 |
+| **S3 + DynamoDB** | State backend | <$1 |
+| **Total** | | **~$275/mes** |
+
+**Nota:** Costos de transferencia de datos no incluidos. Para reducir costos en desarrollo:
+- Reducir NAT Gateways a 1
+- Usar instancias spot para nodes (60% descuento)
+- Pausar RDS cuando no se use
+- Usar db.t3.micro en lugar de pequeño
+
+## Troubleshooting
+
+### Error: "insufficient capacity"
+
+Los nodos no pueden lanzarse en la AZ seleccionada.
+
+**Solución:**
+```hcl
+# En eks/main.tf, cambiar availability_zones
+availability_zones = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+```
+
+### Error: "Security group has dependent object"
+
+El ALB creó security groups que no pueden eliminarse.
+
+**Solución:**
+```bash
+# Eliminar del state
+terraform state rm aws_security_group.alb
+
+# Eliminar manualmente
+aws ec2 describe-security-groups --filters "Name=tag:kubernetes.io/cluster/retrogame,Values=owned" \
+  --query 'SecurityGroups[*].GroupId' --output text | \
+  xargs -I {} aws ec2 delete-security-group --group-id {}
+
+# Reintentar destroy
+terraform destroy -auto-approve
+```
+
+### ArgoCD no sincroniza
+
+**Solución:**
+```bash
+# Verificar token de GitHub
+kubectl get secret -n argocd argocd-repo-creds-github-token -o jsonpath='{.data.password}' | base64 -d
+
+# Forzar refresh
+kubectl patch app retrogame-apps -n argocd --type merge \
+  -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}'
+```
+
+### Pods en CrashLoopBackOff
+
+**Solución:**
+```bash
+# Ver logs
+kubectl logs -n retrogame <pod-name> --previous
+
+# Verificar secretos
+kubectl get secrets -n retrogame
+
+# Verificar conectividad a RDS
+kubectl run -it --rm debug --image=postgres:15 --restart=Never -- \
+  psql -h <RDS_ENDPOINT> -U retrogameadmin -d retrogame
+```
+
+### Error: VPC Limit Exceeded
+
+Los nodos no pueden lanzarse por límite de VPC.
+
+**Solución:**
+```bash
+# Ver límites
+aws service-quotas list-service-quotas \
+  --service-code vpc
+
+# Solicitar aumento
+aws service-quotas request-service-quota-increase \
+  --service-code vpc \
+  --quota-code VPC_PER_REGION \
+  --desired-value 10
+```
+
+### Error: IAM Permission Denied
+
+Usuario sin permisos en AWS.
+
+**Solución:**
+```bash
+# Verificar usuario actual
+aws iam get-user
+aws iam list-attached-user-policies --user-name <user>
+
+# Política requerida: AdministratorAccess (o más específica)
+```
+
+### EKS Nodes No Aparecen
+
+Karpenter no crea nodos automáticamente.
+
+**Solución:**
+```bash
+# Ver logs de Karpenter
+kubectl logs -n karpenter -l app.kubernetes.io/name=karpenter
+
+# Ver eventos
+kubectl describe node
+
+# Verificar recursos
+kubectl top nodes
+
+# Reiniciar Karpenter
+kubectl rollout restart -n karpenter deployment/karpenter
+```
+
+### RDS Connection Error
+
+No conecta a PostgreSQL.
+
+**Solución:**
+```bash
+# Verificar security group
+aws ec2 describe-security-groups \
+  --filters "Name=group-name,Values=rds-sg"
+
+# Añadir ingress para EKS
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-xxx \
+  --protocol tcp \
+  --port 5432 \
+  --source-security-group-id sg-yyy
 ```
 
 ## Destrucción de Recursos
@@ -777,91 +1087,62 @@ terraform destroy -auto-approve
 |----------|-----------|---------------|
 | **ArgoCD** | Continuous Deployment | v2.9.3, GitHub sync |
 
-## Costos Estimados
+## Pipeline CI/CD
 
-**Costo mensual aproximado (región eu-west-1):**
+Este repositorio implementa validaciones automáticas mediante GitHub Actions para asegurar la calidad y seguridad de las configuraciones de infraestructura como código.
 
-| Servicio | Configuración | Costo/mes (USD) |
-|----------|---------------|-----------------|
-| EKS Control Plane | 1 cluster | $72 |
-| EC2 Instances | 2x t3.medium | ~$60 |
-| NAT Gateways | 3x NAT | ~$100 |
-| RDS PostgreSQL | db.t3.micro | ~$15 |
-| EBS Volumes | ~50GB | ~$5 |
-| Application LB | 1 ALB | ~$20 |
-| Route 53 | 1 hosted zone | $0.50 |
-| Secrets Manager | 6 secrets | $2.40 |
-| S3 + DynamoDB | State backend | <$1 |
-| **Total** | | **~$275/mes** |
+### Validaciones Automáticas
 
-**Nota:** Costos de transferencia de datos no incluidos. Para reducir costos en desarrollo:
-- Reducir NAT Gateways a 1
-- Usar instancias spot para nodes
-- Pausar RDS cuando no se use
+Cada vez que haces un push o abres un Pull Request, se ejecutan automáticamente:
 
-## Troubleshooting
+✅ **Terraform Linting:** `terraform fmt` y `terraform validate` en todos los directorios  
+✅ **Validación:** `terraform init` verifica configuración y plugins  
+✅ **Escaneo de Vulnerabilidades:** Trivy escanea el código Terraform  
+✅ **Análisis Estático:** SonarCloud detecta misconfigurations y problemas de IaC  
+✅ **ArgoCD:** Validación de manifiestos GitOps  
+✅ **Notificaciones:** Slack alertas para fallos críticos en validaciones  
 
-### Error: "insufficient capacity"
+### Workflows Disponibles
 
-Los nodos no pueden lanzarse en la AZ seleccionada.
+| Workflow | Trigger | Descripción |
+|---|---|---|
+| **validate-and-scan.yml** | Push a `main`, PR | Validación Terraform, seguridad y análisis estático |
+| **dependabot.yml** | Scheduled (diario) | Mantener dependencias y providers actualizados |
 
-**Solución:**
-```hcl
-# En eks/main.tf, cambiar availability_zones
-availability_zones = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
-```
+**Documentación detallada:** Ver [`.github/README-WF.md`](./.github/README-WF.md) para más información sobre cada workflow, triggers, variables y secrets.
 
-### Error: "Security group has dependent object"
+## Referencias
 
-El ALB creó security groups que no pueden eliminarse.
+### Documentación Oficial
 
-**Solución:**
-```bash
-# Eliminar del state
-terraform state rm aws_security_group.alb
+- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
+- [Karpenter Documentation](https://karpenter.sh/docs/)
+- [ArgoCD Documentation](https://argoproj.github.io/argo-cd/)
 
-# Eliminar manualmente
-aws ec2 describe-security-groups --filters "Name=tag:kubernetes.io/cluster/retrogame,Values=owned" \
-  --query 'SecurityGroups[*].GroupId' --output text | \
-  xargs -I {} aws ec2 delete-security-group --group-id {}
+### Documentación del Proyecto
 
-# Reintentar destroy
-terraform destroy -auto-approve
-```
+- **Workflows CI/CD:** [.github/README-WF.md](./.github/README-WF.md)
+- **Secretos & Seguridad:** [SECRETS-STRATEGY.md](../.github/docs/SECRETS-STRATEGY.md)
+- **Documentación General:** [/README.md](/../README.md)
 
-### ArgoCD no sincroniza
+### Repositorios Relacionados
 
-**Solución:**
-```bash
-# Verificar token de GitHub
-kubectl get secret -n argocd argocd-repo-creds-github-token -o jsonpath='{.data.password}' | base64 -d
+- [Backend API](https://github.com/retrogamecloud/backend/blob/main/README.md)
+- [Frontend](https://github.com/retrogamecloud/frontend/blob/main/README.md)
+- [Kong Gateway](https://github.com/retrogamecloud/kong/blob/main/README.md)
+- [Kubernetes Manifests](https://github.com/retrogamecloud/kubernetes/blob/main/README.md)
+- [Documentación Centralizada](https://github.com/retrogamecloud/docs)
 
-# Forzar refresh
-kubectl patch app retrogame-apps -n argocd --type merge \
-  -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}'
-```
+### Documentación Externa
 
-### Pods en CrashLoopBackOff
+- [Terraform Cloud Console](https://app.terraform.io/)
+- [Terraform Registry](https://registry.terraform.io/)
+- [AWS EKS Documentation](https://docs.aws.amazon.com/eks/)
+- [Kubernetes Official Docs](https://kubernetes.io/docs/)
 
-**Solución:**
-```bash
-# Ver logs
-kubectl logs -n retrogame <pod-name> --previous
+---
 
-# Verificar secretos
-kubectl get secrets -n retrogame
-
-# Verificar conectividad a RDS
-kubectl run -it --rm debug --image=postgres:15 --restart=Never -- \
-  psql -h <RDS_ENDPOINT> -U retrogameadmin -d retrogame
-```
-
-## Soporte
-
-Para issues y preguntas:
-- GitHub Issues: https://github.com/retrogamecloud/infrastructure/issues
-- Documentación K8s: https://github.com/retrogamecloud/kubernetes
-
-## Licencia
-
-[Especificar licencia]
+**Última actualización:** 4 de diciembre de 2025  
+**Versión:** 2.0  
+**Mantenedor:** RetroGameCloud DevOps Team
