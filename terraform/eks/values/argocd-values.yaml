@@ -79,6 +79,101 @@ redis:
   enabled: true
   replicas: 1
 
+# Notifications controller
+notifications:
+  enabled: true
+  
+  # ArgoCD Notifications Controller configuration
+  argocdUrl: https://retrogamehub.games/argocd
+  
+  # Notification services (Slack)
+  notifiers:
+    service.slack: |
+      token: $slack-token
+  
+  # Notification templates
+  templates:
+    template.app-deployed: |
+      message: |
+        :rocket: La aplicación {{.app.metadata.name}} está ejecutando una nueva versión.
+      slack:
+        attachments: |
+          [{
+            "title": "{{.app.metadata.name}}",
+            "title_link":"{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+            "color": "good",
+            "fields": [
+            {
+              "title": "Estado de Sincronización",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            },
+            {
+              "title": "Repositorio",
+              "value": "{{.app.spec.source.repoURL}}",
+              "short": true
+            }
+            ]
+          }]
+    
+    template.app-health-degraded: |
+      message: |
+        :warning: La aplicación {{.app.metadata.name}} se ha degradado.
+      slack:
+        attachments: |
+          [{
+            "title": "{{.app.metadata.name}}",
+            "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+            "color": "warning",
+            "fields": [
+            {
+              "title": "Estado de Salud",
+              "value": "{{.app.status.health.status}}",
+              "short": true
+            },
+            {
+              "title": "Repositorio",
+              "value": "{{.app.spec.source.repoURL}}",
+              "short": true
+            }
+            ]
+          }]
+    
+    template.app-sync-failed: |
+      message: |
+        :x: La sincronización de {{.app.metadata.name}} ha fallado.
+      slack:
+        attachments: |
+          [{
+            "title": "{{.app.metadata.name}}",
+            "title_link":"{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+            "color": "danger",
+            "fields": [
+            {
+              "title": "Estado de Sincronización",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            },
+            {
+              "title": "Repositorio",
+              "value": "{{.app.spec.source.repoURL}}",
+              "short": true
+            }
+            ]
+          }]
+  
+  # Notification triggers
+  triggers:
+    trigger.on-deployed: |
+      - when: app.status.operationState.phase in ['Succeeded']
+        send: [app-deployed]
+    trigger.on-health-degraded: |
+      - when: app.status.health.status == 'Degraded'
+        send: [app-health-degraded]
+    trigger.on-sync-failed: |
+      - when: app.status.operationState.phase in ['Error', 'Failed']
+        send: [app-sync-failed]
+
 # Resource limits
 global:
   image:

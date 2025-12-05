@@ -361,7 +361,7 @@ resource "helm_release" "kube_prometheus_stack" {
         config = {
           global = {
             resolve_timeout = "5m"
-            slack_api_url   = data.kubernetes_secret.alertmanager_slack.data["webhook_url"]
+            slack_api_url   = "https://slack.com/api/chat.postMessage"
           }
 
           # Plantillas de mensajes
@@ -425,9 +425,15 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "default"
               slack_configs = [
                 {
+                  api_url       = "https://slack.com/api/chat.postMessage"
+                  http_config   = {
+                    authorization = {
+                      credentials = local.slack_bot_token
+                    }
+                  }
                   channel       = "#notificacionesrgh"
                   title         = "🔔 [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Severity:* {{ .Labels.severity }}\n*Namespace:* {{ .Labels.namespace }}\n{{ end }}"
+                  text          = "{{ range .Alerts }}*Alerta:* {{ .Annotations.summary }}\n*Descripción:* {{ .Annotations.description }}\n*Severidad:* {{ .Labels.severity }}\n*Namespace:* {{ .Labels.namespace }}\n{{ end }}"
                   send_resolved = true
                   color         = "{{ if eq .Status \"firing\" }}danger{{ else }}good{{ end }}"
                 }
@@ -437,9 +443,15 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "critical-alerts"
               slack_configs = [
                 {
+                  api_url       = "https://slack.com/api/chat.postMessage"
+                  http_config   = {
+                    authorization = {
+                      credentials = local.slack_bot_token
+                    }
+                  }
                   channel       = "#notificacionesrgh"
-                  title         = "🚨 [CRITICAL] {{ .GroupLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n{{ end }}"
+                  title         = "🚨 [CRÍTICO] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Alerta:* {{ .Annotations.summary }}\n*Descripción:* {{ .Annotations.description }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n{{ end }}"
                   send_resolved = true
                   color         = "danger"
                 }
@@ -449,9 +461,15 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "warning-alerts"
               slack_configs = [
                 {
+                  api_url       = "https://slack.com/api/chat.postMessage"
+                  http_config   = {
+                    authorization = {
+                      credentials = local.slack_bot_token
+                    }
+                  }
                   channel       = "#notificacionesrgh"
-                  title         = "⚠️ [WARNING] {{ .GroupLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
+                  title         = "⚠️ [ADVERTENCIA] {{ .GroupLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Alerta:* {{ .Annotations.summary }}\n*Descripción:* {{ .Annotations.description }}\n{{ end }}"
                   send_resolved = true
                   color         = "warning"
                 }
@@ -461,9 +479,15 @@ resource "helm_release" "kube_prometheus_stack" {
               name = "app-alerts"
               slack_configs = [
                 {
+                  api_url       = "https://slack.com/api/chat.postMessage"
+                  http_config   = {
+                    authorization = {
+                      credentials = local.slack_bot_token
+                    }
+                  }
                   channel       = "#notificacionesrgh"
                   title         = "🎮 [RETROGAME] {{ .GroupLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Service:* {{ .Labels.service }}\n*Alert:* {{ .Annotations.summary }}\n*Description:* {{ .Annotations.description }}\n{{ end }}"
+                  text          = "{{ range .Alerts }}*Servicio:* {{ .Labels.service }}\n*Alerta:* {{ .Annotations.summary }}\n*Descripción:* {{ .Annotations.description }}\n{{ end }}"
                   send_resolved = true
                   color         = "{{ if eq .Status \"firing\" }}#FF6B6B{{ else }}#51CF66{{ end }}"
                 }
