@@ -76,7 +76,19 @@ resource "kubernetes_secret" "argocd_repo_infrastructure" {
   depends_on = [helm_release.argocd]
 }
 
-# NOTA: ArgoCD crea automáticamente el secret "argocd-notifications-secret".
-# Para configurar Slack posteriormente:
-# kubectl -n argocd edit secret argocd-notifications-secret
-# Agregar: slack-token: <tu-token>
+# ============================================================================
+# ArgoCD Notifications - Slack Integration
+# ============================================================================
+
+resource "kubernetes_secret" "argocd_notifications" {
+  metadata {
+    name      = "argocd-notifications-secret"
+    namespace = "argocd"
+  }
+
+  data = {
+    slack-token = local.slack_bot_token
+  }
+
+  depends_on = [helm_release.argocd]
+}
