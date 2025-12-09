@@ -1069,6 +1069,35 @@ aws ec2 describe-security-groups \
 kubectl get pods -n ingress-nginx
 ```
 
+**5. ArgoCD webhook error durante instalación:**
+```bash
+# Error: "no endpoints available for service aws-load-balancer-webhook-service"
+# 
+# Causa: El webhook del AWS Load Balancer Controller tarda 30-60s en estar listo
+# Terraform intenta instalar ArgoCD antes de que el webhook esté operativo
+#
+# Solución implementada en argocd.tf:
+# - Se añadió recurso time_sleep de 60s entre AWS LB Controller y ArgoCD
+# - Garantiza que el webhook tenga tiempo de iniciar y registrar endpoints
+#
+# Verificar estado del webhook:
+kubectl get endpoints -n kube-system aws-load-balancer-webhook-service
+
+# Debe mostrar IPs en ENDPOINTS (no <none>)
+# Output esperado:
+# NAME                                  ENDPOINTS          AGE
+# aws-load-balancer-webhook-service     10.0.1.234:9443    2m
+
+# Verificar logs del AWS LB Controller:
+kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+
+# Si se necesita reinstalar ArgoCD manualmente:
+helm uninstall argocd -n argocd
+# Esperar 60 segundos
+sleep 60
+helm install argocd argo-cd/argo-cd -n argocd --create-namespace
+```
+
 ### Ver Eventos del Cluster
 
 ```bash
