@@ -1,10 +1,13 @@
 # Wait for AWS Load Balancer Controller webhook to be ready
+# The webhook service needs time to start and register its endpoints
+# before ArgoCD attempts to create LoadBalancer services
+# Recommended: 60s for production environments to ensure stability
 resource "time_sleep" "wait_for_lb_controller" {
   depends_on = [
     helm_release.aws_load_balancer_controller
   ]
   
-  create_duration = "45s"
+  create_duration = "60s"
 }
 
 # ArgoCD Installation
