@@ -579,8 +579,11 @@ resource "kubernetes_ingress_v1" "wiki" {
     if (url.startsWith("/_next")) return url;
     if (url.startsWith("/_mintlify")) return url;
     if (url.startsWith("/api/")) return url;
-    if (url.includes("?_rsc=")) return url;
     if (url === "/") return "/wiki/";
+    // Handle RSC (React Server Components) URLs from search results
+    if (url.startsWith("/") && url.includes("?_rsc=")) {
+      return "/wiki" + url;
+    }
     if (url.startsWith("/")) return "/wiki" + url;
     return url;
   }
@@ -608,7 +611,8 @@ resource "kubernetes_ingress_v1" "wiki" {
       window.location.href = "/wiki/";
       return;
     }
-    if (href.startsWith("/") && !href.includes("?_rsc=")) {
+    // Handle all internal links including RSC URLs from search
+    if (href.startsWith("/")) {
       e.preventDefault();
       window.location.href = "/wiki" + href;
     }
