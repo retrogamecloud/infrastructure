@@ -1,3 +1,12 @@
+# Wait for AWS Load Balancer Controller webhook to be ready
+resource "time_sleep" "wait_for_lb_controller" {
+  depends_on = [
+    helm_release.aws_load_balancer_controller
+  ]
+  
+  create_duration = "45s"
+}
+
 # ArgoCD Installation
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -12,7 +21,8 @@ resource "helm_release" "argocd" {
   ]
 
   depends_on = [
-    module.eks
+    module.eks,
+    time_sleep.wait_for_lb_controller
   ]
 }
 
