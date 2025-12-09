@@ -569,6 +569,7 @@ resource "kubernetes_ingress_v1" "wiki" {
 (function() {
   const originalPushState = history.pushState;
   const originalReplaceState = history.replaceState;
+  const originalFetch = window.fetch;
   
   function addWikiPrefix(url) {
     if (!url) return url;
@@ -580,13 +581,23 @@ resource "kubernetes_ingress_v1" "wiki" {
     if (url.startsWith("/_mintlify")) return url;
     if (url.startsWith("/api/")) return url;
     if (url === "/") return "/wiki/";
-    // Handle RSC (React Server Components) URLs from search results
-    if (url.startsWith("/") && url.includes("?_rsc=")) {
-      return "/wiki" + url;
-    }
     if (url.startsWith("/")) return "/wiki" + url;
     return url;
   }
+  
+  // Intercept fetch for RSC requests
+  window.fetch = function(resource, options) {
+    if (typeof resource === "string" && resource.startsWith("/") && !resource.startsWith("/wiki/") && !resource.startsWith("/_next") && !resource.startsWith("/_mintlify") && !resource.startsWith("/api/") && !resource.startsWith("/mintlify-assets")) {
+      resource = "/wiki" + resource;
+    } else if (resource instanceof Request) {
+      const url = resource.url;
+      if (url.startsWith(window.location.origin + "/") && !url.includes("/wiki/") && !url.includes("/_next") && !url.includes("/_mintlify") && !url.includes("/api/") && !url.includes("/mintlify-assets")) {
+        const path = url.substring(window.location.origin.length);
+        resource = new Request(window.location.origin + "/wiki" + path, resource);
+      }
+    }
+    return originalFetch.call(this, resource, options);
+  };
   
   history.pushState = function(state, title, url) {
     return originalPushState.call(this, state, title, addWikiPrefix(url));
@@ -611,7 +622,6 @@ resource "kubernetes_ingress_v1" "wiki" {
       window.location.href = "/wiki/";
       return;
     }
-    // Handle all internal links including RSC URLs from search
     if (href.startsWith("/")) {
       e.preventDefault();
       window.location.href = "/wiki" + href;
