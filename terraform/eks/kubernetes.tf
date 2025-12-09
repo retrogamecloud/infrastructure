@@ -571,33 +571,43 @@ resource "kubernetes_ingress_v1" "wiki" {
   const originalReplaceState = history.replaceState;
   const originalFetch = window.fetch;
   
+  function shouldAddPrefix(url) {
+    if (!url || typeof url !== "string") return false;
+    if (url.startsWith("http") || url.startsWith("//")) return false;
+    if (url.startsWith("/wiki/")) return false;
+    if (url.startsWith("#")) return false;
+    if (url.startsWith("/mintlify-assets")) return false;
+    return url.startsWith("/");
+  }
+  
+  // Intercept ALL fetch requests for internal paths
+  window.fetch = function(resource, options) {
+    if (typeof resource === "string") {
+      if (shouldAddPrefix(resource)) {
+        console.log("[Wiki Proxy] Intercepting fetch:", resource, "->", "/wiki" + resource);
+        resource = "/wiki" + resource;
+      }
+    } else if (resource instanceof Request) {
+      const url = resource.url;
+      const relativePath = url.replace(window.location.origin, "");
+      if (shouldAddPrefix(relativePath)) {
+        console.log("[Wiki Proxy] Intercepting Request:", relativePath, "->", "/wiki" + relativePath);
+        resource = new Request(window.location.origin + "/wiki" + relativePath, resource);
+      }
+    }
+    return originalFetch.call(this, resource, options);
+  };
+  
   function addWikiPrefix(url) {
     if (!url) return url;
     if (url.startsWith("http") || url.startsWith("//")) return url;
     if (url.startsWith("/wiki/")) return url;
     if (url.startsWith("#")) return url;
     if (url.startsWith("/mintlify-assets")) return url;
-    if (url.startsWith("/_next")) return url;
-    if (url.startsWith("/_mintlify")) return url;
-    if (url.startsWith("/api/")) return url;
     if (url === "/") return "/wiki/";
     if (url.startsWith("/")) return "/wiki" + url;
     return url;
   }
-  
-  // Intercept fetch for RSC requests
-  window.fetch = function(resource, options) {
-    if (typeof resource === "string" && resource.startsWith("/") && !resource.startsWith("/wiki/") && !resource.startsWith("/_next") && !resource.startsWith("/_mintlify") && !resource.startsWith("/api/") && !resource.startsWith("/mintlify-assets")) {
-      resource = "/wiki" + resource;
-    } else if (resource instanceof Request) {
-      const url = resource.url;
-      if (url.startsWith(window.location.origin + "/") && !url.includes("/wiki/") && !url.includes("/_next") && !url.includes("/_mintlify") && !url.includes("/api/") && !url.includes("/mintlify-assets")) {
-        const path = url.substring(window.location.origin.length);
-        resource = new Request(window.location.origin + "/wiki" + path, resource);
-      }
-    }
-    return originalFetch.call(this, resource, options);
-  };
   
   history.pushState = function(state, title, url) {
     return originalPushState.call(this, state, title, addWikiPrefix(url));
@@ -627,6 +637,8 @@ resource "kubernetes_ingress_v1" "wiki" {
       window.location.href = "/wiki" + href;
     }
   }, true);
+  
+  console.log("[Wiki Proxy] Interceptors initialized successfully");
 })();
 </script></head>';
         proxy_set_header Accept-Encoding "";
