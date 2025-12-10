@@ -59,6 +59,8 @@ coverage/
 *.tfvars.json
 .terraform/
 .terraform.lock.hcl
+tfplan
+*.tfplan
 crash.log
 crash.*.log
 override.tf
