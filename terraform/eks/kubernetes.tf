@@ -562,6 +562,12 @@ resource "kubernetes_ingress_v1" "wiki" {
       "nginx.ingress.kubernetes.io/proxy-ssl-verify"      = "off"
       "nginx.ingress.kubernetes.io/proxy-ssl-protocols"   = "TLSv1.2 TLSv1.3"
       "nginx.ingress.kubernetes.io/rewrite-target"        = "/$2"
+      # Redirigir cualquier ruta de docs (quickstart, architecture, etc.) a /wiki/* con código 302
+      "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+        if ($request_uri ~ "^/(quickstart|architecture|backend|frontend|infrastructure|kong|cicd|troubleshooting)") {
+          rewrite ^/(.*)$ /wiki/$1 redirect;
+        }
+      EOT
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         sub_filter_once off;
         sub_filter_types text/html;
