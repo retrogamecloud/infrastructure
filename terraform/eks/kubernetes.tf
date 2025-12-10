@@ -555,15 +555,15 @@ resource "kubernetes_ingress_v1" "wiki" {
     name      = "wiki-ingress"
     namespace = kubernetes_namespace.retrogame.metadata[0].name
     annotations = {
-      "nginx.ingress.kubernetes.io/ssl-redirect"          = "true"
-      "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
-      "nginx.ingress.kubernetes.io/upstream-vhost"        = "retrogamecloud.mintlify.app"
-      "nginx.ingress.kubernetes.io/use-regex"             = "true"
-      "nginx.ingress.kubernetes.io/proxy-ssl-verify"      = "off"
-      "nginx.ingress.kubernetes.io/proxy-ssl-protocols"   = "TLSv1.2 TLSv1.3"
-      "nginx.ingress.kubernetes.io/rewrite-target"        = "/$2"
+      "nginx.ingress.kubernetes.io/ssl-redirect"        = "true"
+      "nginx.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+      "nginx.ingress.kubernetes.io/upstream-vhost"      = "retrogamecloud.mintlify.app"
+      "nginx.ingress.kubernetes.io/use-regex"           = "true"
+      "nginx.ingress.kubernetes.io/proxy-ssl-verify"    = "off"
+      "nginx.ingress.kubernetes.io/proxy-ssl-protocols" = "TLSv1.2 TLSv1.3"
+      "nginx.ingress.kubernetes.io/rewrite-target"      = "/$2"
       # Redirigir cualquier ruta de docs (quickstart, architecture, etc.) a /wiki/* con código 302
-      "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+      "nginx.ingress.kubernetes.io/server-snippet"        = <<-EOT
         if ($request_uri ~ "^/(quickstart|architecture|backend|frontend|infrastructure|kong|cicd|troubleshooting)") {
           rewrite ^/(.*)$ /wiki/$1 redirect;
         }
