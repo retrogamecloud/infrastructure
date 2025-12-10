@@ -7,8 +7,8 @@
 
 Infraestructura como código para desplegar RetroGame Hub en AWS usando Terraform y Kubernetes. Automatiza la creación de VPC, clúster EKS, base de datos, DNS, secretos, monitoreo y más.
 
-**Documentación General:** [Ir al README Principal](https://github.com/retrogamecloud/.github/blob/main/README.md)  
-**Documentación Profesional:** [Acceder a la Wiki](https://www.retrogamehub.games/wiki)
+**README general:** [Ir al README Principal](https://github.com/retrogamecloud/.github/blob/main/profile/README.md)  
+**Documentación:** [Acceder a la Wiki](https://retrogamecloud.mintlify.app/)
 
 ---
 
@@ -1124,8 +1124,7 @@ Cada vez que haces un push o abres un Pull Request, se ejecutan automáticamente
 ### Documentación del Proyecto
 
 - **Workflows CI/CD:** [.github/README-WF.md](./.github/README-WF.md)
-- **Secretos & Seguridad:** [SECRETS-STRATEGY.md](../.github/docs/SECRETS-STRATEGY.md)
-- **Documentación General:** [/README.md](/../README.md)
+- **README general:** [/README.md](/../README.md)
 
 ### Repositorios Relacionados
 
